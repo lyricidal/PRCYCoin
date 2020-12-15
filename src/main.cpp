@@ -1645,7 +1645,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
     // Check transaction
     if (!CheckTransaction(tx, false, true, state))
-        return state.DoS(100, error("%s : CheckTransaction failed", __func__), REJECT_INVALID, "bad-tx");
+        return state.DoS(100, error("%s: CheckTransaction failed", __func__), REJECT_INVALID, "bad-tx");
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
@@ -1654,7 +1654,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
     //Coinstake is also only valid in a block, not as a loose transaction
     if (tx.IsCoinStake())
-        return state.DoS(100, error("%s : coinstake as individual tx (id=%s): %s",
+        return state.DoS(100, error("%s: coinstake as individual tx (id=%s): %s",
                 __func__, tx.GetHash().GetHex(), tx.ToString()), REJECT_INVALID, "coinstake");
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
     string reason;
@@ -1712,7 +1712,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
         // Check for non-standard pay-to-script-hash in inputs
         if (Params().RequireStandard() && !AreInputsStandard(tx, view))
-            return error("AcceptToMemoryPool: : nonstandard transaction input");
+            return error("AcceptToMemoryPool: nonstandard transaction input");
         // Check that the transaction doesn't have an excessive number of
         // sigops, making it impossible to mine. Since the coinbase transaction
         // itself can contain sigops MAX_TX_SIGOPS is less than
@@ -1772,7 +1772,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
 
         if (!CheckInputs(tx, state, view, true, STANDARD_SCRIPT_VERIFY_FLAGS, true)) {
-            return error("AcceptToMemoryPool: : ConnectInputs failed %s", hash.ToString());
+            return error("AcceptToMemoryPool: ConnectInputs failed %s", hash.ToString());
         }
         // Check again against just the consensus-critical mandatory script
         // verification flags, in case of bugs in the standard flags that cause
@@ -1785,7 +1785,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
         // can be exploited as a DoS attack.
         if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true)) {
             return error(
-                "AcceptToMemoryPool: : BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags %s",
+                "AcceptToMemoryPool: BUG! PLEASE REPORT THIS! ConnectInputs failed against MANDATORY but not STANDARD flags %s",
                 hash.ToString());
         }
         // Store transaction in memory
@@ -1826,11 +1826,11 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
     const int chainHeight = chainActive.Height();
 
     if (!CheckTransaction(tx, false, true, state))
-        return error("AcceptableInputs: : CheckTransaction failed");
+        return error("AcceptableInputs: CheckTransaction failed");
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
-        return state.DoS(100, error("AcceptableInputs: : coinbase as individual tx"),
+        return state.DoS(100, error("AcceptableInputs: coinbase as individual tx"),
             REJECT_INVALID, "coinbase");
 
     // Rather not work on nonstandard transactions (unless -testnet/-regtest)
@@ -1893,7 +1893,7 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
                 // check for invalid/fraudulent inputs
                 if (!ValidOutPoint(txin.prevout, chainHeight)) {
                     return state.Invalid(
-                        error("%s : tried to spend invalid input %s in tx %s", __func__, txin.prevout.ToString(),
+                        error("%s: tried to spend invalid input %s in tx %s", __func__, txin.prevout.ToString(),
                             tx.GetHash().GetHex()),
                         REJECT_INVALID, "bad-txns-invalid-inputs");
                 }
@@ -1975,14 +1975,14 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
         }
 
         if (fRejectInsaneFee && nFees > ::minRelayTxFee.GetFee(nSize) * 10000)
-            return error("AcceptableInputs: : insane fees %s, %d > %d",
+            return error("AcceptableInputs: insane fees %s, %d > %d",
                 hash.ToString(),
                 nFees, ::minRelayTxFee.GetFee(nSize) * 10000);
 
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         if (!CheckInputs(tx, state, view, false, STANDARD_SCRIPT_VERIFY_FLAGS, true)) {
-            return error("AcceptableInputs: : ConnectInputs failed %s", hash.ToString());
+            return error("AcceptableInputs: ConnectInputs failed %s", hash.ToString());
         }
 
         // Check again against just the consensus-critical mandatory script
@@ -2024,11 +2024,11 @@ bool GetTransaction(const uint256& hash, CTransaction& txOut, uint256& hashBlock
                     fseek(file.Get(), postx.nTxOffset, SEEK_CUR);
                     file >> txOut;
                 } catch (const std::exception& e) {
-                    return error("%s : Deserialize or I/O error - %s", __func__, e.what());
+                    return error("%s: Deserialize or I/O error - %s", __func__, e.what());
                 }
                 hashBlock = header.GetHash();
                 if (txOut.GetHash() != hash)
-                    return error("%s : txid mismatch, %s, %s", __func__, txOut.GetHash().GetHex(), hash.GetHex());
+                    return error("%s: txid mismatch, %s, %s", __func__, txOut.GetHash().GetHex(), hash.GetHex());
                 return true;
             }
 
@@ -2105,7 +2105,7 @@ bool ReadBlockFromDisk(CBlock& block, const CDiskBlockPos& pos)
     try {
         filein >> block;
     } catch (const std::exception& e) {
-        return error("%s : Deserialize or I/O error - %s", __func__, e.what());
+        return error("%s: Deserialize or I/O error - %s", __func__, e.what());
     }
 
     // Check the header
@@ -2122,7 +2122,7 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex)
     if (!ReadBlockFromDisk(block, pindex->GetBlockPos()))
         return false;
     if (block.GetHash() != pindex->GetBlockHash()) {
-        LogPrintf("%s : block=%s index=%s\n", __func__, block.GetHash().ToString().c_str(),
+        LogPrintf("%s: block=%s index=%s\n", __func__, block.GetHash().ToString().c_str(),
             pindex->GetBlockHash().ToString().c_str());
         return error("ReadBlockFromDisk(CBlock&, CBlockIndex*) : GetHash() doesn't match index");
     }
@@ -2679,7 +2679,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
 bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& view, bool* pfClean)
 {
     if (pindex->GetBlockHash() != view.GetBestBlock())
-        LogPrintf("%s : pindex=%s view=%s\n", __func__, pindex->GetBlockHash().GetHex(), view.GetBestBlock().GetHex());
+        LogPrintf("%s: pindex=%s view=%s\n", __func__, pindex->GetBlockHash().GetHex(), view.GetBestBlock().GetHex());
     assert(pindex->GetBlockHash() == view.GetBestBlock());
 
     if (pfClean)
@@ -2813,7 +2813,7 @@ bool RecalculateDAPSSupply(int nHeightStart)
     uiInterface.ShowProgress(_("Recalculating DAPS supply..."), 0);
     while (true) {
         if (pindex->nHeight % 1000 == 0) {
-            LogPrintf("%s : block %d...\n", __func__, pindex->nHeight);
+            LogPrintf("%s: block %d...\n", __func__, pindex->nHeight);
             int percent = std::max(1, std::min(99, (int)((double)((pindex->nHeight - nHeightStart) * 100) / (chainHeight - nHeightStart))));
             uiInterface.ShowProgress(_("Recalculating DAPS supply..."), percent);
         }
@@ -2922,10 +2922,10 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             return state.DoS(100, error("ConnectBlock(): A PoA block should not audit any existing PoA blocks"));
         }
         if (!CheckPoABlockRewardAmount(block, pindex)) {
-            return state.DoS(100, error("ConnectBlock(): This PoA block reward does not match the value it should."));
+            return state.DoS(100, error("ConnectBlock(): This PoA block reward does not match the value it should"));
         }
         if (block.GetBlockTime() >= GetAdjustedTime() + 2 * 60 * 60) {
-            return state.DoS(100, error("ConnectBlock(): A PoA block should not be in the future."));
+            return state.DoS(100, error("ConnectBlock(): A PoA block should not be in the future"));
         }
     }
 
@@ -4378,7 +4378,7 @@ bool AcceptBlockHeader(const CBlock& block, CValidationState& state, CBlockIndex
         if (pindexPrev->nStatus & BLOCK_FAILED_MASK) {
             //If this "invalid" block is an exact match from the checkpoints, then reconsider it
             if (pindex && Checkpoints::CheckBlock(pindex->nHeight - 1, block.hashPrevBlock, true)) {
-                LogPrintf("%s : Reconsidering block %s height %d\n", __func__, pindexPrev->GetBlockHash().GetHex(),
+                LogPrintf("%s: Reconsidering block %s height %d\n", __func__, pindexPrev->GetBlockHash().GetHex(),
                     pindexPrev->nHeight);
                 CValidationState statePrev;
                 ReconsiderBlock(statePrev, pindexPrev);
@@ -4425,7 +4425,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
         if (pindexPrev->nStatus & BLOCK_FAILED_MASK) {
             //If this "invalid" block is an exact match from the checkpoints or if it is a PoA block rejected previously due not synced with other nodes before, then reconsider it
             if (Checkpoints::CheckBlock(pindexPrev->nHeight, block.hashPrevBlock, true) || (pindexPrev->IsProofOfAudit() && chainActive.Height() - pindexPrev->nHeight < Params().MaxReorganizationDepth())) {
-                LogPrintf("%s : Reconsidering block %s height %d\n", __func__, pindexPrev->GetBlockHash().GetHex(),
+                LogPrintf("%s: Reconsidering block %s height %d\n", __func__, pindexPrev->GetBlockHash().GetHex(),
                     pindexPrev->nHeight);
                 CValidationState statePrev;
                 ReconsiderBlock(statePrev, pindexPrev);
@@ -4759,7 +4759,7 @@ bool TestBlockValidity(CValidationState& state, const CBlock& block, CBlockIndex
     AssertLockHeld(cs_main);
     assert(pindexPrev);
     if (pindexPrev != chainActive.Tip()) {
-        LogPrintf("%s : No longer working on chain tip\n", __func__);
+        LogPrintf("%s: No longer working on chain tip\n", __func__);
         return false;
     }
 
@@ -5212,7 +5212,7 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos* dbp)
                     }
                 }
             } catch (const std::exception& e) {
-                LogPrintf("%s : Deserialize or I/O error - %s", __func__, e.what());
+                LogPrintf("%s: Deserialize or I/O error - %s", __func__, e.what());
             }
         }
     } catch (const std::runtime_error& e) {
