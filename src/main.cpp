@@ -2918,7 +2918,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (!CheckPoABlockRewardAmount(block, pindex)) {
             return state.DoS(100, error("ConnectBlock(): This PoA block reward does not match the value it should"));
         }
-        if (block.GetBlockTime() >= GetAdjustedTime() + 2 * 60 * 60) {
+        if (block.GetBlockTime() >= GetAdjustedTime() + 2 * 60) {
             return state.DoS(100, error("ConnectBlock(): A PoA block should not be in the future"));
         }
     }
@@ -4610,12 +4610,12 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
 
     if (pwalletMain) {
         LOCK2(cs_main, pwalletMain->cs_wallet);
-        // If turned on MultiSend will send a transaction (or more) on the after maturity of a stake
+        /*// If turned on MultiSend will send a transaction (or more) on the after maturity of a stake
         if (pwalletMain->isMultiSendEnabled())
-            pwalletMain->MultiSend();
+            pwalletMain->MultiSend();*/
 
         // If turned on Auto Combine will scan wallet for dust to combine
-        if (pwalletMain->fCombineDust && chainActive.Height() % 15 == 0)
+        if (pwalletMain->fCombineDust)
             pwalletMain->AutoCombineDust();
 
         if (chainActive.Height() % 15 == 0) {

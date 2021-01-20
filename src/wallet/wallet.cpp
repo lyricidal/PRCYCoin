@@ -1977,7 +1977,7 @@ bool CWallet::AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, vector
             }
             if (!found) continue;
 
-            if (value <= COIN / 1000) continue; //dust
+            if (value <= DUST) continue; //dust
 
             isminetype mine = IsMine(pcoin->vout[i]);
             if (mine == ISMINE_NO)
@@ -2204,7 +2204,7 @@ StakingStatusError CWallet::StakingCoinStatus(CAmount& minFee, CAmount& maxFee)
                                 continue;
                             }
                         }
-                        if (value <= COIN / 10) continue; //dust
+                        if (value <= DUST) continue; //dust
 
                         isminetype mine = IsMine(pcoin->vout[i]);
                         if (mine == ISMINE_NO)
@@ -4013,14 +4013,13 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             nReward = PoSBlockReward();
             txNew.vout[1].nValue = nCredit;
             txNew.vout[2].nValue = nReward;
-            LogPrintf("DEBUGGING: %s, nCredit: %d, nReward: %d\n", __func__, nCredit, nReward);
-              if (stakingMode == STAKING_WITH_CONSOLIDATION || STAKING_WITH_CONSOLIDATION_WITH_STAKING_NEWW_FUNDS) {
+              /*if (stakingMode == STAKING_WITH_CONSOLIDATION || STAKING_WITH_CONSOLIDATION_WITH_STAKING_NEWW_FUNDS) {
                 //the first output contains all funds (input + rewards + fee)
                 if (nCredit + nReward > (MINIMUM_STAKE_AMOUNT + 100000*COIN)*2) {
                     txNew.vout[1].nValue = (nCredit + nReward)/2;
                     txNew.vout[2].nValue = (nCredit + nReward) - txNew.vout[1].nValue;
                 }
-            }
+            }*/
 
             // Limit size
             unsigned int nBytes = ::GetSerializeSize(txNew, SER_NETWORK, PROTOCOL_VERSION);
@@ -5336,16 +5335,9 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
 
 void CWallet::AutoCombineDust()
 {
-    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced()) return;
-    //if (IsInitialBlockDownload()) return;
-    if (chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) {
-        LogPrintf("Time elapsed for autocombine transaction too short\n");
-        return;
-    }
-
+    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced() || chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) return;
     if (stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
-        if (IsLocked()) return;
-        if (fGeneratePrcycoins && chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) {
+        if (fGeneratePrcycoins) {
             //sweeping to create larger UTXO for staking
             LOCK2(cs_main, cs_wallet);
             CAmount max = dirtyCachedBalance;
@@ -5355,7 +5347,7 @@ void CWallet::AutoCombineDust()
             uint32_t nTime = ReadAutoConsolidateSettingTime();
             nTime = (nTime == 0)? GetAdjustedTime() : nTime;
             LogPrintf("Attempting to create a consolidation transaction for a larger UTXO for staking\n");
-            CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + COIN, nTime);
+            CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + MAX_FEE, nTime);
         }
         return;
     }
@@ -6275,7 +6267,7 @@ bool CWallet::SendToStealthAddress(const std::string& stealthAddr, const CAmount
 {
     LOCK2(cs_main, cs_wallet);
     // Check amount
-    if (nValue <= 5)
+    if (nValue < 5 * COIN)
         throw runtime_error("Invalid amount. The minimum amount is 5 PRCY.");
 
     string strError;
