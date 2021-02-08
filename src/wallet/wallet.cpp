@@ -5735,7 +5735,7 @@ void CWallet::SetNull()
 
     // Stake Settings
     nHashDrift = 45;
-    nStakeSplitThreshold = 100000;
+    nStakeSplitThreshold = DEFAULT_STAKE_SPLIT_THRESHOLD;
     nHashInterval = 22;
     nStakeSetUpdateTime = 300; // 5 minutes
 
