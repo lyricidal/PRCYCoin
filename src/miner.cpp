@@ -301,7 +301,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
             vecPriority.push_back(TxPriority(dPriority, feeRate, &mi->second.GetTx()));
         }
 
-        LogPrintf("Selecting %d transactions from mempool\n", vecPriority.size());
+        LogPrint("staking", "Selecting %d transactions from mempool\n", vecPriority.size());
         // Collect transactions into block
         uint64_t nBlockSize = 1000;
         uint64_t nBlockTx = 0;
@@ -749,7 +749,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
             continue;
         }
         GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION);
-        LogPrintf("Running PRCYcoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
+        LogPrint("staking", "Running PRCYcoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
             ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 
         //
