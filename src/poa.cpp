@@ -466,7 +466,7 @@ bool CheckPoABlockRewardAmount(const CBlock& block, const CBlockIndex* pindex)
     if (pindex->nHeight >= Params().HardFork()) {
         ret = block.vtx.size() == 1;
         ret = ret && block.vtx[0].vout.size() == 1;
-        ret = ret && block.vtx[0].vout[0].nValue == block.posBlocksAudited.size() * 100 * COIN;
+        ret = ret && block.vtx[0].vout[0].nValue == block.posBlocksAudited.size() * 0.5 * COIN;
         ret = ret && VerifyZeroBlindCommitment(block.vtx[0].vout[0]);
     }
     return ret;
