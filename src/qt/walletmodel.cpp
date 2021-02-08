@@ -689,7 +689,7 @@ StakingStatusError WalletModel::getStakingStatusError(QString& error)
         CAmount balance = pwalletMain->GetSpendableBalance();
         if (!fMintable || nReserveBalance > balance) {
             if (balance < CWallet::MINIMUM_STAKE_AMOUNT) {
-                error = "\nBalance is under the minimum 400,000 staking threshold.\nPlease send more PRCY to this wallet.\n";
+                error = "\nBalance is under the minimum 2500 staking threshold.\nPlease send more PRCY to this wallet.\n";
                 return StakingStatusError::STAKING_OK;
             }
             if (nReserveBalance > balance || (balance > nReserveBalance && balance - nReserveBalance < CWallet::MINIMUM_STAKE_AMOUNT)) {
