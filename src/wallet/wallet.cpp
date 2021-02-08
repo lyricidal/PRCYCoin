@@ -2674,7 +2674,7 @@ uint32_t CWallet::ReadAutoConsolidateSettingTime()
 
 bool CWallet::IsAutoConsolidateOn()
 {
-    return ReadAutoConsolidateSettingTime() == 0;
+    return ReadAutoConsolidateSettingTime() > 0;
 }
 
 bool CWallet::CreateTransactionBulletProof(const CKey& txPrivDes, const CPubKey& recipientViewKey, const std::vector<std::pair<CScript, CAmount> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX, CAmount nFeePay, int ringSize, bool tomyself)
