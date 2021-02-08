@@ -103,9 +103,6 @@ public:
     int LAST_POW_BLOCK() const { return nLastPOWBlock; }
     int START_POA_BLOCK() const { return nStartPOABlock; }
     int Block_Enforce_Invalid() const { return nBlockEnforceInvalidUTXO; }
-    int SoftFork() const { return nSoftForkBlock;}
-    int HardFork() const { return nHardForkBlock;}
-    int PoAFixTime() const { return nPoAFixTime;}
 
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
@@ -114,7 +111,7 @@ public:
     int nLastPOWBlock;
     int TEAM_REWARD_FREQUENCY = 3; //every  TEAM_REWARD_FREQUENCY PoA blocks, reward the prcy team
     double MAX_MONEY;
-    CAmount TOTAL_SUPPLY = 70000000000*COIN; //70B PRCY
+    CAmount TOTAL_SUPPLY = 70000000 * COIN; //70M PRCY
 
 protected:
     CChainParams() {}
@@ -133,9 +130,6 @@ protected:
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
     int nStartPOABlock;
-    int nSoftForkBlock;
-    int nHardForkBlock;
-    int nPoAFixTime;
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;
