@@ -869,7 +869,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
             return;
         }
 
-        //verify the value if 1M PRCY
+        //verify the value if 5K PRCY
         COutPoint prevout = vin.prevout;
         CTransaction prev;
         uint256 bh;
@@ -891,7 +891,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
             return;
         }
 
-        if (amount != 1000000 * COIN) {
+        if (amount != 5000 * COIN) {
             LogPrint("masternode","dsee - masternode collateralization not equal to 1M %s\n", vin.prevout.hash.ToString());
             return;
         }

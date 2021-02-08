@@ -1468,7 +1468,7 @@ bool VerifyShnorrKeyImageTxIn(const CTxIn& txin, uint256 ctsHash)
 bool VerifyShnorrKeyImageTx(const CTransaction& tx)
 {
     //check if a transaction is staking or spending collateral
-    //this assumes that the transaction is already checked for either a staking transaction or transactions spending only UTXOs of 1M PRCY
+    //this assumes that the transaction is already checked for either a staking transaction or transactions spending only UTXOs of 5K PRCY
     if (!tx.IsCoinStake()) return true;
     uint256 cts = GetTxInSignatureHash(tx.vin[0]);
     return VerifyShnorrKeyImageTxIn(tx.vin[0], cts);
@@ -2221,7 +2221,7 @@ CAmount GetSeeSaw(const CAmount& blockValue, int nMasternodeCount, int nHeight)
         nMasternodeCount = mnodeman.size();
     }
 
-    int64_t mNodeCoins = nMasternodeCount * 1000000 * COIN;
+    int64_t mNodeCoins = nMasternodeCount * 5000 * COIN;
 
     // Use this log to compare the masternode count for different clients
     LogPrintf("Adjusting seesaw at height %d with %d masternodes (without drift: %d) at %ld\n", nHeight,
