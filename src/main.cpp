@@ -2151,7 +2151,7 @@ double ConvertBitsToDouble(unsigned int nBits)
 
 CAmount PoSBlockReward()
 {
-    return 900 * COIN;
+    return 1 * COIN;
 }
 
 CAmount TeamRewards(const CBlockIndex* ptip)
