@@ -2777,7 +2777,7 @@ UniValue sendtostealthaddress(const UniValue& params, bool fHelp)
                 "\nResult:\n"
                 "\"transactionid\"  (string) The transaction id.\n"
                 "\nExamples:\n" +
-                HelpExampleCli("sendtostealthaddress", "\"41kYDmcd27f2ULWE6tfC19UnEHYpEhMBtfiYwVFUYbZhXrjLomZXSovQPGzwTCAgwQLpWiEQPA5uyNjmEVLPr4g71AUMNjaVD3n\" 0.1") + HelpExampleCli("sendtostealthaddress", "\"41kYDmcd27f2ULWE6tfC19UnEHYpEhMBtfiYwVFUYbZhXrjLomZXSovQPGzwTCAgwQLpWiEQPA5uyNjmEVLPr4g71AUMNjaVD3n\" 0.1 \"donation\" \"seans outpost\"") + HelpExampleRpc("sendtostealthaddress", "\"41kYDmcd27f2ULWE6tfC19UnEHYpEhMBtfiYwVFUYbZhXrjLomZXSovQPGzwTCAgwQLpWiEQPA5uyNjmEVLPr4g71AUMNjaVD3n\", 0.1, \"donation\", \"seans outpost\""));
+                HelpExampleCli("sendtostealthaddress", "\"Pap5WCV4SjVMGLyYf98MEX82ErBEMVpg9ViQ1up3aBib6Fz4841SahrRXG6eSNSLBSNvEiGuQiWKXJC3RDfmotKv15oCrh6N2Ym\" 0.1") + HelpExampleCli("sendtostealthaddress", "\"Pap5WCV4SjVMGLyYf98MEX82ErBEMVpg9ViQ1up3aBib6Fz4841SahrRXG6eSNSLBSNvEiGuQiWKXJC3RDfmotKv15oCrh6N2Ym\" 0.1 \"donation\" \"seans outpost\"") + HelpExampleRpc("sendtostealthaddress", "\"Pap5WCV4SjVMGLyYf98MEX82ErBEMVpg9ViQ1up3aBib6Fz4841SahrRXG6eSNSLBSNvEiGuQiWKXJC3RDfmotKv15oCrh6N2Ym\", 0.1, \"donation\", \"seans outpost\""));
 
     std::string stealthAddr = params[0].get_str();
 
