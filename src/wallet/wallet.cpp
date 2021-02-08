@@ -6263,8 +6263,8 @@ bool CWallet::SendToStealthAddress(const std::string& stealthAddr, const CAmount
 {
     LOCK2(cs_main, cs_wallet);
     // Check amount
-    if (nValue <= 0)
-        throw runtime_error("Invalid amount");
+    if (nValue < 5 * COIN)
+        throw runtime_error("Invalid amount. The minimum amount is 5 PRCY.");
 
     string strError;
     if (this->IsLocked()) {
