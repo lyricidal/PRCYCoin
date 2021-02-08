@@ -4034,28 +4034,28 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             }
 
             //Check whether team rewards should be included in this block
-            CBlockIndex* pindexPrev = chainActive.Tip();
+/*             CBlockIndex* pindexPrev = chainActive.Tip();
             CAmount blockValue = GetBlockValue(pindexPrev);
             if (blockValue > PoSBlockReward()) {
                 CAmount teamReward = blockValue - PoSBlockReward();
                 const std::string foundational = FOUNDATION_WALLET;
-                CPubKey foundationalGenPub, pubView, pubSpend;
+                CPubKey addressGenPub, pubView, pubSpend;
                 bool hasPaymentID;
                 uint64_t paymentID;
                 if (!CWallet::DecodeStealthAddress(foundational, pubView, pubSpend, hasPaymentID, paymentID)) {
                     LogPrintf("%s: Cannot decode foundational address\n", __func__);
                     continue;
                 }
-                CKey foundationTxPriv;
-                foundationTxPriv.MakeNewKey(true);
-                CPubKey foundationTxPub = foundationTxPriv.GetPubKey();
-                ComputeStealthDestination(foundationTxPriv, pubView, pubSpend, foundationalGenPub);
-                CScript foundationalScript = GetScriptForDestination(foundationalGenPub);
+                CKey addressTxPriv;
+                addressTxPriv.MakeNewKey(true);
+                CPubKey foundationTxPub = addressTxPriv.GetPubKey();
+                ComputeStealthDestination(addressTxPriv, pubView, pubSpend, addressGenPub);
+                CScript foundationalScript = GetScriptForDestination(addressGenPub);
                 CTxOut foundationalOut(teamReward, foundationalScript);
-                std::copy(foundationTxPriv.begin(), foundationTxPriv.end(), std::back_inserter(foundationalOut.txPriv));
+                std::copy(addressTxPriv.begin(), addressTxPriv.end(), std::back_inserter(foundationalOut.txPriv));
                 std::copy(foundationTxPub.begin(), foundationTxPub.end(), std::back_inserter(foundationalOut.txPub));
                 txNew.vout.push_back(foundationalOut);
-            }
+            }*/
             //Encoding amount
             CPubKey sharedSec1;
             //In this case, use the transaction pubkey to encode the transactiona amount

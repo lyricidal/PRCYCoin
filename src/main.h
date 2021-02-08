@@ -123,7 +123,7 @@ static const unsigned char REJECT_DUST = 0x41;
 static const unsigned char REJECT_INSUFFICIENTFEE = 0x42;
 static const unsigned char REJECT_CHECKPOINT = 0x43;
 
-static const std::string FOUNDATION_WALLET = "41jsGvYo3GMWCvFVZekSnrRV8ptJfMGhuhRjB9tYEv5NSA47VqyLp6gKSCpS3wHTBhCGu9DJ5k1HMWXeHVnL9nUs15CjyeCQDiT";
+//static const std::string FOUNDATION_WALLET = "PandirQr3T895NCsDrSKdCD4TJ324z3VDB8Amcj6wx2kKdB7LztTDefdvP4QTMdgGA72W7SHzQeFzLTo2sikmmbd19E5C8UZbbi";
 
 struct BlockHasher {
     size_t operator()(const uint256& hash) const { return hash.GetLow64(); }
@@ -254,7 +254,7 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
 
 bool ActivateBestChain(CValidationState& state, CBlock* pblock = NULL, bool fAlreadyChecked = false);
 CAmount GetBlockValue(const CBlockIndex *ptip);
-CAmount TeamRewards(const CBlockIndex *ptip);
+//CAmount TeamRewards(const CBlockIndex *ptip);
 CAmount PoSBlockReward();
 
 void RemoveInvalidTransactionsFromMempool();
