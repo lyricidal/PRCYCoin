@@ -15,13 +15,12 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    # May need qt and protobuf to configure qt and include prcycoin-qt.1 in distribution
     - name: Install Required Packages
       run: |
         sudo apt-get update
         sudo apt-get install -y build-essential libtool bsdmainutils autotools-dev autoconf pkg-config automake python3
         sudo apt-get install -y libssl1.0-dev libzmq5 libgmp-dev libevent-dev libboost-all-dev libsodium-dev cargo
-        sudo apt-get install -y libqt5gui5 libqt5core5a libqt5dbus5 qttools5-dev qttools5-dev-tools libprotobuf-dev protobuf-compiler libqrencode-dev
+        sudo apt-get install -y libprotobuf-dev protobuf-compiler libqrencode-dev
         sudo apt-get install -y software-properties-common g++-multilib binutils-gold patch
         sudo add-apt-repository ppa:pivx/pivx
         sudo apt-get update
@@ -70,14 +69,14 @@ jobs:
     - name: Build PRCY 
       run: |
         ./autogen.sh
-        ./configure --disable-jni --disable-tests --disable-gui-tests --disable-bench --prefix=$(realpath depends/x86_64-pc-linux-gnu)
+        ./configure --disable-jni --disable-tests --disable-gui-tests --disable-bench --without-gui --prefix=$(realpath depends/x86_64-pc-linux-gnu)
         make -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
     - name: Prepare Files for Artifact
       run: |
         mkdir -p $ARTIFACT_DIR
-        strip $SOURCE_ARTIFACT/src/{prcycoin-cli,prcycoin-tx,prcycoind,qt/prcycoin-qt}
-        mv $SOURCE_ARTIFACT/src/{prcycoin-cli,prcycoin-tx,prcycoind,qt/prcycoin-qt} $ARTIFACT_DIR
+        strip $SOURCE_ARTIFACT/src/{prcycoin-cli,prcycoin-tx,prcycoind}
+        mv $SOURCE_ARTIFACT/src/{prcycoin-cli,prcycoin-tx,prcycoind} $ARTIFACT_DIR
     - name: Upload Artifact
       uses: actions/upload-artifact@v1
       with:
