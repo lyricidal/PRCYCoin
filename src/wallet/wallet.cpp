@@ -5746,7 +5746,7 @@ void CWallet::SetNull()
 
     //Auto Combine Dust
     fCombineDust = true;
-    nAutoCombineThreshold = 540 * COIN;
+    nAutoCombineThreshold = 150 * COIN;
 }
 
 bool CWallet::isMultiSendEnabled()
