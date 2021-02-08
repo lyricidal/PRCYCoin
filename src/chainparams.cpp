@@ -180,7 +180,7 @@ public:
         pchMessageStart[1] = 0xb7;
         pchMessageStart[2] = 0x79;
         pchMessageStart[3] = 0x84;
-        nDefaultPort = 53572;
+        nDefaultPort = 59682;
         bnProofOfWorkLimit = ~uint256(0) >> 1; // PRCYcoin starting difficulty is 1 / 2^12
         nSubsidyHalvingInterval = 210000;
         nMaxReorganizationDepth = 100;
@@ -331,7 +331,7 @@ public:
         pchMessageStart[1] = 0xb8;
         pchMessageStart[2] = 0x7a;
         pchMessageStart[3] = 0x85;
-        nDefaultPort = 53574;
+        nDefaultPort = 59684;
         nEnforceBlockUpgradeMajority = 51;
         nRejectBlockOutdatedMajority = 75;
         nToCheckBlockUpgradeMajority = 100;

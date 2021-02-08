@@ -173,7 +173,7 @@ UniValue addnode(const UniValue& params, bool fHelp)
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "2. \"command\"  (string, required) 'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once\n"
             "\nExamples:\n" +
-            HelpExampleCli("addnode", "\"192.168.0.6:53572\" \"onetry\"") + HelpExampleRpc("addnode", "\"192.168.0.6:53572\", \"onetry\""));
+            HelpExampleCli("addnode", "\"192.168.0.6:59682\" \"onetry\"") + HelpExampleRpc("addnode", "\"192.168.0.6:59682\", \"onetry\""));
 
     string strNode = params[0].get_str();
 
@@ -240,7 +240,7 @@ UniValue getaddednodeinfo(const UniValue& params, bool fHelp)
             "    \"connected\" : true|false,          (boolean) If connected\n"
             "    \"addresses\" : [\n"
             "       {\n"
-            "         \"address\" : \"192.168.0.201:53572\",  (string) The prcycoin server host and port\n"
+            "         \"address\" : \"192.168.0.201:59682\",  (string) The prcycoin server host and port\n"
             "         \"connected\" : \"outbound\"           (string) connection, inbound or outbound\n"
             "       }\n"
             "       ,...\n"

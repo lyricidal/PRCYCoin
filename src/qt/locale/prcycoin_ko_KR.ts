@@ -4112,8 +4112,8 @@ rpcpassword=%s
         <translation>환경설정에서 masternodeprivkey를 지정해야 합니다. 도움말을 참조하십시오.</translation>
     </message>
     <message>
-        <source>(53572 could be used only on mainnet)</source>
-        <translation>(53572 은 메인넷에서만 사용될 수 있습니다)</translation>
+        <source>(59682 could be used only on mainnet)</source>
+        <translation>(59682 은 메인넷에서만 사용될 수 있습니다)</translation>
     </message>
     <message>
         <source>(default: %s)</source>
@@ -4124,8 +4124,8 @@ rpcpassword=%s
         <translation>(기본값: 1)</translation>
     </message>
     <message>
-        <source>(must be 53572 for mainnet)</source>
-        <translation>(메인넷 일경우 53572)</translation>
+        <source>(must be 59682 for mainnet)</source>
+        <translation>(메인넷 일경우 59682)</translation>
     </message>
     <message>
         <source>Accept command line and JSON-RPC commands</source>

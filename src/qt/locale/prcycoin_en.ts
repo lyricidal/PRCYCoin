@@ -5722,8 +5722,8 @@ Please try again.</source>
     </message>
     <message>
         <location line="+3"/>
-        <source>(53572 could be used only on mainnet)</source>
-        <translation type="unfinished">(53572 could be used only on mainnet)</translation>
+        <source>(59682 could be used only on mainnet)</source>
+        <translation type="unfinished">(59682 could be used only on mainnet)</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -5737,7 +5737,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>(must be 53572 for mainnet)</source>
+        <source>(must be 59682 for mainnet)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
