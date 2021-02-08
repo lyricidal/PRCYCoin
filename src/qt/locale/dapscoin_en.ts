@@ -80,12 +80,12 @@
     </message>
     <message>
         <location line="+7"/>
-        <source>These are your DAPS addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
+        <source>These are your PRCY addresses for sending payments. Always check the amount and the receiving address before sending coins.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+4"/>
-        <source>These are your DAPS addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
+        <source>These are your PRCY addresses for receiving payments. It is recommended to use a new receiving address for each transaction.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -191,7 +191,7 @@
     </message>
     <message>
         <location line="+61"/>
-        <source>DAPS will close now to finish the encryption process. Remember that encrypting your wallet cannot fully protect your DAPSs from being stolen by malware infecting your computer.</source>
+        <source>PRCY will close now to finish the encryption process. Remember that encrypting your wallet cannot fully protect your PRCYs from being stolen by malware infecting your computer.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -231,7 +231,7 @@
     </message>
     <message>
         <location line="+1"/>
-        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR DAPS&lt;/b&gt;!</source>
+        <source>Warning: If you encrypt your wallet and lose your passphrase, you will &lt;b&gt;LOSE ALL OF YOUR PRCY&lt;/b&gt;!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -278,7 +278,7 @@
     </message>
     <message>
         <location line="+6"/>
-        <source>Enter a Dapscoin Address that you would like to encrypt using BIP 38. Enter a passphrase in the middle box. Press encrypt to compute the encrypted private key.</source>
+        <source>Enter a Prcycoin Address that you would like to encrypt using BIP 38. Enter a passphrase in the middle box. Press encrypt to compute the encrypted private key.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -289,7 +289,7 @@
     </message>
     <message>
         <location line="-355"/>
-        <source>The DAPS address to sign the message with</source>
+        <source>The PRCY address to sign the message with</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -331,7 +331,7 @@
     </message>
     <message>
         <location line="+21"/>
-        <source>Sign the message to prove you own this DAPS address</source>
+        <source>Sign the message to prove you own this PRCY address</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -362,12 +362,12 @@
     </message>
     <message>
         <location line="+25"/>
-        <source>The DAPS address the message was signed with</source>
+        <source>The PRCY address the message was signed with</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+29"/>
-        <source>Verify the message to ensure it was signed with the specified DAPS address</source>
+        <source>Verify the message to ensure it was signed with the specified PRCY address</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -617,12 +617,12 @@
     </message>
     <message>
         <location line="+5"/>
-        <source>Show &amp;DAPScoin Folder</source>
+        <source>Show &amp;PRCYcoin Folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Show the DAPScoin folder</source>
+        <source>Show the PRCYcoin folder</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -749,7 +749,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="-241"/>
-        <source>DAPS Coin</source>
+        <source>PRCY Coin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -814,7 +814,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+588"/>
-        <source>DAPS</source>
+        <source>PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -829,12 +829,12 @@ Confirmations: %5
     </message>
     <message>
         <location line="+221"/>
-        <source>&amp;About DAPS</source>
+        <source>&amp;About PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Show information about DAPS</source>
+        <source>Show information about PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -864,7 +864,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+21"/>
-        <source>Open a DAPS: URI or payment request</source>
+        <source>Open a PRCY: URI or payment request</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -879,7 +879,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Facebook</source>
+        <source>PRCY Facebook</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -889,7 +889,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Twitter</source>
+        <source>PRCY Twitter</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -899,7 +899,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Discord</source>
+        <source>PRCY Discord</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -909,7 +909,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Telegram - Main</source>
+        <source>PRCY Telegram - Main</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -919,7 +919,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Telegram - Lounge</source>
+        <source>PRCY Telegram - Lounge</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -929,7 +929,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Medium</source>
+        <source>PRCY Medium</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -939,7 +939,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Steemit</source>
+        <source>PRCY Steemit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -949,7 +949,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Instagram</source>
+        <source>PRCY Instagram</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -959,7 +959,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+1"/>
-        <source>DAPS Reddit</source>
+        <source>PRCY Reddit</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -969,7 +969,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+2"/>
-        <source>Show the DAPS help message to get a list with possible DAPS command-line options</source>
+        <source>Show the PRCY help message to get a list with possible PRCY command-line options</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1049,7 +1049,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+198"/>
-        <source>DAPS client</source>
+        <source>PRCY client</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1224,7 +1224,7 @@ Confirmations: %5
     </message>
     <message>
         <location filename="../blockexplorer.cpp" line="+421"/>
-        <source>Not all transactions will be shown. To view all transactions you need to set txindex=1 in the configuration file (dapscoin.conf).</source>
+        <source>Not all transactions will be shown. To view all transactions you need to set txindex=1 in the configuration file (prcycoin.conf).</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -1588,7 +1588,7 @@ Confirmations: %5
     </message>
     <message>
         <location line="+67"/>
-        <source>The entered address &quot;%1&quot; is not a valid DAPS address.</source>
+        <source>The entered address &quot;%1&quot; is not a valid PRCY address.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1661,7 +1661,7 @@ lowercase letters, numbers, symbols) </source>
     <name>EnterMnemonics</name>
     <message>
         <location filename="../forms/entermnemonics.ui" line="+20"/>
-        <source>DAPS Wallet Recovery Wizard</source>
+        <source>PRCY Wallet Recovery Wizard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1712,7 +1712,7 @@ lowercase letters, numbers, symbols) </source>
     </message>
     <message>
         <location line="+0"/>
-        <source>DAPS</source>
+        <source>PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1723,7 +1723,7 @@ lowercase letters, numbers, symbols) </source>
     </message>
     <message>
         <location line="+4"/>
-        <source>About DAPS</source>
+        <source>About PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1834,7 +1834,7 @@ lowercase letters, numbers, symbols) </source>
     </message>
     <message>
         <location line="+5"/>
-        <source>Amount (DAPS)</source>
+        <source>Amount (PRCY)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1857,7 +1857,7 @@ lowercase letters, numbers, symbols) </source>
     <name>ImportOrCreate</name>
     <message>
         <location filename="../forms/importorcreate.ui" line="+20"/>
-        <source>Welcome to DAPS Wallet Wizard</source>
+        <source>Welcome to PRCY Wallet Wizard</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1890,17 +1890,17 @@ lowercase letters, numbers, symbols) </source>
     </message>
     <message>
         <location line="+9"/>
-        <source>Welcome to the DAPS Wallet.</source>
+        <source>Welcome to the PRCY Wallet.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+26"/>
-        <source>As this is the first time the program is launched, you can choose where the DAPS Wallet will store its data.</source>
+        <source>As this is the first time the program is launched, you can choose where the PRCY Wallet will store its data.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+10"/>
-        <source>The DAPS Wallet will download and store a copy of the DAPS block chain. At least %1GB of data will be stored in this directory, and it will grow over time. The wallet will also be stored in this directory.</source>
+        <source>The PRCY Wallet will download and store a copy of the PRCY block chain. At least %1GB of data will be stored in this directory, and it will grow over time. The wallet will also be stored in this directory.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -1915,7 +1915,7 @@ lowercase letters, numbers, symbols) </source>
     </message>
     <message>
         <location filename="../intro.cpp" line="+77"/>
-        <source>DAPS</source>
+        <source>PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2066,8 +2066,8 @@ lowercase letters, numbers, symbols) </source>
     </message>
     <message>
         <location line="+16"/>
-        <source>MultiSend allows you to automatically send up to 100% of your stake or masternode reward to a list of other DAPS addresses after it matures.
-To Add: enter percentage to give and DAPS address to add to the MultiSend vector.
+        <source>MultiSend allows you to automatically send up to 100% of your stake or masternode reward to a list of other PRCY addresses after it matures.
+To Add: enter percentage to give and PRCY address to add to the MultiSend vector.
 To Delete: Enter address to delete and press delete.
 MultiSend will not be activated unless you have clicked Activate</source>
         <translation type="unfinished"></translation>
@@ -2322,7 +2322,7 @@ Please be patient after clicking import.</source>
     </message>
     <message>
         <location line="+13"/>
-        <source>Add destinations to send DAPS to</source>
+        <source>Add destinations to send PRCY to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2497,7 +2497,7 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <location line="+33"/>
-        <source>Automatically open the DAPS client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <source>Automatically open the PRCY client port on the router. This only works when your router supports UPnP and it is enabled.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2522,12 +2522,12 @@ p, li { white-space: pre-wrap; }
     </message>
     <message>
         <location line="-110"/>
-        <source>Automatically start DAPS after logging in to the system.</source>
+        <source>Automatically start PRCY after logging in to the system.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>&amp;Start DAPS on system login</source>
+        <source>&amp;Start PRCY on system login</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2563,7 +2563,7 @@ p, li { white-space: pre-wrap; }
     <message>
         <location line="+213"/>
         <source>Language missing or translation incomplete? Help contributing translations here:
-https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source>
+https://www.transifex.com/prcycoin-project/prcycoin-project-translations</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2573,7 +2573,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+17"/>
-        <source>Connect to the DAPS network through a SOCKS5 proxy.</source>
+        <source>Connect to the PRCY network through a SOCKS5 proxy.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2633,7 +2633,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+13"/>
-        <source>The user interface language can be set here. This setting will take effect after restarting DAPScoin.</source>
+        <source>The user interface language can be set here. This setting will take effect after restarting PRCYcoin.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2852,12 +2852,12 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+14"/>
-        <source>Quantity of DAPS to keep as spendable (not staking)</source>
+        <source>Quantity of PRCY to keep as spendable (not staking)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+16"/>
-        <source>Enabling this will incur a minimum 1 DAPS fee each time you receive a new deposit that needs to be consolidated for staking.</source>
+        <source>Enabling this will incur a minimum 1 PRCY fee each time you receive a new deposit that needs to be consolidated for staking.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -2882,7 +2882,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+6"/>
-        <source>Automatically open the DAPS client port on the router. This only works when your router supports UPnP and it is enabled.</source>
+        <source>Automatically open the PRCY client port on the router. This only works when your router supports UPnP and it is enabled.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3041,12 +3041,12 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="-84"/>
-        <source>Cannot start dapscoin: click-to-pay handler</source>
+        <source>Cannot start prcycoin: click-to-pay handler</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+90"/>
-        <source>URI cannot be parsed! This can be caused by an invalid DAPS address or malformed URI parameters.</source>
+        <source>URI cannot be parsed! This can be caused by an invalid PRCY address or malformed URI parameters.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3351,7 +3351,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+239"/>
-        <source>Open the DAPS debug log file from the current data directory. This can take a few seconds for large log files.</source>
+        <source>Open the PRCY debug log file from the current data directory. This can take a few seconds for large log files.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3618,7 +3618,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="-39"/>
-        <source>Welcome to the DAPS RPC console.</source>
+        <source>Welcome to the PRCY RPC console.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3767,7 +3767,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     <message>
         <location filename="../forms/receivecoinsdialog.ui" line="+69"/>
         <location line="+10"/>
-        <source>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the DAPS network.</source>
+        <source>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the PRCY network.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -3808,7 +3808,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+38"/>
-        <source>DAPS Amount (optional)</source>
+        <source>PRCY Amount (optional)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4126,7 +4126,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+7"/>
-        <source>0 DAPS</source>
+        <source>0 PRCY</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4247,7 +4247,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="-255"/>
-        <source>DAPS Wallet Address to send to</source>
+        <source>PRCY Wallet Address to send to</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4267,12 +4267,12 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+39"/>
-        <source>Amount of DAPS to send to address above</source>
+        <source>Amount of PRCY to send to address above</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>DAPS Amount</source>
+        <source>PRCY Amount</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4292,7 +4292,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     <name>ShutdownWindow</name>
     <message>
         <location filename="../utilitydialog.cpp" line="+75"/>
-        <source>DAPS is shutting down...</source>
+        <source>PRCY is shutting down...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4320,7 +4320,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+18"/>
-        <source>The DAPS address to sign the message with</source>
+        <source>The PRCY address to sign the message with</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4362,17 +4362,17 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+21"/>
-        <source>Sign the message to prove you own this DAPS address</source>
+        <source>Sign the message to prove you own this PRCY address</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+106"/>
-        <source>The DAPS address the message was signed with</source>
+        <source>The PRCY address the message was signed with</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+37"/>
-        <source>Verify the message to ensure it was signed with the specified DAPS address</source>
+        <source>Verify the message to ensure it was signed with the specified PRCY address</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4487,12 +4487,12 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     <name>SplashScreen</name>
     <message>
         <location filename="../splashscreen.cpp" line="+37"/>
-        <source>DAPS Coin Keychain Wallet</source>
+        <source>PRCY Coin Keychain Wallet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>DAPS Coin Lite Mode Wallet</source>
+        <source>PRCY Coin Lite Mode Wallet</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -4517,7 +4517,7 @@ https://www.transifex.com/dapscoin-project/dapscoin-project-translations</source
     </message>
     <message>
         <location line="+1"/>
-        <source>The DAPS Project developers</source>
+        <source>The PRCY Project developers</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5220,7 +5220,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+11"/>
-        <source>Enabling 2FA in your DAPS Desktop App</source>
+        <source>Enabling 2FA in your PRCY Desktop App</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5419,9 +5419,9 @@ Please try again.</source>
     </message>
 </context>
 <context>
-    <name>dapscoin-core</name>
+    <name>prcycoin-core</name>
     <message>
-        <location filename="../dapscoinstrings.cpp" line="+12"/>
+        <location filename="../prcycoinstrings.cpp" line="+12"/>
         <source>(1 = keep tx meta data e.g. account owner and payment request information, 2 = drop tx meta data)</source>
         <translation type="unfinished">(1 = keep tx meta data e.g. account owner and payment request information, 2 = drop tx meta data)</translation>
     </message>
@@ -5447,7 +5447,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+4"/>
-        <source>Cannot obtain a lock on data directory %s. DAPS is probably already running.</source>
+        <source>Cannot obtain a lock on data directory %s. PRCY is probably already running.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5512,12 +5512,12 @@ Please try again.</source>
     </message>
     <message>
         <location line="+3"/>
-        <source>Fees (in DAPS/Kb) smaller than this are considered zero fee for relaying (default: %s)</source>
+        <source>Fees (in PRCY/Kb) smaller than this are considered zero fee for relaying (default: %s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+3"/>
-        <source>Fees (in DAPS/Kb) smaller than this are considered zero fee for transaction creation (default: %s)</source>
+        <source>Fees (in PRCY/Kb) smaller than this are considered zero fee for transaction creation (default: %s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5647,12 +5647,12 @@ Please try again.</source>
     </message>
     <message>
         <location line="+7"/>
-        <source>Unable to bind to %s on this computer. DAPS is probably already running.</source>
+        <source>Unable to bind to %s on this computer. PRCY is probably already running.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Unable to locate enough funds for this transaction that are not equal 10000 DAPS.</source>
+        <source>Unable to locate enough funds for this transaction that are not equal 10000 PRCY.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5672,7 +5672,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+3"/>
-        <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong DAPS will not work properly.</source>
+        <source>Warning: Please check that your computer&apos;s date and time are correct! If your clock is wrong PRCY will not work properly.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -5962,7 +5962,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Fee (in DAPS/kB) to add to transactions you send (default: %s)</source>
+        <source>Fee (in PRCY/kB) to add to transactions you send (default: %s)</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6012,7 +6012,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Initialization sanity check failed. DAPS is shutting down.</source>
+        <source>Initialization sanity check failed. PRCY is shutting down.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6207,7 +6207,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+6"/>
-        <source>Error loading wallet.dat: Wallet requires newer version of DAPScoin</source>
+        <source>Error loading wallet.dat: Wallet requires newer version of PRCYcoin</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6407,12 +6407,12 @@ Please try again.</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Recalculating DAPS supply...</source>
+        <source>Recalculating PRCY supply...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Reindex the DAPS money supply statistics</source>
+        <source>Reindex the PRCY money supply statistics</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
@@ -6732,7 +6732,7 @@ Please try again.</source>
     </message>
     <message>
         <location line="+1"/>
-        <source>Wallet needed to be rewritten: restart DAPS to complete</source>
+        <source>Wallet needed to be rewritten: restart PRCY to complete</source>
         <translation type="unfinished"></translation>
     </message>
     <message>

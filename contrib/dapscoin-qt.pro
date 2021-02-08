@@ -147,7 +147,7 @@ HEADERS += src/activemasternode.h \
            src/wallet/wallet_ismine.h \
            src/wallet/walletdb.h \
            src/compat/sanity.h \
-           src/config/dapscoin-config.h \
+           src/config/prcycoin-config.h \
            src/crypto/common.h \
            src/crypto/hmac_sha256.h \
            src/crypto/hmac_sha512.h \
@@ -352,7 +352,7 @@ HEADERS += src/activemasternode.h \
            src/secp256k1/src/java/org_bitcoin_NativeSecp256k1.h \
            src/crypto/aes_helper.c \
            src/qt/bitcoinamountfield.moc \
-           src/qt/dapscoin.moc \
+           src/qt/prcycoin.moc \
            src/qt/intro.moc \
            src/qt/overviewpage.moc \
            src/qt/rpcconsole.moc \
@@ -397,9 +397,9 @@ SOURCES += src/activemasternode.cpp \
            src/core_read.cpp \
            src/core_write.cpp \
            src/crypter.cpp \
-           src/dapscoin-cli.cpp \
-           src/dapscoin-tx.cpp \
-           src/dapscoind.cpp \
+           src/prcycoin-cli.cpp \
+           src/prcycoin-tx.cpp \
+           src/prcycoind.cpp \
            src/db.cpp \
            src/eccryptoverify.cpp \
            src/ecdhutil.cpp \
@@ -509,8 +509,8 @@ SOURCES += src/activemasternode.cpp \
            src/qt/coincontroldialog.cpp \
            src/qt/coincontroltreewidget.cpp \
            src/qt/csvmodelwriter.cpp \
-           src/qt/dapscoin.cpp \
-           src/qt/dapscoinstrings.cpp \
+           src/qt/prcycoin.cpp \
+           src/qt/prcycoinstrings.cpp \
            src/qt/editaddressdialog.cpp \
            src/qt/encryptdialog.cpp \
            src/qt/entermnemonics.cpp \
@@ -599,7 +599,7 @@ SOURCES += src/activemasternode.cpp \
            src/test/sighash_tests.cpp \
            src/test/sigopcount_tests.cpp \
            src/test/skiplist_tests.cpp \
-           src/test/test_dapscoin.cpp \
+           src/test/test_prcycoin.cpp \
            src/test/timedata_tests.cpp \
            src/test/transaction_tests.cpp \
            src/test/uint256_tests.cpp \
@@ -690,21 +690,21 @@ SOURCES += src/activemasternode.cpp \
            src/leveldb/helpers/memenv/memenv.cc \
            src/leveldb/helpers/memenv/memenv_test.cc \
            src/secp256k1/src/java/org_bitcoin_NativeSecp256k1.c
-RESOURCES += src/qt/dapscoin.qrc src/qt/dapscoin_locale.qrc
+RESOURCES += src/qt/prcycoin.qrc src/qt/prcycoin_locale.qrc
 
-TRANSLATIONS += src/qt/locale/dapscoin_bg.ts \
-                src/qt/locale/dapscoin_de.ts \
-                src/qt/locale/dapscoin_en.ts \
-                src/qt/locale/dapscoin_es.ts \
-                src/qt/locale/dapscoin_fi.ts \
-                src/qt/locale/dapscoin_fr.ts \
-                src/qt/locale/dapscoin_it.ts \
-                src/qt/locale/dapscoin_ja.ts \
-                src/qt/locale/dapscoin_pl.ts \
-                src/qt/locale/dapscoin_pt.ts \
-                src/qt/locale/dapscoin_ru.ts \
-                src/qt/locale/dapscoin_sk.ts \
-                src/qt/locale/dapscoin_sv.ts \
-                src/qt/locale/dapscoin_vi.ts \
-                src/qt/locale/dapscoin_zh_CN.ts \
-                src/qt/locale/dapscoin_zh_TW.ts
+TRANSLATIONS += src/qt/locale/prcycoin_bg.ts \
+                src/qt/locale/prcycoin_de.ts \
+                src/qt/locale/prcycoin_en.ts \
+                src/qt/locale/prcycoin_es.ts \
+                src/qt/locale/prcycoin_fi.ts \
+                src/qt/locale/prcycoin_fr.ts \
+                src/qt/locale/prcycoin_it.ts \
+                src/qt/locale/prcycoin_ja.ts \
+                src/qt/locale/prcycoin_pl.ts \
+                src/qt/locale/prcycoin_pt.ts \
+                src/qt/locale/prcycoin_ru.ts \
+                src/qt/locale/prcycoin_sk.ts \
+                src/qt/locale/prcycoin_sv.ts \
+                src/qt/locale/prcycoin_vi.ts \
+                src/qt/locale/prcycoin_zh_CN.ts \
+                src/qt/locale/prcycoin_zh_TW.ts

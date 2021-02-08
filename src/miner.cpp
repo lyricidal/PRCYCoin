@@ -35,7 +35,7 @@ using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// DAPScoinMiner
+// PRCYcoinMiner
 //
 
 //
@@ -614,7 +614,7 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     {
         WAIT_LOCK(g_best_block_mutex, lock);
         if (pblock->hashPrevBlock != g_best_block)
-            return error("DAPScoinMiner : generated block is stale");
+            return error("PRCYcoinMiner : generated block is stale");
     }
 
     // Remove key from key pool
@@ -632,7 +632,7 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     // Process this block the same as if we had received it from another node
     CValidationState state;
     if (!ProcessNewBlock(state, NULL, pblock))
-        return error("DAPScoinMiner : ProcessNewBlock, block not accepted");
+        return error("PRCYcoinMiner : ProcessNewBlock, block not accepted");
 
     for (CNode* node : vNodes) {
         node->PushInventory(CInv(MSG_BLOCK, pblock->GetHash()));
@@ -641,17 +641,17 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     return true;
 }
 
-bool fGenerateDapscoins = false;
+bool fGeneratePrcycoins = false;
 
 // ***TODO*** that part changed in bitcoin, we are using a mix with old one here for now
 
 void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
 {
     nDefaultMinerSleep = GetArg("-minersleep", 30000);
-    LogPrintf("DAPScoinMiner started with %sms sleep time\n", nDefaultMinerSleep);
+    LogPrintf("PRCYcoinMiner started with %sms sleep time\n", nDefaultMinerSleep);
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
-    util::ThreadRename("dapscoin-miner");
-    fGenerateDapscoins = true;
+    util::ThreadRename("prcycoin-miner");
+    fGeneratePrcycoins = true;
     // Each thread has its own key and counter
     CReserveKey reservekey(pwallet);
     unsigned int nExtraNonce = 0;
@@ -666,7 +666,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
         fMintableCoins = pwallet->MintableCoins();
     }
 
-    while (fGenerateDapscoins || fProofOfStake) {
+    while (fGeneratePrcycoins || fProofOfStake) {
         if (chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) fProofOfStake = true;
         if (fProofOfStake) {
             if (chainActive.Tip()->nHeight < Params().LAST_POW_BLOCK()) {
@@ -684,14 +684,14 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
                     }
                 }
                 MilliSleep(5000);
-                if (!fGenerateDapscoins) {
+                if (!fGeneratePrcycoins) {
                     break;
                 }
-                if (!fGenerateDapscoins && !fProofOfStake)
+                if (!fGeneratePrcycoins && !fProofOfStake)
                     continue;
             }
 
-            if (!fGenerateDapscoins) {
+            if (!fGeneratePrcycoins) {
                 LogPrintf("Stopping staking or mining\n");
                 nLastCoinStakeSearchInterval = 0;
                 break;
@@ -749,7 +749,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
             continue;
         }
         GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION);
-        LogPrintf("Running DAPScoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
+        LogPrintf("Running PRCYcoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
             ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 
         //
@@ -849,7 +849,7 @@ void static ThreadBitcoinMiner(void* parg)
     LogPrintf("ThreadBitcoinMiner exiting\n");
 }
 
-void static ThreadDapscoinMiner(void* parg)
+void static ThreadPrcycoinMiner(void* parg)
 {
     boost::this_thread::interruption_point();
     try {
@@ -868,7 +868,7 @@ void static ThreadDapscoinMiner(void* parg)
     LogPrintf("ThreadBitcoinMiner exiting\n");
 }
 
-void GeneratePoADapscoin(CWallet* pwallet, int period)
+void GeneratePoAPrcycoin(CWallet* pwallet, int period)
 {
     static boost::thread_group* minerThreads = NULL;
 
@@ -879,13 +879,13 @@ void GeneratePoADapscoin(CWallet* pwallet, int period)
     }
 
     minerThreads = new boost::thread_group();
-    minerThreads->create_thread(boost::bind(&ThreadDapscoinMiner, pwallet));
+    minerThreads->create_thread(boost::bind(&ThreadPrcycoinMiner, pwallet));
 }
 
-void GenerateDapscoins(bool fGenerate, CWallet* pwallet, int nThreads)
+void GeneratePrcycoins(bool fGenerate, CWallet* pwallet, int nThreads)
 {
     static boost::thread_group* minerThreads = NULL;
-    fGenerateDapscoins = fGenerate;
+    fGeneratePrcycoins = fGenerate;
 
     if (nThreads < 0) {
         // In regtest threads defaults to 1

@@ -9,32 +9,32 @@
 #include "stakeinput.h"
 #include "wallet/wallet.h"
 
-//!DAPS Stake
-bool CDapsStake::SetInput(CTransaction txPrev, unsigned int n)
+//!PRCY Stake
+bool CPrcyStake::SetInput(CTransaction txPrev, unsigned int n)
 {
     this->txFrom = txPrev;
     this->nPosition = n;
     return true;
 }
 
-bool CDapsStake::GetTxFrom(CTransaction& tx)
+bool CPrcyStake::GetTxFrom(CTransaction& tx)
 {
     tx = txFrom;
     return true;
 }
 
-bool CDapsStake::CreateTxIn(CWallet* pwallet, CTxIn& txIn, uint256 hashTxOut)
+bool CPrcyStake::CreateTxIn(CWallet* pwallet, CTxIn& txIn, uint256 hashTxOut)
 {
     txIn = CTxIn(txFrom.GetHash(), nPosition);
     return true;
 }
 
-CAmount CDapsStake::GetValue()
+CAmount CPrcyStake::GetValue()
 {
     return txFrom.vout[nPosition].nValue;
 }
 
-bool CDapsStake::CreateTxOuts(CWallet* pwallet, vector<CTxOut>& vout, CAmount nTotal)
+bool CPrcyStake::CreateTxOuts(CWallet* pwallet, vector<CTxOut>& vout, CAmount nTotal)
 {
     vector<valtype> vSolutions;
     txnouttype whichType;
@@ -69,7 +69,7 @@ bool CDapsStake::CreateTxOuts(CWallet* pwallet, vector<CTxOut>& vout, CAmount nT
     return true;
 }
 
-bool CDapsStake::GetModifier(uint64_t& nStakeModifier)
+bool CPrcyStake::GetModifier(uint64_t& nStakeModifier)
 {
     int nStakeModifierHeight = 0;
     int64_t nStakeModifierTime = 0;
@@ -83,16 +83,16 @@ bool CDapsStake::GetModifier(uint64_t& nStakeModifier)
     return true;
 }
 
-CDataStream CDapsStake::GetUniqueness()
+CDataStream CPrcyStake::GetUniqueness()
 {
-    //The unique identifier for a DAPS stake is the outpoint
+    //The unique identifier for a PRCY stake is the outpoint
     CDataStream ss(SER_NETWORK, 0);
     ss << nPosition << txFrom.GetHash();
     return ss;
 }
 
 //The block that the UTXO was added to the chain
-CBlockIndex* CDapsStake::GetIndexFrom()
+CBlockIndex* CPrcyStake::GetIndexFrom()
 {
     uint256 hashBlock = 0;
     CTransaction tx;

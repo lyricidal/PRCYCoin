@@ -2960,7 +2960,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                     if (coin_type == ALL_COINS) {
                         strFailReason = _("Insufficient funds.");
                     } else if (coin_type == ONLY_NOT1000000IFMN) {
-                        strFailReason = _("Unable to locate enough funds for this transaction that are not equal 10000 DAPS.");
+                        strFailReason = _("Unable to locate enough funds for this transaction that are not equal 10000 PRCY.");
                     } else {
                         strFailReason = _("Error in CreateTransaction. Please try again.");
                     }
@@ -2993,7 +2993,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                 if (nChange > 0) {
                     // Fill a vout to ourself
                     // TODO: pass in scriptChange instead of reservekey so
-                    // change transaction isn't always pay-to-dapscoin-address
+                    // change transaction isn't always pay-to-prcycoin-address
                     CScript scriptChange;
 
                     // coin control: send change to custom address
@@ -5214,7 +5214,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
                         }
                     }
                 }
-                LogPrintf("Generating consolidation transaction, total = %d DAPS\n", total);
+                LogPrintf("Generating consolidation transaction, total = %d PRCY\n", total);
                 // Generate transaction public key
                 CWalletTx wtxNew;
                 CKey secret;
@@ -5347,7 +5347,7 @@ void CWallet::AutoCombineDust()
 
     if (stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
         if (IsLocked()) return;
-        if (fGenerateDapscoins && chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) {
+        if (fGeneratePrcycoins && chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) {
             //sweeping to create larger UTXO for staking
             LOCK2(cs_main, cs_wallet);
             CAmount max = dirtyCachedBalance;

@@ -869,7 +869,7 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
             return;
         }
 
-        //verify the value if 1M DAPS
+        //verify the value if 1M PRCY
         COutPoint prevout = vin.prevout;
         CTransaction prev;
         uint256 bh;

@@ -10,7 +10,7 @@
 #define BITCOIN_MAIN_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dapscoin-config.h"
+#include "config/prcycoin-config.h"
 #endif
 
 #include "amount.h"
@@ -154,7 +154,7 @@ extern unsigned int nCoinCacheSize;
 extern CFeeRate minRelayTxFee;
 extern int64_t nMaxTipAge;
 extern bool fVerifyingBlocks;
-extern bool fGenerateDapscoins;
+extern bool fGeneratePrcycoins;
 
 extern bool fLargeWorkForkFound;
 extern bool fLargeWorkInvalidChainFound;
@@ -377,7 +377,7 @@ bool IsTransactionInChain(uint256 txId, int& nHeightTx);
 bool IsBlockHashInChain(const uint256& hashBlock);
 void PopulateInvalidOutPointMap();
 bool ValidOutPoint(const COutPoint out, int nHeight);
-bool RecalculateDAPSSupply(int nHeightStart);
+bool RecalculatePRCYSupply(int nHeightStart);
 bool ReindexAccumulators(list<uint256>& listMissingCheckpoints, string& strError);
 
 

@@ -2,7 +2,7 @@
 # Copyright (c) 2020 The DAPS Project
 # Distributed under the MIT software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
-name: Github Actions CI for DAPS
+name: Github Actions CI for PRCY
 on: [push, pull_request]
 env:
   SOURCE_ARTIFACT: source
@@ -15,7 +15,7 @@ jobs:
     steps:
     - name: Checkout
       uses: actions/checkout@v2
-    # May need qt and protobuf to configure qt and include dapscoin-qt.1 in distribution
+    # May need qt and protobuf to configure qt and include prcycoin-qt.1 in distribution
     - name: Install Required Packages
       run: |
         sudo apt-get update
@@ -29,15 +29,15 @@ jobs:
     - name: Create Distribution Tarball
       run: |
         mkdir -p $ARTIFACT_DIR
-        touch dapscoin.tar.gz
-        tar -czf dapscoin.tar.gz --exclude=dapscoin.tar.gz .
+        touch prcycoin.tar.gz
+        tar -czf prcycoin.tar.gz --exclude=prcycoin.tar.gz .
     - name: Download Dependencies
       run: make -C depends download
     - name: Create Dependencies Tarball
       run: tar -czf depends.tar.gz depends
     - name: Prepare Files for Artifact
       run: |
-        mv depends.tar.gz dapscoin.tar.gz $ARTIFACT_DIR
+        mv depends.tar.gz prcycoin.tar.gz $ARTIFACT_DIR
     - name: Upload Artifact
       uses: actions/upload-artifact@v1
       with:
@@ -58,7 +58,7 @@ jobs:
     - name: Extract Archives
       run: |
         tar -xzf depends.tar.gz
-        tar -xzf dapscoin.tar.gz --strip-components=1
+        tar -xzf prcycoin.tar.gz --strip-components=1
       working-directory: ${{ env.SOURCE_ARTIFACT }}
     - name: Install Required Packages
       run: |
@@ -67,7 +67,7 @@ jobs:
     - name: Build Dependencies
       run: make -C depends -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
-    - name: Build DAPS 
+    - name: Build PRCY 
       run: |
         ./autogen.sh
         ./configure --disable-jni --disable-tests --disable-gui-tests --disable-bench --prefix=$(realpath depends/x86_64-pc-linux-gnu)
@@ -76,8 +76,8 @@ jobs:
     - name: Prepare Files for Artifact
       run: |
         mkdir -p $ARTIFACT_DIR
-        strip $SOURCE_ARTIFACT/src/{dapscoin-cli,dapscoin-tx,dapscoind,qt/dapscoin-qt}
-        mv $SOURCE_ARTIFACT/src/{dapscoin-cli,dapscoin-tx,dapscoind,qt/dapscoin-qt} $ARTIFACT_DIR
+        strip $SOURCE_ARTIFACT/src/{prcycoin-cli,prcycoin-tx,prcycoind,qt/prcycoin-qt}
+        mv $SOURCE_ARTIFACT/src/{prcycoin-cli,prcycoin-tx,prcycoind,qt/prcycoin-qt} $ARTIFACT_DIR
     - name: Upload Artifact
       uses: actions/upload-artifact@v1
       with:

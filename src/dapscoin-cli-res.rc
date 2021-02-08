@@ -16,14 +16,14 @@ BEGIN
     BEGIN
         BLOCK "040904E4" // U.S. English - multilingual (hex)
         BEGIN
-            VALUE "CompanyName",        "Dapscoin"
-            VALUE "FileDescription",    "Dapscoin-cli (OSS RPC client for Dapscoin)"
+            VALUE "CompanyName",        "Prcycoin"
+            VALUE "FileDescription",    "Prcycoin-cli (OSS RPC client for Prcycoin)"
             VALUE "FileVersion",        VER_FILEVERSION_STR
-            VALUE "InternalName",       "dapscoin-cli"
+            VALUE "InternalName",       "prcycoin-cli"
             VALUE "LegalCopyright",     COPYRIGHT_STR
             VALUE "LegalTrademarks1",   "Distributed under the MIT/X11 software license, see the accompanying file COPYING or http://www.opensource.org/licenses/mit-license.php."
-            VALUE "OriginalFilename",   "dapscoin-cli.exe"
-            VALUE "ProductName",        "Dapscoin-cli"
+            VALUE "OriginalFilename",   "prcycoin-cli.exe"
+            VALUE "ProductName",        "Prcycoin-cli"
             VALUE "ProductVersion",     VER_PRODUCTVERSION_STR
         END
     END
