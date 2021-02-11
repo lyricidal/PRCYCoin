@@ -5082,7 +5082,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
         return true;
     }
 
-    if (GetSpendableBalance() < 5 * COIN) {
+    if (GetSpendableBalance() < 1 * COIN) {
         return false;
     }
     LogPrintf("Attempting to create a sweeping transaction\n");
@@ -5334,16 +5334,9 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
 
 void CWallet::AutoCombineDust()
 {
-    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced()) return;
-    //if (IsInitialBlockDownload()) return;
-    if (chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) {
-        LogPrintf("Time elapsed for autocombine transaction too short\n");
-        return;
-    }
-
+    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced() || chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) return;
     if (stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
-        if (IsLocked()) return;
-        if (fGeneratePrcycoins && chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) {
+        if (fGeneratePrcycoins) {
             //sweeping to create larger UTXO for staking
             LOCK2(cs_main, cs_wallet);
             CAmount max = dirtyCachedBalance;
@@ -5353,7 +5346,7 @@ void CWallet::AutoCombineDust()
             uint32_t nTime = ReadAutoConsolidateSettingTime();
             nTime = (nTime == 0)? GetAdjustedTime() : nTime;
             LogPrintf("Attempting to create a consolidation transaction for a larger UTXO for staking\n");
-            CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + COIN, nTime);
+            CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + MAX_FEE, nTime);
         }
         return;
     }
