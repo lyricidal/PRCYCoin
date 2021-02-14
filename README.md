@@ -23,7 +23,8 @@ The team of PRCY solves the trust issue of privacy coins and their management as
 
 PRCY is a non-ICO community driven project. The project has funded itself to deliver ground-breaking technology in the privacy coin industry.
 
-PRCY Team
+## PRCY Team
+
 The team consists of a total of 10 members located worldwide.
 
 ## How to Contribute to PRCY
@@ -47,11 +48,9 @@ Telegram - Tech Support - (https://t.me/prycSupport)
 
 Medium - (https://prcycoin.medium.com/)
 
-Bitcointalk - (https://bitcointalk.org/index.php?topic=5301128)
-
 Instagram - (https://www.instagram.com/prcycoin/)
 
-More information at [prcycoin.com](https://prcycoin.com) Visit our ANN thread at [BitcoinTalk](https://bitcointalk.org/index.php?topic=5301128)
+More information at [prcycoin.com](https://prcycoin.com)
 
 ### Coin Specs
 <table>
