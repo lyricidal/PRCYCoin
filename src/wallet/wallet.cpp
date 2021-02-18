@@ -54,6 +54,7 @@ bool fSendFreeTransactions = false;
 bool fPayAtLeastCustomFee = true;
 int64_t nStartupTime = GetTime();
 int64_t nReserveBalance = 0;
+int64_t nDefaultConsolidateTime;
 
 #include "uint256.h"
 
@@ -2159,6 +2160,9 @@ StakingStatusError CWallet::StakingCoinStatus(CAmount& minFee, CAmount& maxFee)
     minFee = 0;
     maxFee = 0;
     CAmount nBalance = GetBalance();
+    if (pwalletMain->IsMasternodeController()) {
+        nBalance = GetSpendableBalance();
+    }
     if (nBalance < MINIMUM_STAKE_AMOUNT) {
         return StakingStatusError::UNSTAKABLE_BALANCE_TOO_LOW;
     }
@@ -5212,7 +5216,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
                         }
                     }
                 }
-                LogPrintf("Generating consolidation transaction, total = %d PRCY\n", total);
+                LogPrintf("Generating consolidation transaction, total = %d PRCY\n", total / COIN);
                 // Generate transaction public key
                 CWalletTx wtxNew;
                 CKey secret;
@@ -5335,7 +5339,12 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
 
 void CWallet::AutoCombineDust()
 {
-    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced() || chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) return;
+     // QT wallet is always locked at startup, return immediately
+    if (IsLocked()) return;
+    // Chain is not synced, return
+    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced()) return;
+    // Tip()->nTime < (GetAdjustedTime() - 300) - (to be changed to a .conf setting)
+    if (chainActive.Tip()->nTime < (GetAdjustedTime() - nDefaultConsolidateTime)) return;
     if (stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
         if (fGeneratePrcycoins) {
             //sweeping to create larger UTXO for staking
@@ -5351,7 +5360,7 @@ void CWallet::AutoCombineDust()
         }
         return;
     }
-    CreateSweepingTransaction(nAutoCombineThreshold, nAutoCombineThreshold, GetAdjustedTime());
+    CreateSweepingTransaction(nAutoCombineTarget, nAutoCombineThreshold + MAX_FEE, GetAdjustedTime());
 }
 
 bool CWallet::estimateStakingConsolidationFees(CAmount& minFee, CAmount& maxFee) {
@@ -5749,8 +5758,9 @@ void CWallet::SetNull()
     vDisabledAddresses.clear();
 
     //Auto Combine Dust
-    fCombineDust = true;
+    fCombineDust;
     nAutoCombineThreshold = 150;
+    nAutoCombineTarget = GetArg("-autocombinetarget", 15);
 }
 
 bool CWallet::isMultiSendEnabled()

@@ -75,11 +75,12 @@ static Checkpoints::MapCheckpoints mapCheckpoints =
     (18814, uint256("f8092b5c474cc260edb7c378c4f7e2123b007a55018d32f97b9b729f729067ae"))
     (19317, uint256("0bd530827eff9bdc79893739c02c14c02bb35a39b943eaeeb72e04767e0597a5"))	
     (19400, uint256("cdeebfe4fdeda461ab2025d08248e89b13a1e970c76b91ac2788837c147e6f33"))
+    (77852, uint256("e6ec3ddccfb6bd378ca3cf5cc292c011ec235536a9edbb8c3fdbe17abd921d44"))
     ;
 static const Checkpoints::CCheckpointData data = {
     &mapCheckpoints,
-    1611216943,          // * UNIX timestamp of last checkpoint block
-    39882,          // * total number of transactions between genesis and last checkpoint
+    1613185330,          // * UNIX timestamp of last checkpoint block
+    162971,          // * total number of transactions between genesis and last checkpoint
                 //   (the tx=... number in the SetBestChain debug.log lines)
     1440        // * estimated number of transactions per day after checkpoint
 };
@@ -139,6 +140,7 @@ public:
         nPoABlockTime = 60 * 60; //a PoA block every 60 minutes
         nMinNumPoSBlocks = 59;
         nMaxNumPoSBlocks = 120;
+        nSoftForkBlock = 120000; // Soft fork block for difficulty change
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -283,6 +285,7 @@ public:
         nBlockFirstFraudulent = 9891737; //First block that bad serials emerged
         nBlockLastGoodCheckpoint = 9891730; //Last valid accumulator checkpoint
         nBlockEnforceInvalidUTXO = 9902850; //Start enforcing the invalid UTXO's
+        nSoftForkBlock = 0; // Soft fork block for difficulty change - testnet started with it
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;

@@ -6,11 +6,11 @@
 #include "random.h"
 
 #include "crypto/sha512.h"
+#include "support/cleanse.h"
 #ifdef WIN32
 #include "compat.h" // for Windows API
 #include <wincrypt.h>
 #endif
-#include "serialize.h"        // for begin_ptr(vec)
 #include "util.h"             // for LogPrint()
 #include "utilstrencodings.h" // for GetTime()
 
@@ -132,7 +132,7 @@ void RandAddSeed()
     // Seed with CPU performance counter
     int64_t nCounter = GetPerformanceCounter();
     RAND_add(&nCounter, sizeof(nCounter), 1.5);
-    OPENSSL_cleanse((void*)&nCounter, sizeof(nCounter));
+    memory_cleanse((void*)&nCounter, sizeof(nCounter));
 }
 
 static void RandAddSeedPerfmon()
@@ -155,15 +155,15 @@ static void RandAddSeedPerfmon()
     const size_t nMaxSize = 10000000; // Bail out at more than 10MB of performance data
     while (true) {
         nSize = vData.size();
-        ret = RegQueryValueExA(HKEY_PERFORMANCE_DATA, "Global", NULL, NULL, begin_ptr(vData), &nSize);
+        ret = RegQueryValueExA(HKEY_PERFORMANCE_DATA, "Global", NULL, NULL, vData.data(), &nSize);
         if (ret != ERROR_MORE_DATA || vData.size() >= nMaxSize)
             break;
         vData.resize(std::max((vData.size() * 3) / 2, nMaxSize)); // Grow size of buffer exponentially
     }
     RegCloseKey(HKEY_PERFORMANCE_DATA);
     if (ret == ERROR_SUCCESS) {
-        RAND_add(begin_ptr(vData), nSize, nSize / 100.0);
-        OPENSSL_cleanse(begin_ptr(vData), nSize);
+        RAND_add(vData.data(), nSize, nSize / 100.0);
+        memory_cleanse(vData.data(), nSize);
         LogPrint("rand", "%s: %lu bytes\n", __func__, nSize);
     } else {
         static bool warned = false; // Warn only once
@@ -289,8 +289,8 @@ void RandAddSeedSleep()
     AddDataToRng(&nPerfCounter1, sizeof(nPerfCounter1));
     AddDataToRng(&nPerfCounter2, sizeof(nPerfCounter2));
 
-    OPENSSL_cleanse(&nPerfCounter1, sizeof(nPerfCounter1));
-    OPENSSL_cleanse(&nPerfCounter2, sizeof(nPerfCounter2));
+    memory_cleanse(&nPerfCounter1, sizeof(nPerfCounter1));
+    memory_cleanse(&nPerfCounter2, sizeof(nPerfCounter2));
 }
 
 static std::mutex cs_rng_state;
@@ -310,7 +310,7 @@ static void AddDataToRng(void* data, size_t len) {
         hasher.Finalize(buf);
         memcpy(rng_state, buf + 32, 32);
     }
-    OPENSSL_cleanse(buf, 64);
+    memory_cleanse(buf, 64);
 }
 
 void GetStrongRandBytes(unsigned char* out, int num)
@@ -345,7 +345,7 @@ void GetStrongRandBytes(unsigned char* out, int num)
 
     // Produce output
     memcpy(out, buf, num);
-    OPENSSL_cleanse(buf, 64);
+    memory_cleanse(buf, 64);
 }
 
 uint64_t GetRand(uint64_t nMax)
