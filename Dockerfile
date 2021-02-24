@@ -1,5 +1,5 @@
 
-# DAPS DEPS IMG
+# PRCY DEPS IMG
 FROM ubuntu:18.04
 
 RUN apt-get update
@@ -25,14 +25,14 @@ RUN PATH=$(echo "$PATH" | sed -e 's/:\/mnt.*//g') # strip out problematic Window
 
 
 
-RUN mkdir /DAPS/
-COPY . /DAPS/
+RUN mkdir /PRCY/
+COPY . /PRCY/
 
-RUN make -C DAPS/depends HOST=x86_64-w64-mingw32
-#RUN make -C /DAPS/depends
+RUN make -C PRCY/depends HOST=x86_64-w64-mingw32
+#RUN make -C /PRCY/depends
 
-RUN bash /DAPS/autogen.sh
+RUN bash /PRCY/autogen.sh
 RUN CONFIG_SITE=$PWD/depends/x86_64-w64-mingw32/share/config.site ./configure --prefix=/
-RUN bash /DAPS/configure
+RUN bash /PRCY/configure
 
 RUN ls -a

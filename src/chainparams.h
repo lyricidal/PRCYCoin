@@ -29,7 +29,7 @@ public:
 
 /**
  * CChainParams defines various tweakable parameters of a given instance of the
- * DAPS system. There are three: the main network on which people trade goods
+ * PRCY system. There are three: the main network on which people trade goods
  * and services, the public test network which gets reset from time to time and
  * a regression test mode which is intended for private networks only. It has
  * minimal difficulty to ensure that blocks can be found instantly.
@@ -58,7 +58,7 @@ public:
     int ToCheckBlockUpgradeMajority() const { return nToCheckBlockUpgradeMajority; }
     int MaxReorganizationDepth() const { return nMaxReorganizationDepth; }
 
-    /** Used if GenerateDapscoins is called with a negative number of threads */
+    /** Used if GeneratePrcycoins is called with a negative number of threads */
     int DefaultMinerThreads() const { return nMinerThreads; }
     const CBlock& GenesisBlock() const { return genesis; }
     bool RequireRPCPassword() const { return fRequireRPCPassword; }
@@ -103,18 +103,14 @@ public:
     int LAST_POW_BLOCK() const { return nLastPOWBlock; }
     int START_POA_BLOCK() const { return nStartPOABlock; }
     int Block_Enforce_Invalid() const { return nBlockEnforceInvalidUTXO; }
-    int SoftFork() const { return nSoftForkBlock;}
-    int HardFork() const { return nHardForkBlock;}
-    int PoAFixTime() const { return nPoAFixTime;}
 
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
     int MIN_NUM_POS_BLOCKS_AUDITED() const {return nMinNumPoSBlocks;}
     int MAX_NUM_POS_BLOCKS_AUDITED() const {return nMaxNumPoSBlocks;}
     int nLastPOWBlock;
-    int TEAM_REWARD_FREQUENCY = 3; //every  TEAM_REWARD_FREQUENCY PoA blocks, reward the daps team
     double MAX_MONEY;
-    CAmount TOTAL_SUPPLY = 70000000000*COIN; //70B DAPS
+    CAmount TOTAL_SUPPLY = 70000000 * COIN; //70M PRCY
 
 protected:
     CChainParams() {}
@@ -133,9 +129,6 @@ protected:
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
     int nStartPOABlock;
-    int nSoftForkBlock;
-    int nHardForkBlock;
-    int nPoAFixTime;
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;

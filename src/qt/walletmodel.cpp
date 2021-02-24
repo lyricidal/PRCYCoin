@@ -298,7 +298,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 return InvalidAmount;
             }
             total += subtotal;
-        } else { // User-entered dapscoin address / amount:
+        } else { // User-entered prcycoin address / amount:
             if (!validateAddress(rcp.address)) {
                 return InvalidAddress;
             }
@@ -689,7 +689,7 @@ StakingStatusError WalletModel::getStakingStatusError(QString& error)
         CAmount balance = pwalletMain->GetSpendableBalance();
         if (!fMintable || nReserveBalance > balance) {
             if (balance < CWallet::MINIMUM_STAKE_AMOUNT) {
-                error = "\nBalance is under the minimum 400,000 staking threshold.\nPlease send more DAPS to this wallet.\n";
+                error = "\nBalance is under the minimum 2500 staking threshold.\nPlease send more PRCY to this wallet.\n";
                 return StakingStatusError::STAKING_OK;
             }
             if (nReserveBalance > balance || (balance > nReserveBalance && balance - nReserveBalance < CWallet::MINIMUM_STAKE_AMOUNT)) {
@@ -712,11 +712,11 @@ StakingStatusError WalletModel::getStakingStatusError(QString& error)
 
 void WalletModel::generateCoins(bool fGenerate, int nGenProcLimit)
 {
-    GenerateDapscoins(fGenerate, pwalletMain, nGenProcLimit);
+    GeneratePrcycoins(fGenerate, pwalletMain, nGenProcLimit);
     if (false /*if regtest*/ && fGenerate) {
         //regtest generate
     } else {
-        GenerateDapscoins(fGenerate, pwalletMain, nGenProcLimit);
+        GeneratePrcycoins(fGenerate, pwalletMain, nGenProcLimit);
     }
 }
 

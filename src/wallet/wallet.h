@@ -91,9 +91,9 @@ enum WalletFeature {
 enum AvailableCoinsType {
     ALL_COINS = 1,
     ONLY_DENOMINATED = 2,
-    ONLY_NOT1000000IFMN = 3,
-    ONLY_NONDENOMINATED_NOT1000000IFMN = 4, // ONLY_NONDENOMINATED and not 1000000 DAPS at the same time
-    ONLY_1000000 = 5,                        // find masternode outputs including locked ones (use with caution)
+    ONLY_NOT5000IFMN = 3,
+    ONLY_NONDENOMINATED_NOT5000IFMN = 4, // ONLY_NONDENOMINATED and not 5000 PRCY at the same time
+    ONLY_5000 = 5,                        // find masternode outputs including locked ones (use with caution)
     STAKABLE_COINS = 6                          // UTXO's that are valid for staking
 };
 
@@ -208,8 +208,8 @@ public:
 enum StakingStatusError
 {
     STAKING_OK, //use case B, C, D, no consolidation needed, 
-    UNSTAKABLE_BALANCE_TOO_LOW, //coin is not mature yet (balance > 400k)
-    UNSTAKABLE_BALANCE_TOO_LOW_CONSOLIDATION_FAILED, //coin is not mature yet (balance > 400k)
+    UNSTAKABLE_BALANCE_TOO_LOW, //coin is not mature yet (balance > 2.5k)
+    UNSTAKABLE_BALANCE_TOO_LOW_CONSOLIDATION_FAILED, //coin is not mature yet (balance > 2.5k)
     UNSTAKABLE_BALANCE_RESERVE_TOO_HIGH,
     UNSTAKABLE_BALANCE_RESERVE_TOO_HIGH_CONSOLIDATION_FAILED, //even consolidation does not help
     STAKABLE_NEED_CONSOLIDATION,   //stable and consolidation, needs to estimate fees
@@ -217,7 +217,7 @@ enum StakingStatusError
 };
 
 enum StakingMode {
-    STOPPED, //staking disabled or balance < 400k
+    STOPPED, //staking disabled or balance < 2.5k
     STAKING_WITHOUT_CONSOLIDATION,
     STAKING_WITH_CONSOLIDATION,
     STAKING_WITH_CONSOLIDATION_WITH_STAKING_NEWW_FUNDS
@@ -257,7 +257,8 @@ private:
     void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
 
 public:
-    static const CAmount MINIMUM_STAKE_AMOUNT = 400000 * COIN;
+    static const CAmount MINIMUM_STAKE_AMOUNT = 2500 * COIN;
+    static const CAmount DEFAULT_STAKE_SPLIT_THRESHOLD = 100000;
     static const int32_t MAX_DECOY_POOL = 500;
     static const int32_t PROBABILITY_NEW_COIN_SELECTED = 70;
     bool RescanAfterUnlock(int fromHeight);
@@ -378,7 +379,7 @@ public:
     std::map<CBitcoinAddress, std::vector<COutput> > AvailableCoinsByAddress(bool fConfirmed = true, CAmount maxCoinValue = 0);
     bool SelectCoinsMinConf(bool needFee, CAmount& estimatedFee, int ringSize, int numOut, const CAmount& nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet);
 
-    /// Get 1000000 DAPS output and keys which can be used for the Masternode
+    /// Get 5000 PRCY output and keys which can be used for the Masternode
     bool GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "");
     /// Extract txin information and keys from output
     bool GetVinAndKeysFromOutput(COutput out, CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet);

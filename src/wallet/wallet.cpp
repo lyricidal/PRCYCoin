@@ -815,7 +815,7 @@ bool CWallet::GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& 
 
     // Find possible candidates
     std::vector<COutput> vPossibleCoins;
-    AvailableCoins(vPossibleCoins, true, NULL, false, ONLY_1000000);
+    AvailableCoins(vPossibleCoins, true, NULL, false, ONLY_5000);
     if (vPossibleCoins.empty()) {
         LogPrintf("CWallet::GetMasternodeVinAndKeys -- Could not locate any valid masternode vin\n");
         return false;
@@ -1443,7 +1443,7 @@ CAmount CWalletTx::GetUnlockedCredit() const
         const CTxOut& txout = vout[i];
 
         if (pwallet->IsSpent(hashTx, i) || pwallet->IsLockedCoin(hashTx, i)) continue;
-        if (fMasterNode && pwallet->getCTxOutValue(*this, vout[i]) == 1000000 * COIN) continue; // do not count MN-like outputs
+        if (fMasterNode && pwallet->getCTxOutValue(*this, vout[i]) == 5000 * COIN) continue; // do not count MN-like outputs
 
         nCredit += pwallet->GetCredit(*this, txout, ISMINE_SPENDABLE);
     }
@@ -1475,7 +1475,7 @@ CAmount CWalletTx::GetLockedCredit() const
         }
 
         // Add masternode collaterals which are handled likc locked coins
-         else if (fMasterNode && pwallet->getCTxOutValue(*this, vout[i]) == 1000000 * COIN) {
+         else if (fMasterNode && pwallet->getCTxOutValue(*this, vout[i]) == 5000 * COIN) {
             nCredit += pwallet->GetCredit(*this, txout, ISMINE_SPENDABLE);
         }
 
@@ -1959,14 +1959,14 @@ bool CWallet::AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, vector
             CAmount value = getCTxOutValue(*pcoin, pcoin->vout[i]);
             if (nCoinType == ONLY_DENOMINATED) {
                 found = IsDenominatedAmount(value);
-            } else if (nCoinType == ONLY_NOT1000000IFMN) {
-                found = !(fMasterNode && value == 1000000 * COIN);
-            } else if (nCoinType == ONLY_NONDENOMINATED_NOT1000000IFMN) {
+            } else if (nCoinType == ONLY_NOT5000IFMN) {
+                found = !(fMasterNode && value == 5000 * COIN);
+            } else if (nCoinType == ONLY_NONDENOMINATED_NOT5000IFMN) {
                 if (IsCollateralAmount(value)) return false; // do not use collateral amounts
                 found = !IsDenominatedAmount(value);
-                if (found && fMasterNode) found = value != 1000000 * COIN; // do not use Hot MN funds
-            } else if (nCoinType == ONLY_1000000) {
-                found = value == 1000000 * COIN;
+                if (found && fMasterNode) found = value != 5000 * COIN; // do not use Hot MN funds
+            } else if (nCoinType == ONLY_5000) {
+                found = value == 5000 * COIN;
             } else {
                 COutPoint outpoint(pcoin->GetHash(), i);
                 if (IsCollateralized(outpoint)) {
@@ -1976,14 +1976,14 @@ bool CWallet::AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, vector
             }
             if (!found) continue;
 
-            if (value <= COIN / 10) continue; //dust
+            if (value <= DUST) continue; //dust
 
             isminetype mine = IsMine(pcoin->vout[i]);
             if (mine == ISMINE_NO)
                 continue;
             if (mine == ISMINE_WATCH_ONLY)
                 continue;
-            if (IsLockedCoin(wtxid, i) && nCoinType != ONLY_1000000)
+            if (IsLockedCoin(wtxid, i) && nCoinType != ONLY_5000)
                 continue;
             if (value <= 0 && !fIncludeZeroValue)
                 continue;
@@ -2056,7 +2056,6 @@ static CAmount ApproximateBestSubset(int numOut, int ringSize, vector<pair<CAmou
                     numSelected++;
                     estimateTxSize = CWallet::ComputeTxSize(numSelected, numOut, ringSize);
                     nFeeNeeded = CWallet::GetMinimumFee(estimateTxSize, nTxConfirmTarget, mempool);
-                    nFeeNeeded += BASE_FEE;
                     if (nTotal >= nTargetValue + nFeeNeeded) {
                         fReachedTarget = true;
                         if (nTotal < nBest) {
@@ -2198,13 +2197,13 @@ StakingStatusError CWallet::StakingCoinStatus(CAmount& minFee, CAmount& maxFee)
                             continue;
                         }
                         CAmount value = getCTxOutValue(*pcoin, pcoin->vout[i]);
-                        if (value == 1000000 * COIN) {
+                        if (value == 5000 * COIN) {
                             COutPoint outpoint(wtxid, i);
                             if (IsCollateralized(outpoint)) {
                                 continue;
                             }
                         }
-                        if (value <= COIN / 10) continue; //dust
+                        if (value <= DUST) continue; //dust
 
                         isminetype mine = IsMine(pcoin->vout[i]);
                         if (mine == ISMINE_NO)
@@ -2504,7 +2503,7 @@ bool CWallet::SelectCoins(bool needFee, CAmount& estimatedFee, int ringSize, int
                 CAmount decodedAmount;
                 CKey decodedBlind;
                 RevealTxOutAmount(*pcoin, pcoin->vout[i], decodedAmount, decodedBlind);
-                if (decodedAmount == 1000000 * COIN) {
+                if (decodedAmount == 5000 * COIN) {
                     COutPoint outpoint(wtxid, i);
                     if (IsCollateralized(outpoint)) {
                         continue;
@@ -2650,7 +2649,7 @@ int CWallet::ComputeFee(size_t numIn, size_t numOut, size_t ringSize)
 {
     int txSize = ComputeTxSize(numIn, numOut, ringSize);
     CAmount nFeeNeeded = GetMinimumFee(txSize, nTxConfirmTarget, mempool);
-    nFeeNeeded += BASE_FEE;
+    if (nFeeNeeded > MAX_FEE) nFeeNeeded = MAX_FEE;
     return nFeeNeeded;
 }
 
@@ -2675,7 +2674,7 @@ uint32_t CWallet::ReadAutoConsolidateSettingTime()
 
 bool CWallet::IsAutoConsolidateOn()
 {
-    return ReadAutoConsolidateSettingTime() == 0;
+    return ReadAutoConsolidateSettingTime() > 0;
 }
 
 bool CWallet::CreateTransactionBulletProof(const CKey& txPrivDes, const CPubKey& recipientViewKey, const std::vector<std::pair<CScript, CAmount> >& vecSend, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl, AvailableCoinsType coin_type, bool useIX, CAmount nFeePay, int ringSize, bool tomyself)
@@ -2798,9 +2797,8 @@ bool CWallet::CreateTransactionBulletProof(const CKey& txPrivDes, const CPubKey&
                     int rsSize = ComputeTxSize(setCoins.size(), 2, ringSize);
                     nBytes = rsSize;
                     CAmount nFeeNeeded = max(nFeePay, GetMinimumFee(nBytes, nTxConfirmTarget, mempool));
-                    nFeeNeeded += BASE_FEE;
                     LogPrintf("%s: nFeeNeeded=%d, rsSize=%d\n", __func__, nFeeNeeded, rsSize);
-                    if (nFeeNeeded < COIN) nFeeNeeded = COIN;
+                    if (nFeeNeeded >= MAX_FEE) nFeeNeeded = MAX_FEE;
                     newTxOut.nValue -= nFeeNeeded;
                     txNew.nTxFee = nFeeNeeded;
                     if (newTxOut.nValue < 0) {
@@ -2959,8 +2957,8 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                 if (!SelectCoins(true, estimatedFee, 10, 2, nTotalValue, setCoins, nValueIn, coinControl, coin_type, useIX)) {
                     if (coin_type == ALL_COINS) {
                         strFailReason = _("Insufficient funds.");
-                    } else if (coin_type == ONLY_NOT1000000IFMN) {
-                        strFailReason = _("Unable to locate enough funds for this transaction that are not equal 10000 DAPS.");
+                    } else if (coin_type == ONLY_NOT5000IFMN) {
+                        strFailReason = _("Unable to locate enough funds for this transaction that are not equal 10000 PRCY.");
                     } else {
                         strFailReason = _("Error in CreateTransaction. Please try again.");
                     }
@@ -2993,7 +2991,7 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, CAmount> >& vecSend,
                 if (nChange > 0) {
                     // Fill a vout to ourself
                     // TODO: pass in scriptChange instead of reservekey so
-                    // change transaction isn't always pay-to-dapscoin-address
+                    // change transaction isn't always pay-to-prcycoin-address
                     CScript scriptChange;
 
                     // coin control: send change to custom address
@@ -3857,7 +3855,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 //make sure not to outrun target amount
                 CAmount value = getCOutPutValue(out);
                 if (value < MINIMUM_STAKE_AMOUNT) continue;
-                if (value == 1000000 * COIN) {
+                if (value == 5000 * COIN) {
                     COutPoint outpoint(out.tx->GetHash(), out.i);
                     if (IsCollateralized(outpoint)) {
                         continue;
@@ -4034,28 +4032,28 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             }
 
             //Check whether team rewards should be included in this block
-            CBlockIndex* pindexPrev = chainActive.Tip();
+/*             CBlockIndex* pindexPrev = chainActive.Tip();
             CAmount blockValue = GetBlockValue(pindexPrev);
             if (blockValue > PoSBlockReward()) {
                 CAmount teamReward = blockValue - PoSBlockReward();
                 const std::string foundational = FOUNDATION_WALLET;
-                CPubKey foundationalGenPub, pubView, pubSpend;
+                CPubKey addressGenPub, pubView, pubSpend;
                 bool hasPaymentID;
                 uint64_t paymentID;
                 if (!CWallet::DecodeStealthAddress(foundational, pubView, pubSpend, hasPaymentID, paymentID)) {
                     LogPrintf("%s: Cannot decode foundational address\n", __func__);
                     continue;
                 }
-                CKey foundationTxPriv;
-                foundationTxPriv.MakeNewKey(true);
-                CPubKey foundationTxPub = foundationTxPriv.GetPubKey();
-                ComputeStealthDestination(foundationTxPriv, pubView, pubSpend, foundationalGenPub);
-                CScript foundationalScript = GetScriptForDestination(foundationalGenPub);
+                CKey addressTxPriv;
+                addressTxPriv.MakeNewKey(true);
+                CPubKey foundationTxPub = addressTxPriv.GetPubKey();
+                ComputeStealthDestination(addressTxPriv, pubView, pubSpend, addressGenPub);
+                CScript foundationalScript = GetScriptForDestination(addressGenPub);
                 CTxOut foundationalOut(teamReward, foundationalScript);
-                std::copy(foundationTxPriv.begin(), foundationTxPriv.end(), std::back_inserter(foundationalOut.txPriv));
+                std::copy(addressTxPriv.begin(), addressTxPriv.end(), std::back_inserter(foundationalOut.txPriv));
                 std::copy(foundationTxPub.begin(), foundationTxPub.end(), std::back_inserter(foundationalOut.txPub));
                 txNew.vout.push_back(foundationalOut);
-            }
+            }*/
             //Encoding amount
             CPubKey sharedSec1;
             //In this case, use the transaction pubkey to encode the transactiona amount
@@ -4154,6 +4152,7 @@ bool CWallet::AddAccountingEntry(const CAccountingEntry& acentry, CWalletDB & pw
 CAmount CWallet::GetMinimumFee(unsigned int nTxBytes, unsigned int nConfirmTarget, const CTxMemPool& pool)
 {
     CAmount nFeeNeeded = payTxFee.GetFee(nTxBytes);
+    if (nFeeNeeded >= MAX_FEE) nFeeNeeded = MAX_FEE;
     return nFeeNeeded;
 }
 
@@ -4888,7 +4887,6 @@ bool CWallet::SendAll(std::string des)
 
     int estimateTxSize = ComputeTxSize(1, 1, MIN_RING_SIZE);
     CAmount nFeeNeeded = GetMinimumFee(estimateTxSize, nTxConfirmTarget, mempool);
-    nFeeNeeded += BASE_FEE;
     if (GetSpendableBalance() <= nFeeNeeded) {
         throw runtime_error("Not enough balance to pay minimum transaction Fee: " + ValueFromAmountToString(nFeeNeeded));
     }
@@ -4968,7 +4966,6 @@ bool CWallet::SendAll(std::string des)
 
                 estimateTxSize = ComputeTxSize(vCoins.size(), 1, ringSize);
                 nFeeNeeded = GetMinimumFee(estimateTxSize, nTxConfirmTarget, mempool);
-                nFeeNeeded += BASE_FEE;
                 if (total < nFeeNeeded) {
                     strFailReason = "Not enough balance to pay minimum transaction Fee: " + ValueFromAmountToString(nFeeNeeded);
                     ret = false;
@@ -5085,7 +5082,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
         return true;
     }
 
-    if (GetSpendableBalance() < 5 * COIN) {
+    if (GetSpendableBalance() < 1 * COIN) {
         return false;
     }
     LogPrintf("Attempting to create a sweeping transaction\n");
@@ -5214,7 +5211,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
                         }
                     }
                 }
-                LogPrintf("Generating consolidation transaction, total = %d DAPS\n", total);
+                LogPrintf("Generating consolidation transaction, total = %d PRCY\n", total);
                 // Generate transaction public key
                 CWalletTx wtxNew;
                 CKey secret;
@@ -5223,7 +5220,6 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
 
                 int estimateTxSize = ComputeTxSize(vCoins.size(), 1, ringSize);
                 CAmount nFeeNeeded = GetMinimumFee(estimateTxSize, nTxConfirmTarget, mempool);
-                nFeeNeeded += BASE_FEE;
                 if (total < nFeeNeeded * 2) {
                     ret = false;
                 } else {
@@ -5338,16 +5334,9 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
 
 void CWallet::AutoCombineDust()
 {
-    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced()) return;
-    //if (IsInitialBlockDownload()) return;
-    if (chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) {
-        LogPrintf("Time elapsed for autocombine transaction too short\n");
-        return;
-    }
-
+    if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced() || chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) return;
     if (stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
-        if (IsLocked()) return;
-        if (fGenerateDapscoins && chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) {
+        if (fGeneratePrcycoins) {
             //sweeping to create larger UTXO for staking
             LOCK2(cs_main, cs_wallet);
             CAmount max = dirtyCachedBalance;
@@ -5357,7 +5346,7 @@ void CWallet::AutoCombineDust()
             uint32_t nTime = ReadAutoConsolidateSettingTime();
             nTime = (nTime == 0)? GetAdjustedTime() : nTime;
             LogPrintf("Attempting to create a consolidation transaction for a larger UTXO for staking\n");
-            CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + COIN, nTime);
+            CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + MAX_FEE, nTime);
         }
         return;
     }
@@ -5735,7 +5724,7 @@ void CWallet::SetNull()
 
     // Stake Settings
     nHashDrift = 45;
-    nStakeSplitThreshold = 100000;
+    nStakeSplitThreshold = DEFAULT_STAKE_SPLIT_THRESHOLD;
     nHashInterval = 22;
     nStakeSetUpdateTime = 300; // 5 minutes
 
@@ -5750,7 +5739,7 @@ void CWallet::SetNull()
 
     //Auto Combine Dust
     fCombineDust = true;
-    nAutoCombineThreshold = 540 * COIN;
+    nAutoCombineThreshold = 150 * COIN;
 }
 
 bool CWallet::isMultiSendEnabled()
@@ -6063,7 +6052,7 @@ bool CWallet::encodeStealthBase58(const std::vector<unsigned char>& raw, std::st
 bool CWallet::EncodeStealthPublicAddress(const std::vector<unsigned char>& pubViewKey, const std::vector<unsigned char>& pubSpendKey, std::string& pubAddrb58)
 {
     std::vector<unsigned char> pubAddr;
-    pubAddr.push_back(18);                                                                 //1 byte
+    pubAddr.push_back(135);                                                                 //1 byte
     std::copy(pubSpendKey.begin(), pubSpendKey.begin() + 33, std::back_inserter(pubAddr)); //copy 33 bytes
     std::copy(pubViewKey.begin(), pubViewKey.begin() + 33, std::back_inserter(pubAddr));   //copy 33 bytes
     uint256 h = Hash(pubAddr.begin(), pubAddr.end());
@@ -6079,7 +6068,7 @@ bool CWallet::EncodeStealthPublicAddress(const std::vector<unsigned char>& pubVi
 bool CWallet::EncodeIntegratedAddress(const std::vector<unsigned char>& pubViewKey, const std::vector<unsigned char>& pubSpendKey, uint64_t paymentID, std::string& pubAddrb58)
 {
     std::vector<unsigned char> pubAddr;
-    pubAddr.push_back(19);                                                                            //1 byte 19 for integrated address
+    pubAddr.push_back(136);                                                                            //1 byte 19 for integrated address
     std::copy(pubSpendKey.begin(), pubSpendKey.begin() + 33, std::back_inserter(pubAddr));            //copy 33 bytes
     std::copy(pubViewKey.begin(), pubViewKey.begin() + 33, std::back_inserter(pubAddr));              //copy 33 bytes
     std::copy((char*)&paymentID, (char*)&paymentID + sizeof(paymentID), std::back_inserter(pubAddr)); //8 bytes of payment id
@@ -6267,8 +6256,8 @@ bool CWallet::SendToStealthAddress(const std::string& stealthAddr, const CAmount
 {
     LOCK2(cs_main, cs_wallet);
     // Check amount
-    if (nValue <= 0)
-        throw runtime_error("Invalid amount");
+    if (nValue < 5 * COIN)
+        throw runtime_error("Invalid amount. The minimum amount is 5 PRCY.");
 
     string strError;
     if (this->IsLocked()) {

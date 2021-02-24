@@ -3,8 +3,8 @@
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef DAPScoin_STAKEINPUT_H
-#define DAPScoin_STAKEINPUT_H
+#ifndef PRCYcoin_STAKEINPUT_H
+#define PRCYcoin_STAKEINPUT_H
 
 class CKeyStore;
 class CWallet;
@@ -27,13 +27,13 @@ public:
 };
 
 
-class CDapsStake : public CStakeInput
+class CPrcyStake : public CStakeInput
 {
 private:
     CTransaction txFrom;
     unsigned int nPosition;
 public:
-    CDapsStake()
+    CPrcyStake()
     {
         this->pindexFrom = nullptr;
     }
@@ -50,4 +50,4 @@ public:
 };
 
 
-#endif //DAPScoin_STAKEINPUT_H
+#endif //PRCYcoin_STAKEINPUT_H
