@@ -1950,6 +1950,7 @@ bool AppInit2(bool isDaemon)
         storedStakingStatus = pwalletMain->ReadStakingStatus();
         if (GetBoolArg("-staking", false) || storedStakingStatus) {
             fGeneratePrcycoins = true;
+            pwalletMain->WriteStakingStatus(true);
             LogPrintf("Starting staking\n");
             threadGroup.create_thread(boost::bind(&TraceThread<void (*)()>, "stakemint", &ThreadStakeMinter));
             // stakingMode should be STOPPED on first launch or keep previous setting when available
