@@ -53,7 +53,7 @@ bool fSendFreeTransactions = false;
 bool fPayAtLeastCustomFee = true;
 int64_t nStartupTime = GetTime();
 int64_t nReserveBalance = 0;
-int64_t nDefaultConsolidateTime = GetArg("-autoconsolidatetime", 300);
+int64_t nDefaultConsolidateTime;
 
 #include "uint256.h"
 
