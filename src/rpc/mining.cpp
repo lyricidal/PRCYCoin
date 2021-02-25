@@ -139,7 +139,6 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Method not found (disabled)");
 
     bool fGenerate = true;
-    pwalletMain->WriteStakingStatus(true);
     if (params.size() > 0)
         fGenerate = params[0].get_bool();
 
@@ -149,8 +148,7 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
         if (nGenProcLimit == 0)
             fGenerate = false;
     }
-    if (fGenerate =  false)
-        pwalletMain->WriteStakingStatus(false);
+    pwalletMain->WriteStakingStatus(fGenerate);
 
     // -regtest mode: don't return until nGenProcLimit blocks are generated
     if (fGenerate && Params().MineBlocksOnDemand()) {
