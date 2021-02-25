@@ -1944,9 +1944,11 @@ bool AppInit2(bool isDaemon)
             threadGroup.create_thread(boost::bind(&TraceThread<void (*)()>, "stakemint", &ThreadStakeMinter));
             // stakingMode should be STOPPED on first launch or keep previous setting when available
             // This changes that setting only if staking is on
-            if (GetBoolArg("-autoconsolidate", false)) {
-                LogPrintf("Autoconsolidate is true and we are setting StakingMode::STAKING_WITH_CONSOLIDATION now\n");
+            if (GetBoolArg("-autoconsolidate", true)) {
+                LogPrintf("Autoconsolidate is enabled and we are setting StakingMode::STAKING_WITH_CONSOLIDATION now\n");
                 pwalletMain->stakingMode = StakingMode::STAKING_WITH_CONSOLIDATION;
+            } else {
+                LogPrintf("Autoconsolidate is disabled\n");
             }
         }
         //read decoy confirmation min
