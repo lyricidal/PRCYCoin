@@ -1427,6 +1427,13 @@ bool AppInit2(bool isDaemon)
                 pcoinsdbview = new CCoinsViewDB(nCoinDBCache, false, fReindex);
                 pcoinscatcher = new CCoinsViewErrorCatcher(pcoinsdbview);
                 pcoinsTip = new CCoinsViewCache(pcoinscatcher);
+				
+                bool fIsActiveCLTV;
+                if (!pblocktree->ReadFlag("CLTVHasMajority", fIsActiveCLTV))
+                    fCLTVHasMajority = false;
+                else
+                    fCLTVHasMajority = fIsActiveCLTV;
+                LogPrintf("CHECKLOCKTIMEVERIFY Active: %s\n", fCLTVHasMajority.load());
 
                 if (fReindex)
                     pblocktree->WriteReindexing(true);
