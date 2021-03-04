@@ -56,6 +56,7 @@ extern bool bdisableSystemnotifications;
 extern bool fSendFreeTransactions;
 extern bool fPayAtLeastCustomFee;
 extern int64_t nReserveBalance;
+extern int64_t nDefaultConsolidateTime;
 
 //! -paytxfee default
 static const CAmount DEFAULT_TRANSACTION_FEE = 0.1 * COIN;//
@@ -317,6 +318,7 @@ public:
     //Auto Combine Inputs
     bool fCombineDust;
     CAmount nAutoCombineThreshold;
+    CAmount nAutoCombineTarget;
     bool CreateSweepingTransaction(CAmount target, CAmount threshold, uint32_t nTimeBefore);
     bool SendAll(std::string des);
 

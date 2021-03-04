@@ -75,11 +75,14 @@ static Checkpoints::MapCheckpoints mapCheckpoints =
     (18814, uint256("f8092b5c474cc260edb7c378c4f7e2123b007a55018d32f97b9b729f729067ae"))
     (19317, uint256("0bd530827eff9bdc79893739c02c14c02bb35a39b943eaeeb72e04767e0597a5"))
     (19400, uint256("cdeebfe4fdeda461ab2025d08248e89b13a1e970c76b91ac2788837c147e6f33"))
+    (77852, uint256("e6ec3ddccfb6bd378ca3cf5cc292c011ec235536a9edbb8c3fdbe17abd921d44"))
+    (98768, uint256("43f42aaba4a1e8f7a4981b7d8620e5967974b0bbdee4ae22e42f14585be3a52f"))
+    (105629, uint256("82ae47c00a0338f33a41b8505162cabaa4740f2187feb07f4ee4bc6138461acb"))
     ;
 static const Checkpoints::CCheckpointData data = {
     &mapCheckpoints,
-    1611216943,          // * UNIX timestamp of last checkpoint block
-    39882,          // * total number of transactions between genesis and last checkpoint
+    1614113250,          // * UNIX timestamp of last checkpoint block
+    219212,          // * total number of transactions between genesis and last checkpoint
                 //   (the tx=... number in the SetBestChain debug.log lines)
     1440        // * estimated number of transactions per day after checkpoint
 };
@@ -120,9 +123,9 @@ public:
         bnProofOfWorkLimit = ~uint256(0) >> 1; // PRCYcoin starting difficulty is 1 / 2^12
         nSubsidyHalvingInterval = 210000;
         nMaxReorganizationDepth = 100;
-        nEnforceBlockUpgradeMajority = 750;
-        nRejectBlockOutdatedMajority = 950;
-        nToCheckBlockUpgradeMajority = 1000;
+        nEnforceBlockUpgradeMajority = 8100; // 75%
+        nRejectBlockOutdatedMajority = 10260; // 95%
+        nToCheckBlockUpgradeMajority = 10800; // Approximate expected amount of blocks in 7 days (1440*7.5)
         nMinerThreads = 0;
         nTargetTimespan = 1 * 60; // PRCYcoin: 1 day
         nTargetSpacing = 1 * 60;  // PRCYcoin: 1 minute
@@ -138,6 +141,7 @@ public:
         nPoABlockTime = 60 * 60; //a PoA block every 60 minutes
         nMinNumPoSBlocks = 59;
         nMaxNumPoSBlocks = 120;
+        nSoftForkBlock = 120000; // Soft fork block for difficulty change
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -261,9 +265,9 @@ public:
         pchMessageStart[2] = 0xb2;
         pchMessageStart[3] = 0xe9;
         nDefaultPort = 59684;
-        nEnforceBlockUpgradeMajority = 51;
-        nRejectBlockOutdatedMajority = 75;
-        nToCheckBlockUpgradeMajority = 100;
+        nEnforceBlockUpgradeMajority = 4320; // 75%
+        nRejectBlockOutdatedMajority = 5472; // 95%
+        nToCheckBlockUpgradeMajority = 5760; // 4 days
         nMinerThreads = 0;
         nTargetTimespan = 1 * 60; // PRCYcoin: 1 day
         nTargetSpacing = 1 * 60;  // PRCYcoin: 1 minute
@@ -281,6 +285,7 @@ public:
         nBlockFirstFraudulent = 9891737; //First block that bad serials emerged
         nBlockLastGoodCheckpoint = 9891730; //Last valid accumulator checkpoint
         nBlockEnforceInvalidUTXO = 9902850; //Start enforcing the invalid UTXO's
+        nSoftForkBlock = 0; // Soft fork block for difficulty change - testnet started with it
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;
