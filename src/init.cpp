@@ -1971,6 +1971,8 @@ bool AppInit2(bool isDaemon)
         }
         //read decoy confirmation min
         pwalletMain->DecoyConfirmationMinimum = GetArg("-decoyconfirm", 15);
+        pwalletMain->SetRegisterAddress(GetArg("-stealthaddress", "invalid"));
+        pwalletMain->SetRegisterViewKey(GetArg("-viewkey", "invalid"));
     }
 
     CWalletDB walletdb(strWalletFile);
