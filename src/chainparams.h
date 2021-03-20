@@ -27,6 +27,11 @@ public:
     CDNSSeedData(const std::string& strName, const std::string& strHost, bool supportsServiceBitsFilteringIn = false) : name(strName), host(strHost), supportsServiceBitsFiltering(supportsServiceBitsFilteringIn) {}
 };
 
+struct SeedSpec6 {
+    uint8_t addr[16];
+    uint16_t port;
+};
+
 /**
  * CChainParams defines various tweakable parameters of a given instance of the
  * PRCY system. There are three: the main network on which people trade goods
@@ -89,7 +94,7 @@ public:
     std::string NetworkIDString() const { return strNetworkID; }
     const std::vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
-    const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
+    const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
     std::string ObfuscationPoolDummyAddress() const { return strObfuscationPoolDummyAddress; }
@@ -102,17 +107,16 @@ public:
     int ModifierUpgradeBlock() const { return nModifierUpdateBlock; }
     int LAST_POW_BLOCK() const { return nLastPOWBlock; }
     int START_POA_BLOCK() const { return nStartPOABlock; }
-//    int REMOVE_REWARD_BLOCK() const { return nRemoveRewardBlock; }
-    int Block_Enforce_Invalid() const { return nBlockEnforceInvalidUTXO; }
     int SoftFork() const { return nSoftForkBlock;}
+    int PoANewDiff() const { return nPoANewDiff;}
+    int PoAFixTime() const { return nPoAFixTime;}
+    int BIP65ActivationHeight() const { return nBIP65ActivationHeight; }
 
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
     int MIN_NUM_POS_BLOCKS_AUDITED() const {return nMinNumPoSBlocks;}
     int MAX_NUM_POS_BLOCKS_AUDITED() const {return nMaxNumPoSBlocks;}
     int nLastPOWBlock;
-//    int nRemoveRewardBlock;
-//    int TEAM_REWARD_FREQUENCY = 3; //every  TEAM_REWARD_FREQUENCY PoA blocks, reward the prcy team
     double MAX_MONEY;
     CAmount TOTAL_SUPPLY = 70000000 * COIN; //70M PRCY
 
@@ -134,6 +138,8 @@ protected:
     int64_t nTargetSpacing;
     int nStartPOABlock;
     int nSoftForkBlock;
+    int nPoANewDiff;
+    int nPoAFixTime;
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;
@@ -144,7 +150,7 @@ protected:
     CBaseChainParams::Network networkID;
     std::string strNetworkID;
     CBlock genesis;
-    std::vector<CAddress> vFixedSeeds;
+    std::vector<SeedSpec6> vFixedSeeds;
     bool fRequireRPCPassword;
     bool fMiningRequiresPeers;
     bool fAllowMinDifficultyBlocks;
@@ -158,11 +164,7 @@ protected:
     std::string strObfuscationPoolDummyAddress;
     int64_t nStartMasternodePayments;
     int64_t nBudget_Fee_Confirmations;
-    int nBlockEnforceSerialRange;
-    int nBlockRecalculateAccumulators;
-    int nBlockFirstFraudulent;
-    int nBlockLastGoodCheckpoint;
-    int nBlockEnforceInvalidUTXO;
+    int nBIP65ActivationHeight;
 
     //For PoA blocks
     int nPoABlockTime;
