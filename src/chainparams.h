@@ -3,6 +3,7 @@
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
+// Copyright (c) 2020-2021 The PRCY developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -110,6 +111,7 @@ public:
     int SoftFork() const { return nSoftForkBlock;}
     int PoANewDiff() const { return nPoANewDiff;}
     int PoAFixTime() const { return nPoAFixTime;}
+    int PoAPaddingTime() const { return nPoAPaddingTime;}
     int BIP65ActivationHeight() const { return nBIP65ActivationHeight; }
 
     //For PoA block time
@@ -140,6 +142,7 @@ protected:
     int nSoftForkBlock;
     int nPoANewDiff;
     int nPoAFixTime;
+    int nPoAPaddingTime;
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;
