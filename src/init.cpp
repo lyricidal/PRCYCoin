@@ -1844,6 +1844,7 @@ bool AppInit2(bool isDaemon)
     //get the mode of budget voting for this masternode
     strBudgetMode = GetArg("-budgetvotemode", "auto");
 
+#ifdef ENABLE_WALLET
     if (GetBoolArg("-mnconflock", true) && pwalletMain) {
         LOCK(pwalletMain->cs_wallet);
         LogPrintf("Locking Masternodes:\n");
@@ -1855,6 +1856,7 @@ bool AppInit2(bool isDaemon)
             pwalletMain->LockCoin(outpoint);
         }
     }
+#endif
 
     fEnableSwiftTX = GetBoolArg("-enableswifttx", fEnableSwiftTX);
     nSwiftTXDepth = GetArg("-swifttxdepth", nSwiftTXDepth);
