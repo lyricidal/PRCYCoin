@@ -220,8 +220,7 @@ enum StakingStatusError
 enum StakingMode {
     STOPPED, //staking disabled or balance < 2.5k
     STAKING_WITHOUT_CONSOLIDATION,
-    STAKING_WITH_CONSOLIDATION,
-    STAKING_WITH_CONSOLIDATION_WITH_STAKING_NEWW_FUNDS
+    STAKING_WITH_CONSOLIDATION
 };
 
 /**
