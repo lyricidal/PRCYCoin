@@ -5341,7 +5341,7 @@ void CWallet::AutoCombineDust()
     if (IsLocked()) return;
     // Chain is not synced, return
     if (IsInitialBlockDownload() || !masternodeSync.IsBlockchainSynced()) return;
-    // Tip()->nTime < (GetAdjustedTime() - 300) - (to be changed to a .conf setting)
+    // Tip()->nTime < (GetAdjustedTime() - 300) - (default .conf setting = 300)
     if (chainActive.Tip()->nTime < (GetAdjustedTime() - nDefaultConsolidateTime)) return;
     if (combineMode == CombineMode::ON) {
         //sweeping to create larger UTXO for staking
@@ -5353,9 +5353,11 @@ void CWallet::AutoCombineDust()
         uint32_t nTime = ReadAutoConsolidateSettingTime();
         nTime = (nTime == 0)? GetAdjustedTime() : nTime;
         LogPrintf("Attempting to create a consolidation transaction for a larger UTXO for staking\n");
+        // MINIMUM_STAKE_AMOUNT already has * COIN, so not used here
         CreateSweepingTransaction(MINIMUM_STAKE_AMOUNT, max + MAX_FEE, nTime);
         return;
     }
+    // nAutoCombineTarget/ nAutoCombineThreshold are not * COIN, so that is used here
     CreateSweepingTransaction(nAutoCombineTarget * COIN, nAutoCombineThreshold * COIN, GetAdjustedTime());
 }
 
