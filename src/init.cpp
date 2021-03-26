@@ -1934,7 +1934,6 @@ bool AppInit2(bool isDaemon)
 
 #ifdef ENABLE_WALLET
     bool storedStakingStatus = false;
-    nDefaultConsolidateTime = GetArg("-autoconsolidatetime", 300);
 
     if (pwalletMain) {
         // Add wallet transactions that aren't already in a block to mapTransactions
@@ -1949,7 +1948,6 @@ bool AppInit2(bool isDaemon)
         } else {
             LogPrintf("Autocombinedust is disabled\n");
         }
-        LogPrintf("nDefaultConsolidateTime = %ss\n", nDefaultConsolidateTime);
 
         storedStakingStatus = pwalletMain->ReadStakingStatus();
         if (GetBoolArg("-staking", false) || storedStakingStatus) {
