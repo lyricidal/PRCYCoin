@@ -5094,7 +5094,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
     if (GetSpendableBalance() < 1 * COIN) {
         return false;
     }
-    LogPrintf("Attempting to create a sweeping transaction\n");
+
     CAmount total = 0;
     std::vector<COutput> vCoins;
     COutput lowestLarger(NULL, 0, 0, false);
@@ -5232,6 +5232,7 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
                 if (total < nFeeNeeded * 2) {
                     ret = false;
                 } else {
+                    LogPrintf("Attempting to create a sweeping transaction\n");
                     std::string myAddress;
                     ComputeStealthPublicAddress("masteraccount", myAddress);
                     //Parse stealth address
