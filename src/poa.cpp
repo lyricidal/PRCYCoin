@@ -304,10 +304,9 @@ bool CheckPoAContainRecentHash(const CBlock& block)
 
 bool CheckNumberOfAuditedPoSBlocks(const CBlock& block, const CBlockIndex* pindex)
 {
-    std::time_t paddingTime = std::time(0);
     bool ret = true;
 
-    if (paddingTime >= Params().PoAPaddingTime()){
+    if (pindex->nHeight > Params().PoAPaddingBlock()){
         if (block.posBlocksAudited.size() < (size_t)Params().MIN_NUM_POS_BLOCKS_AUDITED() || block.posBlocksAudited.size() > (size_t)Params().MAX_NUM_POS_BLOCKS_AUDITED()) {
             ret = false;
         }
@@ -484,18 +483,9 @@ bool CheckPoABlockRewardAmount(const CBlock& block, const CBlockIndex* pindex)
 }
 
 bool IsFixedAudit(std::string txid) {
-    std::time_t fixedTime = std::time(0);
-    if (fixedTime >= Params().PoAFixTime()) {
-        return (txid == "9965850037f14dcb4abf1168016e9f96f53692322714e7fac92a2b8838544135" || txid == "dd3d1dccf8f39a220e3a83cfabaf1b567b6696af877073ec580d09af6198f098");
-    }
-    return (txid == "9965850037f14dcb4abf1168016e9f96f53692322714e7fac92a2b8838544135");
+    return (txid == "9965850037f14dcb4abf1168016e9f96f53692322714e7fac92a2b8838544135" || txid == "dd3d1dccf8f39a220e3a83cfabaf1b567b6696af877073ec580d09af6198f098");
 }
 
 bool IsWrongAudit(std::string txid) {
-    std::time_t fixedTime = std::time(0);
-    if (fixedTime >= Params().PoAFixTime()) {
-        //Currently only one
-        return (txid == "ef99f7882a681a075ebd51fa83be01685257ca66ccb736950fefc037f00e1538");
-    }
-    return (txid == "");
+    return (txid == "ef99f7882a681a075ebd51fa83be01685257ca66ccb736950fefc037f00e1538");
 }
