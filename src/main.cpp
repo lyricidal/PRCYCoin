@@ -3093,7 +3093,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
             return state.DoS(100, error("ConnectBlock(): PoA block should contain only non-audited recent PoS blocks"));
         }
         if (!CheckNumberOfAuditedPoSBlocks(block, pindex)) {
-            return state.DoS(100, error("ConnectBlock(): A PoA block should audit at least 59 PoS blocks and no more than 120 PoS blocks"));
+            return state.DoS(100, error("ConnectBlock(): A PoA block should audit at least 59 PoS blocks and no more than 120 PoS blocks (65 max after block 169869)"));
         }
         if (!CheckPoABlockNotContainingPoABlockInfo(block, pindex)) {
             return state.DoS(100, error("ConnectBlock(): A PoA block should not audit any existing PoA blocks"));
