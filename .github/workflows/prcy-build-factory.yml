@@ -31,7 +31,7 @@ jobs:
         touch prcycoin.tar.gz
         tar -czf prcycoin.tar.gz --exclude=prcycoin.tar.gz .
     - name: Download Dependencies
-      run: make -C depends download
+      run: make -C depends download NO_QT=1
     - name: Create Dependencies Tarball
       run: tar -czf depends.tar.gz depends
     - name: Prepare Files for Artifact
