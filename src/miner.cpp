@@ -3,6 +3,7 @@
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
+// Copyright (c) 2020-2021 The PRCY developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -503,9 +504,13 @@ CBlockTemplate* CreateNewPoABlock(const CScript& scriptPubKeyIn, const CPubKey& 
 
     int nprevPoAHeight;
 
-
     nprevPoAHeight = GetListOfPoSInfo(pindexPrev->nHeight, pblock->posBlocksAudited);
+
     if (pblock->posBlocksAudited.size() == 0) {
+        return NULL;
+    }
+
+    if (pblock->posBlocksAudited.size() >= (size_t)Params().MIN_NUM_POS_BLOCKS_AUDITED() && pblock->posBlocksAudited[Params().MIN_NUM_POS_BLOCKS_AUDITED()].height >= (chainActive.Tip()->nHeight - 30)){
         return NULL;
     }
     // Set block version to differentiate PoA blocks from PoS blocks

@@ -2,6 +2,7 @@
 // Copyright (c) 2009-2014 The Bitcoin developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
+// Copyright (c) 2020-2021 The PRCY developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,15 +18,22 @@
 #include <math.h>
 
 unsigned int N_BITS = 0x1e050000;
-unsigned int N_BITS_SF = 0x1e127ff8;
+unsigned int N_BITS_SF = 0x1e127ff8; // Params().SoftFork()
+unsigned int N_BITS_PD = 0x1e02b2dc; // Params().PoANewDiff()
 
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader* pblock)
 {
     if (N_BITS != 0 && pblock->IsPoABlockByVersion()) {
         if (pindexLast->nHeight < Params().SoftFork()) {
+            LogPrint("poa", "%s: returning N_BITS\n", __func__);
             return N_BITS;
         }
-        return N_BITS_SF;
+        if (pindexLast->nHeight < Params().PoANewDiff()) {
+            LogPrint("poa", "%s: returning N_BITS_SF\n", __func__);
+            return N_BITS_SF;
+        }
+        LogPrint("poa", "%s: returning N_BITS_PD\n", __func__);
+        return N_BITS_PD;
     }
     /* current difficulty formula, prcycoin - DarkGravity v3, written by Evan Duffield - evan@dashpay.io */
     const CBlockIndex* BlockLastSolved = pindexLast;
@@ -216,7 +224,7 @@ bool CheckPoAContainRecentHash(const CBlock& block)
     } else {
         if (pindex->nHeight >= Params().START_POA_BLOCK()) {
             // Bypass bad block
-            if (pindex->nHeight == 17077 || pindex->nHeight == 17154) {
+            if (pindex->nHeight == 17077 || pindex->nHeight == 17154 || pindex->nHeight == 135887) {
                 return true;
             }
             CBlock prevPoablock;
@@ -225,7 +233,7 @@ bool CheckPoAContainRecentHash(const CBlock& block)
                 throw runtime_error("Can't read block from disk");
             PoSBlockSummary lastAuditedPoSBlockInfo = prevPoablock.posBlocksAudited.back();
             uint256 lastAuditedPoSHash = lastAuditedPoSBlockInfo.hash;
-            if (mapBlockIndex.count(lastAuditedPoSHash) < 1) {
+            if (mapBlockIndex.count(lastAuditedPoSHash) < 1 && !IsWrongAudit(lastAuditedPoSHash.GetHex())) {
                 return error("CheckPoAContainRecentHash(): Audited blocks not found");
             }
 
@@ -297,8 +305,15 @@ bool CheckPoAContainRecentHash(const CBlock& block)
 bool CheckNumberOfAuditedPoSBlocks(const CBlock& block, const CBlockIndex* pindex)
 {
     bool ret = true;
-    if (block.posBlocksAudited.size() < (size_t)Params().MIN_NUM_POS_BLOCKS_AUDITED() || block.posBlocksAudited.size() > (size_t)Params().MAX_NUM_POS_BLOCKS_AUDITED() ) {
-        ret = false;
+
+    if (pindex->nHeight > Params().PoAPaddingBlock()){
+        if (block.posBlocksAudited.size() < (size_t)Params().MIN_NUM_POS_BLOCKS_AUDITED() || block.posBlocksAudited.size() > (size_t)Params().MAX_NUM_POS_BLOCKS_AUDITED()) {
+            ret = false;
+        }
+    } else {
+        if (block.posBlocksAudited.size() < (size_t)Params().MIN_NUM_POS_BLOCKS_AUDITED() || block.posBlocksAudited.size() > 120 ) {
+            ret = false;
+        }
     }
     return ret;
 }
@@ -376,7 +391,7 @@ bool CheckPoAMerkleRoot(const CBlock& block, bool* fMutate)
 bool CheckPoABlockNotContainingPoABlockInfo(const CBlock& block, const CBlockIndex* pindex)
 {
     // Bypass bad block
-    if (pindex->nHeight == 17154) {
+    if (pindex->nHeight == 17154 || pindex->nHeight == 135948) {
         return true;
     }
     uint32_t numOfPoSBlocks = block.posBlocksAudited.size();
@@ -468,5 +483,9 @@ bool CheckPoABlockRewardAmount(const CBlock& block, const CBlockIndex* pindex)
 }
 
 bool IsFixedAudit(std::string txid) {
-    return (txid == "9965850037f14dcb4abf1168016e9f96f53692322714e7fac92a2b8838544135");
+    return (txid == "9965850037f14dcb4abf1168016e9f96f53692322714e7fac92a2b8838544135" || txid == "dd3d1dccf8f39a220e3a83cfabaf1b567b6696af877073ec580d09af6198f098");
+}
+
+bool IsWrongAudit(std::string txid) {
+    return (txid == "ef99f7882a681a075ebd51fa83be01685257ca66ccb736950fefc037f00e1538");
 }

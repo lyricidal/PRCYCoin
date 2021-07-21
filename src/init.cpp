@@ -201,15 +201,16 @@ void PrepareShutdown()
     GeneratePrcycoins(false, NULL, 0);
 #endif
     StopNode();
-    DumpMasternodes();
-    DumpBudgets();
-    DumpMasternodePayments();
-    UnregisterNodeSignals(GetNodeSignals());
 
     // After everything has been shut down, but before things get flushed, stop the
     // CScheduler/checkqueue threadGroup
     threadGroup.interrupt_all();
     threadGroup.join_all();
+
+    DumpMasternodes();
+    DumpBudgets();
+    DumpMasternodePayments();
+    UnregisterNodeSignals(GetNodeSignals());
 
     if (fFeeEstimatesInitialized) {
         boost::filesystem::path est_path = GetDataDir() / FEE_ESTIMATES_FILENAME;
@@ -1460,9 +1461,6 @@ bool AppInit2(bool isDaemon)
                     break;
                 }
 
-                // Populate list of invalid/fraudulent outpoints that are banned from the chain
-                PopulateInvalidOutPointMap();
-
                 // Recalculate money supply for blocks
                 if (GetBoolArg("-reindexmoneysupply", false)) {
                     RecalculatePRCYSupply(1);
@@ -1727,8 +1725,11 @@ bool AppInit2(bool isDaemon)
 
     // scan for better chains in the block chain database, that are not yet connected in the active best chain
     CValidationState state;
-    if (!ActivateBestChain(state))
+    if (!ActivateBestChain(state)) {
         strErrors << "Failed to connect best block";
+        StartShutdown();
+        return false;
+}
     // update g_best_block if needed
     {
         LOCK(g_best_block_mutex);
@@ -1847,23 +1848,26 @@ bool AppInit2(bool isDaemon)
     //get the mode of budget voting for this masternode
     strBudgetMode = GetArg("-budgetvotemode", "auto");
 
+#ifdef ENABLE_WALLET
     if (GetBoolArg("-mnconflock", true) && pwalletMain) {
         LOCK(pwalletMain->cs_wallet);
-        LogPrintf("Locking Masternodes:\n");
+        LogPrintf("Locking Masternodes collateral utxo:\n");
         uint256 mnTxHash;
-        for (CMasternodeConfig::CMasternodeEntry mne : masternodeConfig.getEntries()) {
-            LogPrintf("  %s %s\n", mne.getTxHash(), mne.getOutputIndex());
+        for (const auto& mne : masternodeConfig.getEntries()) {
             mnTxHash.SetHex(mne.getTxHash());
             COutPoint outpoint = COutPoint(mnTxHash, (unsigned int) std::stoul(mne.getOutputIndex().c_str()));
             pwalletMain->LockCoin(outpoint);
+            LogPrintf("Locked collateral, MN: %s, tx hash: %s, output index: %s\n",
+                      mne.getAlias(), mne.getTxHash(), mne.getOutputIndex());
         }
     }
+#endif
 
     fEnableSwiftTX = GetBoolArg("-enableswifttx", fEnableSwiftTX);
     nSwiftTXDepth = GetArg("-swifttxdepth", nSwiftTXDepth);
     nSwiftTXDepth = std::min(std::max(nSwiftTXDepth, 0), 60);
 
-    //lite mode disables all Masternode and Obfuscation related functionality
+    // lite mode disables all Masternode and Obfuscation related functionality
     fLiteMode = GetBoolArg("-litemode", false);
     if (fMasterNode && fLiteMode) {
         return InitError("You can not start a masternode in litemode");
@@ -1930,7 +1934,6 @@ bool AppInit2(bool isDaemon)
 
 #ifdef ENABLE_WALLET
     bool storedStakingStatus = false;
-    nDefaultConsolidateTime = GetArg("-autoconsolidatetime", 300);
 
     if (pwalletMain) {
         // Add wallet transactions that aren't already in a block to mapTransactions
@@ -1945,7 +1948,6 @@ bool AppInit2(bool isDaemon)
         } else {
             LogPrintf("Autocombinedust is disabled\n");
         }
-        LogPrintf("nDefaultConsolidateTime = %ss\n", nDefaultConsolidateTime);
 
         storedStakingStatus = pwalletMain->ReadStakingStatus();
         if (GetBoolArg("-staking", false) || storedStakingStatus) {
@@ -1953,13 +1955,13 @@ bool AppInit2(bool isDaemon)
             pwalletMain->WriteStakingStatus(true);
             LogPrintf("Starting staking\n");
             threadGroup.create_thread(boost::bind(&TraceThread<void (*)()>, "stakemint", &ThreadStakeMinter));
-            // stakingMode should be STOPPED on first launch or keep previous setting when available
+            // combineMode should be OFF on first launch or keep previous setting when available
             // This changes that setting only if staking is on
             if (GetBoolArg("-autoconsolidate", false)) {
-                LogPrintf("Autoconsolidate is enabled and we are setting StakingMode::STAKING_WITH_CONSOLIDATION now\n");
-                pwalletMain->stakingMode = StakingMode::STAKING_WITH_CONSOLIDATION;
+                LogPrintf("Autoconsolidate is enabled and we are setting CombineMode::ON now\n");
+                pwalletMain->combineMode = CombineMode::ON;
             } else {
-                pwalletMain->stakingMode = StakingMode::STAKING_WITHOUT_CONSOLIDATION;
+                pwalletMain->combineMode = CombineMode::OFF;
                 LogPrintf("Autoconsolidate is disabled\n");
             }
         } else {

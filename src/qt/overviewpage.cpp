@@ -518,7 +518,7 @@ void OverviewPage::on_lockUnlock() {
             ui->labelBalance_2->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getBalance(), false, BitcoinUnits::separatorAlways));
             ui->labelBalance->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getSpendableBalance(), false, BitcoinUnits::separatorAlways));
             ui->labelUnconfirmed->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getUnconfirmedBalance(), false, BitcoinUnits::separatorAlways));
-            pwalletMain->stakingMode = StakingMode::STAKING_WITH_CONSOLIDATION;
+            pwalletMain->combineMode = CombineMode::ON;
         }
     }
     else {
@@ -530,7 +530,6 @@ void OverviewPage::on_lockUnlock() {
             ui->labelBalance_2->setText("Locked; Hidden");
             ui->labelBalance->setText("Locked; Hidden");
             ui->labelUnconfirmed->setText("Locked; Hidden");
-            pwalletMain->stakingMode = StakingMode::STOPPED;
         }
     }
 }
