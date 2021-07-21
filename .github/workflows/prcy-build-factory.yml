@@ -47,7 +47,7 @@ jobs:
     needs: create-source-distribution
     runs-on: ubuntu-18.04
     env:
-      ARTIFACT_DIR: x86_64-linux-binaries
+      ARTIFACT_DIR: rpcserver-x86_64-linux
       TEST_LOG_ARTIFACT_DIR: test-logs
     steps:
     - name: Getting Source
