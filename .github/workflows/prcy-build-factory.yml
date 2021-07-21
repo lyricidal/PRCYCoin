@@ -69,7 +69,7 @@ jobs:
     - name: Build PRCY 
       run: |
         ./autogen.sh
-        ./configure --disable-jni --disable-tests --disable-gui-tests --disable-bench --without-gui --prefix=$(realpath depends/x86_64-pc-linux-gnu)
+        ./configure --disable-jni --disable-tests --disable-gui-tests --disable-bench --without-gui --enable-upnp-default --prefix=$(realpath depends/x86_64-pc-linux-gnu)
         make -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
     - name: Prepare Files for Artifact
