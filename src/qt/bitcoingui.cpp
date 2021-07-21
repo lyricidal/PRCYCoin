@@ -467,6 +467,10 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     openBlockExplorerAPIAction->setStatusTip(tr("Blockhain Explorer API"));
     openBootStrapAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&BootStrap"), this);
     openBootStrapAction->setStatusTip(tr("BootStrap Link"));
+    openBridgeAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Bridge"), this);
+    openBridgeAction->setStatusTip(tr("Bridge Link"));
+    openDexAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PRivaCY DEX"), this);
+    openDexAction->setStatusTip(tr("PRivaCY Dex Link"));
     openTGTechSupportAction = new QAction(QIcon(":/icons/telegram"), tr("&Telegram Tech Support"), this);
     openTGTechSupportAction->setStatusTip(tr("Telegram Tech Support"));
     openTGMNSupportAction = new QAction(QIcon(":/icons/telegram"), tr("&Telegram Masternode Support"), this);
@@ -485,6 +489,8 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     connect(openFAQAction, SIGNAL(triggered()), this, SLOT(openFAQClicked()));
     connect(openBlockExplorerAPIAction, SIGNAL(triggered()), this, SLOT(openBlockExplorerAPIClicked()));
     connect(openBootStrapAction, SIGNAL(triggered()), this, SLOT(openBootStrapClicked()));
+    connect(openBridgeAction, SIGNAL(triggered()), this, SLOT(openBridgeClicked()));
+    connect(openDexAction, SIGNAL(triggered()), this, SLOT(openDexClicked()));
     connect(openTGTechSupportAction, SIGNAL(triggered()), this, SLOT(openTGTechSupportClicked()));
     connect(openTGMNSupportAction, SIGNAL(triggered()), this, SLOT(openTGMNSupportClicked()));
     connect(openDiscordSupportAction, SIGNAL(triggered()), this, SLOT(openDiscordSupportClicked()));
@@ -583,6 +589,8 @@ void BitcoinGUI::createMenuBar()
     help->addSeparator();
     help->addAction(openBlockExplorerAPIAction);
     help->addAction(openBootStrapAction);
+    help->addAction(openBridgeAction);
+    help->addAction(openDexAction);
     help->addSeparator();
     help->addAction(openTGTechSupportAction);
     help->addAction(openTGMNSupportAction);
@@ -918,6 +926,16 @@ void BitcoinGUI::openTGMNSupportClicked()
 void BitcoinGUI::openDiscordSupportClicked()
 {
     QDesktopServices::openUrl(QUrl("https://discord.gg/8vbXJMf"));
+}
+
+void BitcoinGUI::openBridgeClicked()
+{
+    QDesktopServices::openUrl(QUrl("https://bridge.prcycoin.com"));
+}
+
+void BitcoinGUI::openDexClicked()
+{
+    QDesktopServices::openUrl(QUrl("https://privacydex.io"));
 }
 
 void BitcoinGUI::checkForUpdatesClicked()
