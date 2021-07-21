@@ -891,8 +891,8 @@ void CMasternodeMan::ProcessMessage(CNode* pfrom, std::string& strCommand, CData
             return;
         }
 
-        if (amount != 5000 * COIN) {
-            LogPrint("masternode","dsee - masternode collateralization not equal to 1M %s\n", vin.prevout.hash.ToString());
+        if (amount != Params().MNCollateralAmt()) {
+            LogPrint("masternode","dsee - masternode collateralization not equal to 5K %s\n", vin.prevout.hash.ToString());
             return;
         }
 

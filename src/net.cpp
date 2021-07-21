@@ -125,7 +125,10 @@ unsigned short GetListenPort() {
     return (unsigned short) (GetArg("-port", Params().GetDefaultPort()));
 }
 
-bool IsUnsupportedVersion(std::string strSubVer) {
+bool IsUnsupportedVersion(std::string strSubVer, int nHeight) {
+    if (nHeight >= Params().HardFork()) {
+        return (strSubVer == "/PRCY:1.0.0.2/" || strSubVer == "/PRCY:1.0.0.3/" || strSubVer == "/PRCY:1.0.0.4/" || strSubVer == "/PRCY:1.0.0.5/" || strSubVer == "/PRCY:1.0.0.6/");
+    }
     return (strSubVer == "/PRCY:1.0.0.2/" || strSubVer == "/PRCY:1.0.0.3/" || strSubVer == "/PRCY:1.0.0.4/" || strSubVer == "/PRCY:1.0.0.5/");
 }
 
