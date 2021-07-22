@@ -286,6 +286,7 @@ static const CRPCCommand vRPCCommands[] =
 
         /* Block chain and UTXO */
         {"blockchain", "getsupply", &getsupply, true, false, false},
+        {"blockchain", "getmaxsupply", &getmaxsupply, true, false, false},
         {"blockchain", "getblockchaininfo", &getblockchaininfo, true, false, false},
         {"blockchain", "getbestblockhash", &getbestblockhash, true, false, false},
         {"blockchain", "getblockcount", &getblockcount, true, false, false},
@@ -428,7 +429,7 @@ static const CRPCCommand vRPCCommands[] =
         // {"wallet", "setstakesplitthreshold", &setstakesplitthreshold, false, false, true},
         // {"wallet", "settxfee", &settxfee, true, false, true},
         // {"wallet", "signmessage", &signmessage, true, false, true},
-        // {"wallet", "walletlock", &walletlock, true, false, true},
+        {"wallet", "walletlock", &walletlock, true, false, true},
         {"wallet", "walletpassphrasechange", &walletpassphrasechange, true, false, true},
         {"wallet", "unlockwallet", &unlockwallet, true, false, true},
         {"wallet", "revealmnemonicphrase", &revealmnemonicphrase, true, false, true}
