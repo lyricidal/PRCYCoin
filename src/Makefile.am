@@ -108,6 +108,7 @@ BITCOIN_CORE_H = \
   compat/sanity.h \
   compressor.h \
   consensus/consensus.h \
+  consensus/merkle.h \
   consensus/validation.h \
   consensus/tx_verify.h \
   primitives/block.h \
@@ -351,6 +352,7 @@ libbitcoin_common_a_SOURCES = \
   chainparams.cpp \
   coins.cpp \
   compressor.cpp \
+  consensus/merkle.cpp \
   primitives/block.cpp \
   primitives/transaction.cpp \
   core_read.cpp \
@@ -535,7 +537,7 @@ config/stamp-h1: $(top_srcdir)/$(subdir)/config/prcycoin-config.h.in $(top_build
 	$(AM_V_at)$(MAKE) -C $(top_builddir) $(subdir)/$(@)
 $(top_srcdir)/$(subdir)/config/prcycoin-config.h.in:  $(am__configure_deps)
 	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/prcycoin-config.h.in
-	
+
 clean-local:
 	-$(MAKE) -C secp256k1 clean
 	-$(MAKE) -C secp256k1-mw clean
