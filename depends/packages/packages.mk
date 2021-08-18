@@ -1,4 +1,4 @@
-packages:=boost openssl libevent
+packages:=boost openssl libevent libcurl
 
 qt_native_packages = native_protobuf
 qt_packages = protobuf zlib

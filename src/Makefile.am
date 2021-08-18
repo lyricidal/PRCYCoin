@@ -25,7 +25,7 @@ BITCOIN_INCLUDES += -I$(srcdir)/secp256k1-mw/include
 BITCOIN_INCLUDES += -I$(srcdir)/zxcvbn
 BITCOIN_INCLUDES += $(UNIVALUE_CFLAGS)
 
-LIBBITCOIN_SERVER=libbitcoin_server.a
+LIBBITCOIN_SERVER=libbitcoin_server.a -lcurl
 LIBBITCOIN_COMMON=libbitcoin_common.a
 LIBBITCOIN_CLI=libbitcoin_cli.a
 LIBBITCOIN_UTIL=libbitcoin_util.a
