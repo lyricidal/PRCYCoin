@@ -648,13 +648,11 @@ bool ReVerifyPoSBlock(CBlockIndex* pindex)
         nValueOut = coinstake.GetValueOut();
 
         size_t numUTXO = coinstake.vout.size();
-        CAmount posBlockReward = PoSBlockReward();
         if (mapBlockIndex.count(block.hashPrevBlock) < 1) {
             LogPrintf("ReVerifyPoSBlock() : Previous block not found, received block %s, previous %s, current tip %s", block.GetHash().GetHex(), block.hashPrevBlock.GetHex(), chainActive.Tip()->GetBlockHash().GetHex());
             return false;
         }
-        int thisBlockHeight = mapBlockIndex[block.hashPrevBlock]->nHeight + 1; //avoid potential block disorder during download
-        CAmount blockValue = GetBlockValue(mapBlockIndex[block.hashPrevBlock]);
+        CAmount blockValue = GetBlockValue(mapBlockIndex[block.hashPrevBlock]->nHeight);
         const CTxOut& mnOut = coinstake.vout[numUTXO - 1];
         std::string mnsa(mnOut.masternodeStealthAddress.begin(), mnOut.masternodeStealthAddress.end());
         if (!VerifyDerivedAddress(mnOut, mnsa)) {
@@ -669,7 +667,7 @@ bool ReVerifyPoSBlock(CBlockIndex* pindex)
         pindex->nMint = pindex->nMoneySupply - nMoneySupplyPrev + nFees;
 
         //PoW phase redistributed fees to miner. PoS stage destroys fees.
-        CAmount nExpectedMint = GetBlockValue(pindex->pprev);
+        CAmount nExpectedMint = GetBlockValue(pindex->pprev->nHeight);
         nExpectedMint += nFees;
 
         if (!IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {
@@ -2112,32 +2110,24 @@ double ConvertBitsToDouble(unsigned int nBits)
     return dDiff;
 }
 
-CAmount PoSBlockReward()
-{
-    return 1 * COIN;
-}
-
-int64_t GetBlockValue(const CBlockIndex* ptip)
+CAmount GetBlockValue(int nHeight)
 {
     LOCK(cs_main);
     int64_t nSubsidy = 0;
-    const CBlockIndex* pForkTip = ptip;
-    if (!ptip) {
-        pForkTip = chainActive.Tip();
-    }
+    int64_t nMoneySupply = chainActive.Tip()->nMoneySupply;
 
-    if (pForkTip->nMoneySupply >= Params().TOTAL_SUPPLY) {
+    if (nMoneySupply >= Params().TOTAL_SUPPLY) {
         //zero rewards when total supply reach 70M PRCY
         return 0;
     }
-    if (pForkTip->nHeight < Params().LAST_POW_BLOCK()) {
+    if (nHeight < Params().LAST_POW_BLOCK()) {
         nSubsidy = 120000 * COIN;
     } else {
-        nSubsidy = PoSBlockReward();
+        nSubsidy = 1 * COIN;
     }
 
-    if (pForkTip->nMoneySupply + nSubsidy >= Params().TOTAL_SUPPLY) {
-        nSubsidy = Params().TOTAL_SUPPLY - pForkTip->nMoneySupply;
+    if (nMoneySupply + nSubsidy >= Params().TOTAL_SUPPLY) {
+        nSubsidy = Params().TOTAL_SUPPLY - nMoneySupply;
     }
 
     return nSubsidy;
@@ -3060,16 +3050,16 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         view.SetBestBlock(pindex->GetBlockHash());
         return true;
     }
-
-    if (pindex->nHeight <= Params().LAST_POW_BLOCK() && block.IsProofOfStake())
+    int nHeight = pindex->nHeight;
+    if (nHeight <= Params().LAST_POW_BLOCK() && block.IsProofOfStake())
         return state.DoS(100, error("ConnectBlock() : PoS period not active"),
             REJECT_INVALID, "PoS-early");
 
-    if (pindex->nHeight > Params().LAST_POW_BLOCK() && block.IsProofOfWork())
+    if (nHeight > Params().LAST_POW_BLOCK() && block.IsProofOfWork())
         return state.DoS(100, error("ConnectBlock() : PoW period ended"),
             REJECT_INVALID, "PoW-ended");
 
-    bool fScriptChecks = pindex->nHeight >= Checkpoints::GetTotalBlocksEstimate();
+    bool fScriptChecks = nHeight >= Checkpoints::GetTotalBlocksEstimate();
 
     // If scripts won't be checked anyways, don't bother seeing if CLTV is activated
     bool fCLTVIsActivated = false;
@@ -3142,6 +3132,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
                 }
             }
 
+            if (!tx.IsCoinStake() && tx.nTxFee < MIN_FEE && nHeight >= Params().HardFork())
+                return state.Invalid(error("ConnectBlock() : Fee below Minimum. Network spam detected."),
+                    REJECT_INVALID, "bad-txns-low-fee");
             if (!tx.IsCoinStake())
                 nFees += tx.nTxFee;
             CAmount valTemp = GetValueIn(view, tx);
@@ -3162,7 +3155,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         if (i > 0) {
             blockundo.vtxundo.push_back(CTxUndo());
         }
-        UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), pindex->nHeight);
+        UpdateCoins(tx, state, view, i == 0 ? undoDummy : blockundo.vtxundo.back(), nHeight);
 
         vPos.push_back(std::make_pair(tx.GetHash(), pos));
         pos.nTxOffset += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
@@ -3171,17 +3164,17 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     if (block.IsProofOfStake()) {
         const CTransaction coinstake = block.vtx[1];
         size_t numUTXO = coinstake.vout.size();
-        CAmount posBlockReward = PoSBlockReward();
         if (mapBlockIndex.count(block.hashPrevBlock) < 1) {
             return state.DoS(100, error("ConnectBlock() : Previous block not found, received block %s, previous %s, current tip %s", block.GetHash().GetHex(), block.hashPrevBlock.GetHex(), chainActive.Tip()->GetBlockHash().GetHex()));
         }
-        int thisBlockHeight = mapBlockIndex[block.hashPrevBlock]->nHeight + 1; //avoid potential block disorder during download
-        CAmount blockValue = GetBlockValue(mapBlockIndex[block.hashPrevBlock]);
+        CAmount blockValue = GetBlockValue(mapBlockIndex[block.hashPrevBlock]->nHeight);
         const CTxOut& mnOut = coinstake.vout[numUTXO - 1];
         std::string mnsa(mnOut.masternodeStealthAddress.begin(), mnOut.masternodeStealthAddress.end());
         if (!VerifyDerivedAddress(mnOut, mnsa))
             return state.DoS(100, error("ConnectBlock() : Incorrect derived address for masternode rewards"));
 
+        if (nHeight >= Params().HardFork() && nValueIn < Params().MinimumStakeAmount())
+            return state.DoS(100, error("ConnectBlock() : Incorrect Minimum Stake Amount"));
     }
 
     // track money supply and mint amount info
@@ -3198,7 +3191,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
         nInputs <= 1 ? 0 : 0.001 * (nTime1 - nTimeStart) / (nInputs - 1), nTimeConnect * 0.000001);
 
     //PoW phase redistributed fees to miner. PoS stage destroys fees.
-    CAmount nExpectedMint = GetBlockValue(pindex->pprev);
+    CAmount nExpectedMint = GetBlockValue(pindex->pprev->nHeight);
     nExpectedMint += nFees;
 
     if (!block.IsPoABlockByVersion() && !IsBlockValueValid(block, nExpectedMint, pindex->nMint)) {

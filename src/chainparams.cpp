@@ -122,6 +122,7 @@ public:
         MAX_MONEY = 70000000.0;
         nMaxMoneyOut = MAX_MONEY * COIN;
         nMNCollateralAmt = 5000 * COIN;
+        nMinimumStakeAmount = 2500 * COIN;
 
         /** Height or Time Based Activations **/
         nLastPOWBlock = 500;
@@ -136,7 +137,7 @@ public:
         nPoAFixTime = 1616716800; // Fork time for PoA fix - Friday, March 26, 2021 12:00:00 AM (GMT)
         nPoAPaddingBlock = 169869; // Last block with 120 PoS blocks in a PoA Audit
         nPoAPadding = 10; // Current PoA Padding
-        nHardForkBlock = 350000; // Add hard fork block for Consensus/PoA Padding
+        nHardForkBlock = 375000; // Add hard fork block for Consensus/PoA Padding
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot

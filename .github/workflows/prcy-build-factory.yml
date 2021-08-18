@@ -66,7 +66,7 @@ jobs:
     - name: Build Dependencies
       run: make -C depends -j$(nproc)
       working-directory: ${{ env.SOURCE_ARTIFACT }}
-    - name: Build PRCY 
+    - name: Build PRCY
       run: |
         ./autogen.sh
         ./configure --disable-jni --disable-tests --disable-gui-tests --disable-bench --without-gui --enable-upnp-default --prefix=$(realpath depends/x86_64-pc-linux-gnu)

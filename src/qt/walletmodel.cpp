@@ -77,7 +77,7 @@ CAmount WalletModel::getBalance(const CCoinControl* coinControl) const
 {
     if (coinControl) {
 
-        {   
+        {
             return wallet->GetBalance();
         }
     }
@@ -90,7 +90,7 @@ CAmount WalletModel::getUnconfirmedBalance() const
     return wallet->GetUnconfirmedBalance();
 }
 
-CAmount WalletModel::getSpendableBalance() const 
+CAmount WalletModel::getSpendableBalance() const
 {
     return wallet->GetSpendableBalance();
 }
@@ -184,7 +184,7 @@ void WalletModel::emitBalanceChanged()
     // Force update of UI elements even when no values have changed
     if (cachedBalance == 0 && !checkBalanceChanged())
         return;
-    
+
     Q_EMIT balanceChanged(cachedBalance, cachedUnconfirmedBalance, cachedImmatureBalance,
         cachedWatchOnlyBalance, cachedWatchUnconfBalance, cachedWatchImmatureBalance);
 }
@@ -210,14 +210,14 @@ bool WalletModel::checkBalanceChanged()
         newWatchImmatureBalance = getWatchImmatureBalance();
     }
 
-    if (walletLocked != pwalletMain->IsLocked() || 
-        (stkEnabled != (nLastCoinStakeSearchInterval > 0)) || 
-        newSpendableBalance != spendableBalance || 
-        cachedBalance != newBalance || 
-        cachedUnconfirmedBalance != newUnconfirmedBalance || 
+    if (walletLocked != pwalletMain->IsLocked() ||
+        (stkEnabled != (nLastCoinStakeSearchInterval > 0)) ||
+        newSpendableBalance != spendableBalance ||
+        cachedBalance != newBalance ||
+        cachedUnconfirmedBalance != newUnconfirmedBalance ||
         cachedImmatureBalance != newImmatureBalance ||
-        cachedWatchOnlyBalance != newWatchOnlyBalance || 
-        cachedWatchUnconfBalance != newWatchUnconfBalance || 
+        cachedWatchOnlyBalance != newWatchOnlyBalance ||
+        cachedWatchUnconfBalance != newWatchUnconfBalance ||
         cachedWatchImmatureBalance != newWatchImmatureBalance ||
         cachedTxLocks != nCompleteTXLocks) {
         cachedBalance = newBalance;
@@ -636,12 +636,12 @@ void WalletModel::listCoins(std::map<QString, std::vector<COutput> >& mapCoins) 
 
 bool WalletModel::isLockedCoin(uint256 hash, unsigned int n) const
 {
-    LOCK2(cs_main, wallet->cs_wallet);   
+    LOCK2(cs_main, wallet->cs_wallet);
     return wallet->IsLockedCoin(hash, n);
 }
 
 void WalletModel::lockCoin(COutPoint& output)
-{   
+{
     LOCK2(cs_main, wallet->cs_wallet);
     wallet->LockCoin(output);
 }
@@ -697,14 +697,14 @@ StakingStatusError WalletModel::getStakingStatusError(QString& error)
                 error = "\nBalance is under the minimum 2500 staking threshold.\nPlease send more PRCY to this wallet.\n";
                 return StakingStatusError::STAKING_OK;
             }
-            if (nReserveBalance > balance || (balance > nReserveBalance && balance - nReserveBalance < CWallet::MINIMUM_STAKE_AMOUNT)) {
+            if (nReserveBalance > balance || (balance > nReserveBalance && balance - nReserveBalance < Params().MinimumStakeAmount())) {
                 error = "Reserve balance is too high.\nPlease lower it in order to turn staking on.";
                 return StakingStatusError::RESERVE_TOO_HIGH;
             }
             if (!fMintable) {
-                if (balance > CWallet::MINIMUM_STAKE_AMOUNT) {
+                if (balance > Params().MinimumStakeAmount()) {
                     //10 is to cover transaction fees
-                    if (balance >= CWallet::MINIMUM_STAKE_AMOUNT + 10*COIN) {
+                    if (balance >= Params().MinimumStakeAmount() + 10*COIN) {
                         error = "Not enough mintable coins.\nDo you want to merge & make a sent-to-yourself transaction to make the wallet stakable?";
                         return StakingStatusError::UTXO_UNDER_THRESHOLD;
                     }
@@ -797,7 +797,7 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
     std::string txHash = tx.GetHash().GetHex();
     QList<QString> addressBook = getAddressBookData(wallet);
     std::map<QString, QString> txData;
-    
+
     if (tx.hashBlock != 0) {
         BlockMap::iterator mi = mapBlockIndex.find(tx.hashBlock);
         if (mi != mapBlockIndex.end() && (*mi).second) {
@@ -812,7 +812,7 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
     for (TransactionRecord TxRecord : decomposedTx) {
         txData["date"] = QString(GUIUtil::dateTimeStr(TxRecord.time));
         // if address is in book, use data from book, else use data from transaction
-        txData["address"]=""; 
+        txData["address"]="";
 //        for (QString addressBookEntry : addressBook)
 //            if (addressBookEntry.contains(TxRecord.address.c_str())) {
 //                txData["address"] = addressBookEntry;
@@ -856,7 +856,7 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
         case TransactionRecord::MNReward:
             txData["type"] = QString("Masternode");
             txData["amount"] = BitcoinUnits::format(0,  TxRecord.credit); //absolute value of total amount
-            break;     
+            break;
         default:
             txData["type"] = QString("Unknown");
         }
@@ -875,7 +875,7 @@ QList<QString> getAddressBookData(CWallet* wallet)
             AddressBookData.push_front(desc + " | " + addressHash);
         else
             AddressBookData.push_front(addressHash);
-       
+
     }
     return AddressBookData;
 }

@@ -181,7 +181,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
     std::copy(txPriv.begin(), txPriv.end(), std::back_inserter(txNew.vout[0].txPriv));
 
     CBlockIndex* prev = chainActive.Tip();
-    CAmount nValue = GetBlockValue(prev);
+    CAmount nValue = GetBlockValue(prev->nHeight);
     txNew.vout[0].nValue = nValue;
 
     pblock->vtx.push_back(txNew);
@@ -515,14 +515,8 @@ CBlockTemplate* CreateNewPoABlock(const CScript& scriptPubKeyIn, const CPubKey& 
     pblock->nTime = GetAdjustedTime();
 
     //compute PoA block reward
-    CAmount nReward;
-    if (pindexPrev->nHeight >= Params().HardFork()) {
-        nReward = pblock->posBlocksAudited.size() * 0.25 * COIN;
-    } else {
-        nReward = pblock->posBlocksAudited.size() * 0.5 * COIN;
-    }
+    CAmount nReward = pblock->posBlocksAudited.size() * 0.25 * COIN;
     pblock->vtx[0].vout[0].nValue = nReward;
-
     pblock->vtx[0].txType = TX_TYPE_REVEAL_AMOUNT;
 
     CPubKey sharedSec;

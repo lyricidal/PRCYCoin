@@ -71,7 +71,7 @@ public:
 #endif // ENABLE_WALLET
     bool enableWallet;
     bool fMultiSend = false;
-    
+
 protected:
     void changeEvent(QEvent* e);
     void closeEvent(QCloseEvent* event);
@@ -137,13 +137,15 @@ private:
     QAction* openTGTechSupportAction;
     QAction* openTGMNSupportAction;
     QAction* openDiscordSupportAction;
+    QAction* openBridgeAction;
+    QAction* openDexAction;
     QAction* checkForUpdatesAction;
     QAction* multiSendAction;
     QFrame* frameBlocks;
     QLabel *stakingState;
     QLabel* connectionCount;
     QLabel* blockCount;
-    
+
     QProgressDialog* progressDialog = nullptr;
 
     QSystemTrayIcon* trayIcon;
@@ -267,6 +269,8 @@ private Q_SLOTS:
     void openTGTechSupportClicked();
     void openTGMNSupportClicked();
     void openDiscordSupportClicked();
+    void openBridgeClicked();
+    void openDexClicked();
     void checkForUpdatesClicked();
     void serviceRequestFinished(QNetworkReply* reply);
 #ifndef Q_OS_MAC
