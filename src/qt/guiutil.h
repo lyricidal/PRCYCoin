@@ -109,26 +109,29 @@ QString getOpenFileName(QWidget* parent, const QString& caption, const QString& 
     */
 Qt::ConnectionType blockingGUIThreadConnection();
 
+// Activate, show and raise the widget
+void bringToFront(QWidget* w);
+
 // Determine whether a widget is hidden behind other windows
 bool isObscured(QWidget* w);
 
 // Open debug.log
-void openDebugLogfile();
+bool openDebugLogfile();
 
 // Open prcycoin.conf
-void openConfigfile();
+bool openConfigfile();
 
 // Open masternode.conf
-void openMNConfigfile();
+bool openMNConfigfile();
 
 // Browse DataDir folder
-void showDataDir();
+bool showDataDir();
 
 // Browse Qt Dir folder
 void showQtDir();
 
 // Browse backup folder
-void showBackups();
+bool showBackups();
 
 // Replace invalid default fonts with known good ones
 void SubstituteFonts(const QString& language);

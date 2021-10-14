@@ -11,6 +11,7 @@
 #include "base58.h"
 #include "checkpoints.h"
 #include "coincontrol.h"
+#include "guiinterfaceutil.h"
 #include "kernel.h"
 #include "masternode-budget.h"
 #include "net.h"
@@ -37,9 +38,7 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include "masternodeconfig.h"
 
-
-
-
+CWallet* pwalletMain = nullptr;
 /**
  * Settings
  */
@@ -708,6 +707,52 @@ void CWallet::SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator> ran
         // cached members not copied on purpose
     }
 }
+
+///////// Init ////////////////
+
+bool CWallet::ParameterInteraction()
+{
+    if (mapArgs.count("-mintxfee")) {
+        CAmount n = 0;
+        if (ParseMoney(mapArgs["-mintxfee"], n) && n > 0)
+            CWallet::minTxFee = CFeeRate(n);
+        else
+            return UIError(AmountErrMsg("mintxfee", mapArgs["-mintxfee"]));
+    }
+    if (mapArgs.count("-paytxfee")) {
+        CAmount nFeePerK = 0;
+        if (!ParseMoney(mapArgs["-paytxfee"], nFeePerK))
+            return UIError(AmountErrMsg("paytxfee", mapArgs["-paytxfee"]));
+        if (nFeePerK > nHighTransactionFeeWarning)
+            UIWarning(_("Warning: -paytxfee is set very high! This is the transaction fee you will pay if you send a transaction."));
+        payTxFee = CFeeRate(nFeePerK, 1000);
+        if (payTxFee < ::minRelayTxFee) {
+            return UIError(strprintf(_("Invalid amount for -paytxfee=<amount>: '%s' (must be at least %s)"),
+                                       mapArgs["-paytxfee"], ::minRelayTxFee.ToString()));
+        }
+    }
+    if (mapArgs.count("-maxtxfee")) {
+        CAmount nMaxFee = 0;
+        if (!ParseMoney(mapArgs["-maxtxfee"], nMaxFee))
+            return UIError(AmountErrMsg("maxtxfee", mapArgs["-maxtxfee"]));
+        if (nMaxFee > nHighTransactionMaxFeeWarning)
+            UIWarning(_("Warning: -maxtxfee is set very high! Fees this large could be paid on a single transaction."));
+        maxTxFee = nMaxFee;
+        if (CFeeRate(maxTxFee, 1000) < ::minRelayTxFee) {
+            return UIError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
+                                       mapArgs["-maxtxfee"], ::minRelayTxFee.ToString()));
+        }
+    }
+    nTxConfirmTarget = GetArg("-txconfirmtarget", 1);
+    bSpendZeroConfChange = GetBoolArg("-spendzeroconfchange", false);
+    bdisableSystemnotifications = GetBoolArg("-disablesystemnotifications", false);
+    fSendFreeTransactions = GetBoolArg("-sendfreetransactions", false);
+
+    return true;
+}
+
+
+//////// End Init ////////////
 
 /**
  * Outpoint is spent if any non-conflicted transaction
@@ -2320,7 +2365,7 @@ bool CWallet::SelectCoinsMinConf(bool needFee, CAmount& feeNeeded, int ringSize,
 
     // try to find nondenom first to prevent unneeded spending of mixed coins
     for (unsigned int tryDenom = 0; tryDenom < 2; tryDenom++) {
-        if (fDebug) LogPrint("selectcoins", "tryDenom: %d\n", tryDenom);
+        LogPrint(BCLog::SELECTCOINS, "tryDenom: %d\n", tryDenom);
         vValue.clear();
         nTotalLower = 0;
         for (const COutput& output : vCoins) {
@@ -3904,9 +3949,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 if (it != mapBlockIndex.end()) {
                     pindex = it->second;
                 } else {
-                    if (fDebug) {
-                        LogPrintf("CreateCoinStake() failed to find block index\n");
-                    }
+                    LogPrintf("%s: CreateCoinStake() failed to find block index\n", __func__);
                     continue;
                 }
 
@@ -3931,7 +3974,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                     }
 
                     // Found a kernel
-                    if (fDebug && GetBoolArg("-printcoinstake", false))
+                    if (GetBoolArg("-printcoinstake", false))
                         LogPrintf("CreateCoinStake : kernel found\n");
 
                     std::vector<valtype> vSolutions;
@@ -3943,10 +3986,10 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                         break;
                     }
 
-                    if (fDebug && GetBoolArg("-printcoinstake", false))
+                    if (GetBoolArg("-printcoinstake", false))
                         LogPrintf("CreateCoinStake : parsed kernel type=%d\n", whichType);
                     if (whichType != TX_PUBKEY && whichType != TX_PUBKEYHASH) {
-                        if (fDebug && GetBoolArg("-printcoinstake", false))
+                        if (GetBoolArg("-printcoinstake", false))
                             LogPrintf("CreateCoinStake : no support for kernel type=%d\n", whichType);
                         break; // only support pay to public key and pay to address
                     }
@@ -3955,7 +3998,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                         //convert to pay to public key type
                         CKey key;
                         if (!keystore.GetKey(uint160(vSolutions[0]), key)) {
-                            if (fDebug && GetBoolArg("-printcoinstake", false))
+                            if (GetBoolArg("-printcoinstake", false))
                                 LogPrintf("CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
                             break; // unable to find corresponding public key
                         }
@@ -4000,7 +4043,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                     std::copy(txPubStaking.begin(), txPubStaking.end(), std::back_inserter(outStaking.txPub));
                     txNew.vout.push_back(outStaking);
                     //the staking process for the moment only accept one UTXO as staking coin
-                    if (fDebug && GetBoolArg("-printcoinstake", false))
+                    if (GetBoolArg("-printcoinstake", false))
                         LogPrintf("CreateCoinStake : added kernel type=%d\n", whichType);
                     fKernelFound = true;
                     break;

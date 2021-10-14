@@ -121,14 +121,9 @@ std::string strBudgetMode = "";
 
 std::map<std::string, std::string> mapArgs;
 std::map<std::string, std::vector<std::string> > mapMultiArgs;
-bool fDebug = false;
-bool fPrintToConsole = false;
-bool fPrintToDebugLog = true;
+
 bool fDaemon = false;
 std::string strMiscWarning;
-bool fLogTimestamps = false;
-bool fLogIPs = false;
-volatile bool fReopenDebugLog = false;
 
 /** Init OpenSSL library multithreading support */
 static RecursiveMutex** ppmutexOpenSSL;
@@ -180,74 +175,6 @@ public:
     }
 } instance_of_cinit;
 
-/**
- * LogPrintf() has been broken a couple of times now
- * by well-meaning people adding mutexes in the most straightforward way.
- * It breaks because it may be called by global destructors during shutdown.
- * Since the order of destruction of static/global objects is undefined,
- * defining a mutex as a global object doesn't work (the mutex gets
- * destroyed, and then some later destructor calls OutputDebugStringF,
- * maybe indirectly, and you get a core dump at shutdown trying to lock
- * the mutex).
- */
-
-static boost::once_flag debugPrintInitFlag = BOOST_ONCE_INIT;
-/**
- * We use boost::call_once() to make sure these are initialized
- * in a thread-safe manner the first time called:
- */
-static FILE* fileout = NULL;
-static boost::mutex* mutexDebugLog = NULL;
-
-static void DebugPrintInit()
-{
-    assert(fileout == NULL);
-    assert(mutexDebugLog == NULL);
-
-    fs::path pathDebug = GetDataDir() / "debug.log";
-    fileout = fsbridge::fopen(pathDebug, "a");
-    if (fileout) setbuf(fileout, NULL); // unbuffered
-
-    mutexDebugLog = new boost::mutex();
-}
-
-bool LogAcceptCategory(const char* category)
-{
-    if (category != NULL) {
-        if (!fDebug)
-            return false;
-
-        // Give each thread quick access to -debug settings.
-        // This helps prevent issues debugging global destructors,
-        // where mapMultiArgs might be deleted before another
-        // global destructor calls LogPrint()
-        static boost::thread_specific_ptr<std::set<std::string> > ptrCategory;
-        if (ptrCategory.get() == NULL) {
-            const std::vector<std::string>& categories = mapMultiArgs["-debug"];
-            ptrCategory.reset(new std::set<std::string>(categories.begin(), categories.end()));
-            // thread_specific_ptr automatically deletes the set when the thread ends.
-            // "prcycoin" is a composite category enabling all PRCY-related debug output
-            if (ptrCategory->count(std::string("prcycoin"))) {
-                ptrCategory->insert(std::string("obfuscation"));
-                ptrCategory->insert(std::string("swiftx"));
-                ptrCategory->insert(std::string("masternode"));
-                ptrCategory->insert(std::string("mnpayments"));
-                ptrCategory->insert(std::string("poa"));
-                ptrCategory->insert(std::string("mnbudget"));
-                ptrCategory->insert(std::string("staking"));
-                ptrCategory->insert(std::string("autocombine"));
-            }
-        }
-        const std::set<std::string>& setCategories = *ptrCategory.get();
-
-        // if not debugging everything and not debugging specific category, LogPrint does nothing.
-        if (setCategories.count(std::string("")) == 0 &&
-            setCategories.count(std::string(category)) == 0)
-            return false;
-    }
-    return true;
-}
-
 std::string FilterInjection(const std::string& str) 
 {
     //std::cout << "filtering" << std::endl;
@@ -270,45 +197,6 @@ std::string FilterInjection(const std::string& str)
 
     std::string result(char_array);
     return result;
-}
-
-int LogPrintStr(const std::string& str)
-{
-    std::string filteredStr = FilterInjection(str);
-    int ret = 0; // Returns total number of characters written
-    if (fPrintToConsole) {
-        // print to console
-        ret = fwrite(filteredStr.data(), 1, filteredStr.size(), stdout);
-        fflush(stdout);
-    } else if (fPrintToDebugLog && AreBaseParamsConfigured()) {
-        static bool fStartedNewLine = true;
-        boost::call_once(&DebugPrintInit, debugPrintInitFlag);
-
-        if (fileout == NULL)
-            return ret;
-
-        boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
-
-        // reopen the log file, if requested
-        if (fReopenDebugLog) {
-            fReopenDebugLog = false;
-            fs::path pathDebug = GetDataDir() / "debug.log";
-            if (freopen(pathDebug.string().c_str(), "a", fileout) != NULL)
-                setbuf(fileout, NULL); // unbuffered
-        }
-
-        // Debug print useful for profiling
-        if (fLogTimestamps && fStartedNewLine)
-            ret += fprintf(fileout, "%s ", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str());
-        if (!filteredStr.empty() && filteredStr[filteredStr.size() - 1] == '\n')
-            fStartedNewLine = true;
-        else
-            fStartedNewLine = false;
-
-        ret = fwrite(filteredStr.data(), 1, filteredStr.size(), fileout);
-    }
-
-    return ret;
 }
 
 /** Interpret string as boolean, for argument parsing */
@@ -547,6 +435,14 @@ void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet,
     ClearDatadirCache();
 }
 
+fs::path AbsPathForConfigVal(const fs::path& path, bool net_specific)
+{
+    if (path.is_absolute()) {
+        return path;
+    }
+    return fs::absolute(path, GetDataDir(net_specific));
+}
+
 #ifndef WIN32
 fs::path GetPidFile()
 {
@@ -694,27 +590,6 @@ void AllocateFileRange(FILE* file, unsigned int offset, unsigned int length)
         length -= now;
     }
 #endif
-}
-
-void ShrinkDebugFile()
-{
-    // Scroll debug.log if it's getting too big
-    fs::path pathLog = GetDataDir() / "debug.log";
-    FILE* file = fsbridge::fopen(pathLog, "r");
-    if (file && fs::file_size(pathLog) > 10 * 1000000) {
-        // Restart the file with some of the end
-        std::vector<char> vch(200000, 0);
-        fseek(file, -((long)vch.size()), SEEK_END);
-        int nBytes = fread(vch.data(), 1, vch.size(), file);
-        fclose(file);
-
-        file = fsbridge::fopen(pathLog, "w");
-        if (file) {
-            fwrite(vch.data(), 1, nBytes, file);
-            fclose(file);
-        }
-    } else if (file != NULL)
-        fclose(file);
 }
 
 #ifdef WIN32

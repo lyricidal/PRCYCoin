@@ -1017,7 +1017,7 @@ void ThreadFlushWalletDB(const std::string& strFile)
                     boost::this_thread::interruption_point();
                     std::map<std::string, int>::iterator mi = bitdb.mapFileUseCount.find(strFile);
                     if (mi != bitdb.mapFileUseCount.end()) {
-                        LogPrint("db", "Flushing wallet.dat\n");
+                        LogPrint(BCLog::DB, "Flushing wallet.dat\n");
                         nLastFlushed = nWalletDBUpdated;
                         int64_t nStart = GetTimeMillis();
 
@@ -1026,7 +1026,7 @@ void ThreadFlushWalletDB(const std::string& strFile)
                         bitdb.CheckpointLSN(strFile);
 
                         bitdb.mapFileUseCount.erase(mi++);
-                        LogPrint("db", "Flushed wallet.dat %dms\n", GetTimeMillis() - nStart);
+                        LogPrint(BCLog::DB, "Flushed wallet.dat %dms\n", GetTimeMillis() - nStart);
                     }
                 }
             }
@@ -1145,6 +1145,10 @@ bool AttemptBackupWallet(const CWallet& wallet, const fs::path& pathSrc, const f
 {
     bool retStatus;
     try {
+        if (fs::equivalent(pathSrc, pathDest)) {
+            LogPrintf("cannot backup to wallet source file %s\n", pathDest.string());
+            return false;
+        }
 #if BOOST_VERSION >= 105800 /* BOOST_LIB_VERSION 1_58 */
         fs::copy_file(pathSrc, pathDest, fs::copy_option::overwrite_if_exists);
 #else

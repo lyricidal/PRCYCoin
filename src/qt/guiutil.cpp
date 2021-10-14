@@ -78,6 +78,16 @@ extern double NSAppKitVersionNumber;
 
 #define URI_SCHEME "prcycoin"
 
+#if defined(Q_OS_MAC)
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+
+#include <CoreServices/CoreServices.h>
+#include <QProcess>
+
+void ForceActivation();
+#endif
+
 namespace GUIUtil
 {
 QString dateTimeStr(const QDateTime& date)
@@ -337,40 +347,63 @@ bool isObscured(QWidget* w)
     return !(checkPoint(QPoint(0, 0), w) && checkPoint(QPoint(w->width() - 1, 0), w) && checkPoint(QPoint(0, w->height() - 1), w) && checkPoint(QPoint(w->width() - 1, w->height() - 1), w) && checkPoint(QPoint(w->width() / 2, w->height() / 2), w));
 }
 
-void openDebugLogfile()
+void bringToFront(QWidget* w)
 {
-    fs::path pathDebug = GetDataDir() / "debug.log";
+#ifdef Q_OS_MAC
+     ForceActivation();
+#endif
 
-    /* Open debug.log with the associated application */
-    if (fs::exists(pathDebug))
-        QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathDebug)));
+    if (w) {
+        // activateWindow() (sometimes) helps with keyboard focus on Windows
+        if (w->isMinimized()) {
+            w->showNormal();
+        } else {
+            w->show();
+        }
+        w->activateWindow();
+        w->raise();
+    }
 }
 
-void openConfigfile()
+/* Open file with the associated application */
+bool openFile(fs::path path, bool isTextFile)
 {
-    fs::path pathConfig = GetConfigFile();
-
-    /* Open prcycoin.conf with the associated application */
-    if (fs::exists(pathConfig))
-        QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathConfig)));
+    bool ret = false;
+    if (fs::exists(path)) {
+        ret = QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(path)));
+#ifdef Q_OS_MAC
+        // Workaround for macOS-specific behavior; see btc@15409.
+        if (isTextFile && !ret) {
+            ret = QProcess::startDetached("/usr/bin/open", QStringList{"-t", boostPathToQString(path)});
+        }
+#endif
+    }
+    return ret;
 }
 
-void openMNConfigfile()
+bool openDebugLogfile()
 {
-    fs::path pathConfig = GetMasternodeConfigFile();
-
-    /* Open masternode.conf with the associated application */
-    if (fs::exists(pathConfig))
-        QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathConfig)));
+    return openFile(GetDataDir() / "debug.log", true);
 }
 
-void showDataDir()
+bool openConfigfile()
 {
-    fs::path pathBackups = GetDataDir();
+    return openFile(GetConfigFile(), true);
+}
+
+bool openMNConfigfile()
+{
+    return openFile(GetMasternodeConfigFile(), true);
+}
+
+bool showDataDir()
+{
+    fs::path pathDataDir = GetDataDir();
 
     /* Open folder with default browser */
-    if (fs::exists(pathBackups))
-        QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathBackups)));
+    if (fs::exists(pathDataDir))
+        return QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathDataDir)));
+    return false;
 }
 
 void showQtDir()
@@ -379,13 +412,9 @@ void showQtDir()
     QDesktopServices::openUrl(QUrl(pathQt, QUrl::TolerantMode));
 }
 
-void showBackups()
+bool showBackups()
 {
-    fs::path pathBackups = GetDataDir() / "backups";
-
-    /* Open folder with default browser */
-    if (fs::exists(pathBackups))
-        QDesktopServices::openUrl(QUrl::fromLocalFile(boostPathToQString(pathBackups)));
+    return openFile(GetDataDir() / "backups", false);
 }
 
 void SubstituteFonts(const QString& language)
@@ -710,12 +739,7 @@ bool SetStartOnSystemStartup(bool fAutoStart)
 
 
 #elif defined(Q_OS_MAC)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
 // based on: https://github.com/Mozketo/LaunchAtLoginController/blob/master/LaunchAtLoginController.m
-
-#include <CoreFoundation/CoreFoundation.h>
-#include <CoreServices/CoreServices.h>
 
 LSSharedFileListItemRef findStartupItemInList(LSSharedFileListRef list, CFURLRef findUrl);
 LSSharedFileListItemRef findStartupItemInList(LSSharedFileListRef list, CFURLRef findUrl)
