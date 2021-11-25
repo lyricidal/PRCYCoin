@@ -436,7 +436,7 @@ bool OptionsPage::matchNewPasswords()
 
 void OptionsPage::on_EnableStaking(ToggleButton* widget)
 {
-    if (!masternodeSync.IsSynced()) {
+    if (!masternodeSync.IsSynced() && !widget->getState()) {
         QMessageBox msgBox;
         msgBox.setWindowTitle("Staking Disabled - Syncing Masternode list");
         msgBox.setText("Enable Staking is disabled when you are still syncing the Masternode list as this is required. Please allow the wallet to fully sync this list before attempting to Enable Staking.");
