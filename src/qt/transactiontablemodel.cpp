@@ -291,6 +291,7 @@ TransactionTableModel::TransactionTableModel(CWallet* wallet, WalletModel* paren
     priv->refreshWallet();
 
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
+    connect(walletModel, SIGNAL(WalletUnlocked()), this, SLOT(priv->refreshWallet()));
 
     subscribeToCoreSignals();
 }
