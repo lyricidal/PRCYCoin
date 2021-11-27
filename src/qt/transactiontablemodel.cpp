@@ -83,7 +83,9 @@ public:
      */
     void refreshWallet()
         {
+            LogPrintf("%s: Before Unlocked\n", __func__);
             if (wallet->IsLocked()) return;
+            LogPrintf("%s: After Unlocked\n", __func__);
             cachedWallet.clear();
             //Use defined values
             int customThreadLimit = SINGLE_THREAD_MAX_TXES_SIZE;
