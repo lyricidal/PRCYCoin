@@ -99,6 +99,7 @@ private:
     QVariant txAddressDecoration(const TransactionRecord* wtx) const;
 
 public Q_SLOTS:
+    void updateWallet();
     /* New transaction, or transaction changed status */
     void updateTransaction(const QString& hash, int status, bool showTransaction);
     void updateConfirmations();

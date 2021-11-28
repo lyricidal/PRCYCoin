@@ -290,12 +290,15 @@ TransactionTableModel::TransactionTableModel(CWallet* wallet, WalletModel* paren
                                                                                      fProcessingQueuedTransactions(false)
 {
     columns << QString() << QString() << tr("Date") << tr("Type") << tr("Address") << BitcoinUnits::getAmountColumnTitle(walletModel->getOptionsModel()->getDisplayUnit()) << tr("Confirmations");
-    priv->refreshWallet();
 
     connect(walletModel->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
-    connect(walletModel, SIGNAL(WalletUnlocked()), this, SLOT(priv->refreshWallet()));
+    connect(walletModel, SIGNAL(WalletUnlocked()), this, SLOT(updateWallet()));
 
     subscribeToCoreSignals();
+}
+void TransactionTableModel::updateWallet()
+{
+    priv->refreshWallet();
 }
 
 TransactionTableModel::~TransactionTableModel()
