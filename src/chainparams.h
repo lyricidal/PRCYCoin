@@ -12,6 +12,7 @@
 
 #include "chainparamsbase.h"
 #include "checkpoints.h"
+#include "consensus/params.h"
 #include "primitives/block.h"
 #include "protocol.h"
 #include "uint256.h"
@@ -51,11 +52,12 @@ public:
         MAX_BASE58_TYPES
     };
 
-    const uint256& HashGenesisBlock() const { return hashGenesisBlock; }
+    const Consensus::Params& GetConsensus() const { return consensus; }
     const MessageStartChars& MessageStart() const { return pchMessageStart; }
     int GetDefaultPort() const { return nDefaultPort; }
     const uint256& ProofOfWorkLimit() const { return bnProofOfWorkLimit; }
-    int SubsidyHalvingInterval() const { return nSubsidyHalvingInterval; }
+
+    const CBlock& GenesisBlock() const { return genesis; }
     /** Used to check majorities for block version upgrade */
     int EnforceBlockUpgradeMajority() const { return nEnforceBlockUpgradeMajority; }
     int RejectBlockOutdatedMajority() const { return nRejectBlockOutdatedMajority; }
@@ -64,7 +66,6 @@ public:
 
     /** Used if GeneratePrcycoins is called with a negative number of threads */
     int DefaultMinerThreads() const { return nMinerThreads; }
-    const CBlock& GenesisBlock() const { return genesis; }
     bool RequireRPCPassword() const { return fRequireRPCPassword; }
     /** Make miner wait to have peers to avoid wasting work */
     bool MiningRequiresPeers() const { return fMiningRequiresPeers; }
@@ -81,7 +82,6 @@ public:
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetSpacing() const { return nTargetSpacing; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
-    int COINBASE_MATURITY() const { return nMaturity; }
     CAmount MNCollateralAmt() const { return nMNCollateralAmt; }
     CAmount MinimumStakeAmount() const { return nMinimumStakeAmount; }
     /** The masternode count that we will allow the see-saw reward payments to be off by */
@@ -113,7 +113,6 @@ public:
     int PoAFixTime() const { return nPoAFixTime;}
     int PoAPaddingBlock() const { return nPoAPaddingBlock;}
     int PoAPadding() const { return nPoAPadding;}
-    int BIP65ActivationHeight() const { return nBIP65ActivationHeight; }
     int HardFork() const { return nHardForkBlock;}
 
     //For PoA block time
@@ -126,14 +125,13 @@ public:
 protected:
     CChainParams() {}
 
-    uint256 hashGenesisBlock;
+    Consensus::Params consensus;
     MessageStartChars pchMessageStart;
     //! Raw pub key bytes for the broadcast alert signing key.
     int nDefaultPort;
     int nExtCoinType;
     uint256 bnProofOfWorkLimit;
     mutable int nMaxReorganizationDepth;
-    int nSubsidyHalvingInterval;
     int nEnforceBlockUpgradeMajority;
     int nRejectBlockOutdatedMajority;
     int nToCheckBlockUpgradeMajority;
@@ -171,7 +169,6 @@ protected:
     std::string strObfuscationPoolDummyAddress;
     int64_t nStartMasternodePayments;
     int64_t nBudget_Fee_Confirmations;
-    int nBIP65ActivationHeight;
 
     //For PoA blocks
     int nPoABlockTime;

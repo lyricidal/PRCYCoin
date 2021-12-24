@@ -2156,7 +2156,7 @@ bool CWallet::SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int
             continue;
 
         //check that it is matured
-        if (out.nDepth < (out.tx->IsCoinStake() ? Params().COINBASE_MATURITY() : 10))
+        if (out.nDepth < (out.tx->IsCoinStake() ? Params().GetConsensus().CoinbaseMaturity() : 10))
             continue;
 
         //add to our stake set
@@ -3604,7 +3604,7 @@ bool CWallet::selectDecoysAndRealIndex(CTransaction& tx, int& myIndex, int ringS
 {
     LogPrintf("Selecting coinbase decoys for transaction\n");
     if (coinbaseDecoysPool.size() <= 100) {
-        for (int i = chainActive.Height() - Params().COINBASE_MATURITY(); i > 0; i--) {
+        for (int i = chainActive.Height() - Params().GetConsensus().CoinbaseMaturity(); i > 0; i--) {
             if (coinbaseDecoysPool.size() > 100) break;
             CBlockIndex* p = chainActive[i];
             CBlock b;
@@ -3924,7 +3924,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
                 //check that it is matured
 
-                if (out.nDepth < (out.tx->IsCoinStake() ? Params().COINBASE_MATURITY() : 10))
+                if (out.nDepth < (out.tx->IsCoinStake() ? Params().GetConsensus().CoinbaseMaturity() : 10))
                     continue;
 
                 {
@@ -5465,7 +5465,7 @@ bool CWallet::MultiSend()
     bool mnSent = false;
     for (const COutput& out : vCoins) {
         //need output with precise confirm count - this is how we identify which is the output to send
-        if (out.tx->GetDepthInMainChain() != Params().COINBASE_MATURITY() + 1)
+        if (out.tx->GetDepthInMainChain() != Params().GetConsensus().CoinbaseMaturity() + 1)
             continue;
 
         COutPoint outpoint(out.tx->GetHash(), out.i);
@@ -5664,7 +5664,7 @@ int CMerkleTx::GetBlocksToMaturity() const
     LOCK(cs_main);
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
-    return std::max(0, (Params().COINBASE_MATURITY() + 1) - GetDepthInMainChain());
+    return std::max(0, (Params().GetConsensus().CoinbaseMaturity() + 1) - GetDepthInMainChain());
 }
 
 bool CMerkleTx::IsInMainChain() const
@@ -5676,7 +5676,7 @@ bool CMerkleTx::IsInMainChainImmature() const
 {
     if (!IsCoinBase() && !IsCoinStake()) return false;
     const int depth = GetDepthInMainChain(false);
-    return (depth > 0 && depth <= Params().COINBASE_MATURITY());
+    return (depth > 0 && depth <= Params().GetConsensus().CoinbaseMaturity());
 }
 
 bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)

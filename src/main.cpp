@@ -1477,7 +1477,7 @@ bool CheckHaveInputs(const CCoinsViewCache& view, const CTransaction& tx)
 
                 if (mapBlockIndex.count(bh) < 1) return false;
                 if (prev.IsCoinStake() || prev.IsCoinAudit() || prev.IsCoinBase()) {
-                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY()) return false;
+                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().GetConsensus().CoinbaseMaturity()) return false;
                 }
 
                 CBlockIndex* tip = chainActive.Tip();
@@ -1654,7 +1654,7 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
             }
         }
 
-        bool fCLTVIsActivated = chainActive.Tip()->nHeight >= Params().BIP65ActivationHeight();
+        bool fCLTVIsActivated = chainActive.Tip()->nHeight >= Params().GetConsensus().BIP65Height;
 
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
@@ -1865,7 +1865,7 @@ bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransact
                 hash.ToString(),
                 nFees, ::minRelayTxFee.GetFee(nSize) * 10000);
 
-        bool fCLTVIsActivated = chainActive.Tip()->nHeight >= Params().BIP65ActivationHeight();
+        bool fCLTVIsActivated = chainActive.Tip()->nHeight >= Params().GetConsensus().BIP65Height;
 
         // Check against previous transactions
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
@@ -2642,7 +2642,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
 
                 // If prev is coinbase, check that it's matured
                 if (prev.IsCoinBase() || prev.IsCoinStake()) {
-                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY())
+                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().GetConsensus().CoinbaseMaturity())
                         return state.Invalid(
                             error("CheckInputs() : tried to spend coinbase at depth %d, coinstake=%d",
                                 nSpendHeight - mapBlockIndex[bh]->nHeight, prev.IsCoinStake()),
@@ -2995,8 +2995,9 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     assert(hashPrevBlock == view.GetBestBlock());
     // Special case for the genesis block, skipping connection of its transactions
     // (its coinbase is unspendable)
-    if (block.GetHash() == Params().HashGenesisBlock()) {
-        view.SetBestBlock(pindex->GetBlockHash());
+    if (block.GetHash() == Params().GetConsensus().hashGenesisBlock) {
+        if (!fJustCheck)
+            view.SetBestBlock(pindex->GetBlockHash());
         return true;
     }
     int nHeight = pindex->nHeight;
@@ -3013,7 +3014,7 @@ bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pin
     // If scripts won't be checked anyways, don't bother seeing if CLTV is activated
     bool fCLTVIsActivated = false;
     if (fScriptChecks && pindex->pprev) {
-        fCLTVIsActivated = pindex->pprev->nHeight >= Params().BIP65ActivationHeight();
+        fCLTVIsActivated = pindex->pprev->nHeight >= Params().GetConsensus().BIP65Height;
     }
 
     CCheckQueueControl<CScriptCheck> control(fScriptChecks && nScriptCheckThreads ? &scriptcheckqueue : NULL);
@@ -4287,7 +4288,7 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
 {
     uint256 hash = block.GetHash();
 
-    if (hash == Params().HashGenesisBlock())
+    if (hash == Params().GetConsensus().hashGenesisBlock)
         return true;
 
     assert(pindexPrev);
@@ -4412,7 +4413,7 @@ bool AcceptBlockHeader(const CBlock& block, CValidationState& state, CBlockIndex
     }
     // Get prev block index
     CBlockIndex* pindexPrev = NULL;
-    if (hash != Params().HashGenesisBlock()) {
+    if (hash != Params().GetConsensus().hashGenesisBlock) {
         BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
         if (mi == mapBlockIndex.end())
             return state.DoS(0, error("%s : prev block %s not found", __func__, block.hashPrevBlock.ToString().c_str()),
@@ -4459,7 +4460,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
     CBlockIndex*& pindex = *ppindex;
     // Get prev block index
     CBlockIndex* pindexPrev = NULL;
-    if (block.GetHash() != Params().HashGenesisBlock()) {
+    if (block.GetHash() != Params().GetConsensus().hashGenesisBlock) {
         BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
         if (mi == mapBlockIndex.end() || mi->second == NULL)
             return state.DoS(0, error("%s : prev block %s not found", __func__, block.hashPrevBlock.ToString().c_str()),
@@ -4481,7 +4482,7 @@ bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** ppindex, 
                 REJECT_INVALID, "bad-prevblk");
         }
     }
-    if (block.GetHash() != Params().HashGenesisBlock() && !CheckWork(block, pindexPrev)) {
+    if (block.GetHash() != Params().GetConsensus().hashGenesisBlock && !CheckWork(block, pindexPrev)) {
         return false;
     }
     if (!AcceptBlockHeader(block, state, &pindex))
@@ -4602,7 +4603,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
     if (!pblock->IsPoABlockByVersion() && !pblock->CheckBlockSignature())
         return error("ProcessNewBlock() : bad proof-of-stake block signature");
 
-    if (pblock->GetHash() != Params().HashGenesisBlock() && pfrom != NULL) {
+    if (pblock->GetHash() != Params().GetConsensus().hashGenesisBlock && pfrom != NULL) {
         //if we get this far, check if the prev block is our prev block, if not then request sync and return false
         BlockMap::iterator mi = mapBlockIndex.find(pblock->hashPrevBlock);
         if (mi == mapBlockIndex.end() || (mi != mapBlockIndex.end() && mi->second == NULL)) {
@@ -4718,9 +4719,9 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
                 }
             }
 
-            if (chainActive.Height() > Params().COINBASE_MATURITY()) {
-                //read block chainActive.Height() - Params().COINBASE_MATURITY()
-                CBlockIndex* p = chainActive[chainActive.Height() - Params().COINBASE_MATURITY()];
+            if (chainActive.Height() > Params().GetConsensus().CoinbaseMaturity()) {
+                //read block chainActive.Height() - Params().GetConsensus().CoinbaseMaturity()
+                CBlockIndex* p = chainActive[chainActive.Height() - Params().GetConsensus().CoinbaseMaturity()];
                 CBlock b;
                 if (ReadBlockFromDisk(b, p)) {
                     coinbaseIdx = 0;
@@ -5161,7 +5162,7 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos* dbp)
 
                 // detect out of order blocks, and store them for later
                 uint256 hash = block.GetHash();
-                if (hash != Params().HashGenesisBlock() &&
+                if (hash != Params().GetConsensus().hashGenesisBlock &&
                     mapBlockIndex.find(block.hashPrevBlock) == mapBlockIndex.end()) {
                     LogPrint(BCLog::REINDEX, "%s: Out of order block %s, parent %s not known\n", __func__,
                             hash.GetHex(), block.hashPrevBlock.GetHex());
@@ -5177,7 +5178,7 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos* dbp)
                         nLoaded++;
                     if (state.IsError())
                         break;
-                } else if (hash != Params().HashGenesisBlock() && mapBlockIndex[hash]->nHeight % 1000 == 0) {
+                } else if (hash != Params().GetConsensus().hashGenesisBlock && mapBlockIndex[hash]->nHeight % 1000 == 0) {
                     LogPrintf("Block Import: already had block %s at height %d\n", hash.ToString(),
                         mapBlockIndex[hash]->nHeight);
                 }
@@ -5275,7 +5276,7 @@ void static CheckBlockIndex()
         // Begin: actual consistency checks.
         if (pindex->pprev == NULL) {
             // Genesis block checks.
-            assert(pindex->GetBlockHash() == Params().HashGenesisBlock()); // Genesis block's hash must match.
+            assert(pindex->GetBlockHash() == Params().GetConsensus().hashGenesisBlock); // Genesis block's hash must match.
             assert(pindex ==
                    chainActive.Genesis()); // The current active chain's genesis block must be this block.
         }

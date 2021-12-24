@@ -151,6 +151,7 @@ HEADERS += src/activemasternode.h \
            src/consensus/consensus.h \
            src/consensus/validation.h \
            src/consensus/tx_verify.h \
+           src/consensus/params.h \
            src/compat/sanity.h \
            src/config/prcycoin-config.h \
            src/crypto/common.h \

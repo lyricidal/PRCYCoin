@@ -8,14 +8,52 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chainparams.h"
-
-#include "chainparamsseeds.h"
 #include "util.h"
 #include "utilstrencodings.h"
 
+#include <assert.h>
+
 #include <boost/assign/list_of.hpp>
 
-#include <assert.h>
+#include "chainparamsseeds.h"
+
+static CBlock CreateGenesisBlock(const char* pszTimestamp, const CScript& genesisOutputScript, uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+{
+    CMutableTransaction txNew;
+    txNew.nVersion = 1;
+    txNew.vin.resize(1);
+    txNew.vout.resize(1);
+    txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
+    txNew.vout[0].nValue = genesisReward;
+    txNew.vout[0].scriptPubKey = genesisOutputScript;
+
+    CBlock genesis;
+    genesis.vtx.push_back(txNew);
+    genesis.hashPrevBlock = 0;
+    genesis.nVersion = nVersion;
+    genesis.nTime    = nTime;
+    genesis.nBits    = nBits;
+    genesis.nNonce   = nNonce;
+    genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
+    return genesis;
+}
+
+/**
+ * Build the genesis block. Note that the output of the genesis coinbase cannot
+ * be spent as it did not originally exist in the database.
+ *
+ * CBlock(hash=00000ffd590b14, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=e0028e, nTime=1390095618, nBits=1e0ffff0, nNonce=28917698, vtx=1)
+ *   CTransaction(hash=e0028e, ver=1, vin.size=1, vout.size=1, nLockTime=0)
+ *     CTxIn(COutPoint(000000, -1), coinbase 04ffff001d01044c5957697265642030392f4a616e2f3230313420546865204772616e64204578706572696d656e7420476f6573204c6976653a204f76657273746f636b2e636f6d204973204e6f7720416363657074696e6720426974636f696e73)
+ *     CTxOut(nValue=50.00000000, scriptPubKey=0xA9037BAC7050C479B121CF)
+ *   vMerkleTree: e0028e
+ */
+static CBlock CreateGenesisBlock(uint32_t nTime, uint32_t nNonce, uint32_t nBits, int32_t nVersion, const CAmount& genesisReward)
+{
+    const char* pszTimestamp = "12 January 2021 PRCY Coin Development Team - Privacy is Your Right";
+    const CScript genesisOutputScript = CScript() << ParseHex("04b78f63269234b741668d85b57ba11edec2ee20f15719db180d5d6a37c4e9db0c494390fb54925934bc7b29f148a372c00273bbd5c939830d7d2941de6ce44b8b") << OP_CHECKSIG;
+    return CreateGenesisBlock(pszTimestamp, genesisOutputScript, nTime, nNonce, nBits, nVersion, genesisReward);
+}
 
 /**
  * Main network
@@ -90,6 +128,20 @@ public:
     {
         networkID = CBaseChainParams::MAIN;
         strNetworkID = "main";
+
+        consensus.BIP65Height = 125000; // Last v3 block was 124712, leave a bit of padding
+        consensus.nCoinbaseMaturity = 100;
+        consensus.nTargetTimespan = 1 * 60;
+        consensus.nTargetSpacing = 1 * 60;
+        consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.fPowNoRetargeting = false;
+
+        // The best chain should have at least this much work.
+        consensus.nMinimumChainWork = uint256S("0000000000000000000000000000000000000000000000000000000000000000");
+
+        // By default assume that the signatures in ancestors of this block are valid.
+        consensus.defaultAssumeValid = uint256S("0000000000000000000000000000000000000000000000000000000000000000");
+
         /**
          * The message start string is designed to be unlikely to occur in normal data.
          * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
@@ -101,15 +153,19 @@ public:
         pchMessageStart[3] = 0x90;
         nDefaultPort = 59682;
         bnProofOfWorkLimit = ~uint256(0) >> 1; // PRCYcoin starting difficulty is 1 / 2^12
-        nSubsidyHalvingInterval = 210000;
         nMaxReorganizationDepth = 100;
+
+        genesis = CreateGenesisBlock(1610409600, 28141687, 0x1e0ffff0, 1, 0 * COIN);
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256("000006957e238ff4e6bcf00c8a7d1b3e7249c0a2109b0391d8740821a40c1d8c"));
+        assert(genesis.hashMerkleRoot == uint256("cd01f1ca20c22b336f1ee83af9fd8b7facbf42083bf3bed49af045f5cadc9cd4"));
+
         nEnforceBlockUpgradeMajority = 8100; // 75%
         nRejectBlockOutdatedMajority = 10260; // 95%
         nToCheckBlockUpgradeMajority = 10800; // Approximate expected amount of blocks in 7 days (1440*7.5)
         nMinerThreads = 0;
         nTargetTimespan = 1 * 60; // PRCYcoin: 1 day
         nTargetSpacing = 1 * 60;  // PRCYcoin: 1 minute
-        nMaturity = 100;
         nMasternodeCountDrift = 20;
         nMNCollateralAmt = 5000 * COIN;
         nMinimumStakeAmount = 2500 * COIN;
@@ -123,72 +179,10 @@ public:
         nMaxNumPoSBlocks = 65;
         nSoftForkBlock = 120000; // Soft fork block for difficulty change
         nPoANewDiff = 150000; // New PoA difficulty
-        nBIP65ActivationHeight = 125000; // Last v3 block was 124712, leave a bit of padding
         nPoAFixTime = 1616716800; // Fork time for PoA fix - Friday, March 26, 2021 12:00:00 AM (GMT)
         nPoAPaddingBlock = 169869; // Last block with 120 PoS blocks in a PoA Audit
         nPoAPadding = 10; // Current PoA Padding
         nHardForkBlock = 375000; // Add hard fork block for Consensus/PoA Padding
-
-        /**
-         * Build the genesis block. Note that the output of the genesis coinbase cannot
-         * be spent as it did not originally exist in the database.
-         *
-         * CBlock(hash=00000ffd590b14, ver=1, hashPrevBlock=00000000000000, hashMerkleRoot=e0028e, nTime=1390095618, nBits=1e0ffff0, nNonce=28917698, vtx=1)
-         *   CTransaction(hash=e0028e, ver=1, vin.size=1, vout.size=1, nLockTime=0)
-         *     CTxIn(COutPoint(000000, -1), coinbase 04ffff001d01044c5957697265642030392f4a616e2f3230313420546865204772616e64204578706572696d656e7420476f6573204c6976653a204f76657273746f636b2e636f6d204973204e6f7720416363657074696e6720426974636f696e73)
-         *     CTxOut(nValue=50.00000000, scriptPubKey=0xA9037BAC7050C479B121CF)
-         *   vMerkleTree: e0028e
-         */
-        const char* pszTimestamp = "12 January 2021 PRCY Coin Development Team - Privacy is Your Right";
-        CMutableTransaction txNew;
-        txNew.vin.resize(1);
-        txNew.vout.resize(1);
-        txNew.vin[0].scriptSig = CScript() << 486604799 << CScriptNum(4) << std::vector<unsigned char>((const unsigned char*)pszTimestamp, (const unsigned char*)pszTimestamp + strlen(pszTimestamp));
-        txNew.vout[0].nValue = 0 * COIN;
-        txNew.vout[0].scriptPubKey = CScript() << ParseHex("04b78f63269234b741668d85b57ba11edec2ee20f15719db180d5d6a37c4e9db0c494390fb54925934bc7b29f148a372c00273bbd5c939830d7d2941de6ce44b8b") << OP_CHECKSIG;
-        genesis.vtx.push_back(txNew);
-        genesis.hashPrevBlock = 0;
-        genesis.hashMerkleRoot = genesis.BuildMerkleTree();
-        genesis.nVersion = 1;
-        genesis.nTime = 1610409600; // 1/12/2021 @ 12:00am (GMT)
-        genesis.nBits = 0x1e0ffff0;
-        genesis.nNonce = 28141687;
-
-        //change blockhash from 0x00000e9468bba3df97334bfb5015543488a0fb38193c82b101472937590e3037 because of transaction structure change
-        if(genesis.GetHash()!=uint256("000006957e238ff4e6bcf00c8a7d1b3e7249c0a2109b0391d8740821a40c1d8c"))
-        {
-            printf("Searchingforgenesisblock...\n");
-            uint256 hashTarget=uint256().SetCompact(genesis.nBits);
-
-            printf("hashTarget:%s\n",hashTarget.ToString().c_str());
-
-            while(uint256(genesis.GetHash())>hashTarget)
-            {
-                printf("loop:%s\n",genesis.GetHash().ToString().c_str());
-                ++genesis.nNonce;
-                if(genesis.nNonce==0)
-                {
-                    printf("NONCEWRAPPED,incrementingtime");
-                    std::cout<<std::string("NONCEWRAPPED,incrementingtime:\n");
-                    ++genesis.nTime;
-                }
-                if(genesis.nNonce%10000==0)
-                {
-                    printf("Mainnet:nonce%08u:hash=%s\n",genesis.nNonce,genesis.GetHash().ToString().c_str());
-                }
-            }
-            printf("block.nTime=%u\n",genesis.nTime);
-            printf("block.nNonce=%u\n",genesis.nNonce);
-            printf("block.GetHash=%s\n",genesis.GetHash().ToString().c_str());
-            printf("hashMerkleRoot=%s\n",genesis.hashMerkleRoot.ToString().c_str());
-
-        }
-
-
-
-        hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256("000006957e238ff4e6bcf00c8a7d1b3e7249c0a2109b0391d8740821a40c1d8c"));
-        assert(genesis.hashMerkleRoot == uint256("cd01f1ca20c22b336f1ee83af9fd8b7facbf42083bf3bed49af045f5cadc9cd4"));
 
         // nodes with support for servicebits filtering should be at the top
         vSeeds.push_back(CDNSSeedData("seed.prcycoin.com", "seed.prcycoin.com"));          // Single node address
@@ -254,11 +248,37 @@ public:
     {
         networkID = CBaseChainParams::TESTNET;
         strNetworkID = "test";
+
+        consensus.BIP65Height = 0; // Testnet started with BIP65
+        consensus.nCoinbaseMaturity = 15;
+        consensus.nTargetTimespan = 1 * 60;
+        consensus.nTargetSpacing = 1 * 60;
+        consensus.fPowAllowMinDifficultyBlocks = false;
+        consensus.fPowNoRetargeting = false;
+
+        // The best chain should have at least this much work.
+        consensus.nMinimumChainWork = uint256S("0000000000000000000000000000000000000000000000000000000000000000");
+
+        // By default assume that the signatures in ancestors of this block are valid.
+        consensus.defaultAssumeValid = uint256S("0000000000000000000000000000000000000000000000000000000000000000");
+
+        /**
+         * The message start string is designed to be unlikely to occur in normal data.
+         * The characters are rarely used upper ASCII, not valid as UTF-8, and produce
+         * a large 4-byte int at any alignment.
+         */
+
         pchMessageStart[0] = 0xc1;
         pchMessageStart[1] = 0xaa;
         pchMessageStart[2] = 0xb2;
         pchMessageStart[3] = 0xe9;
         nDefaultPort = 59684;
+
+        genesis = CreateGenesisBlock(1608422400, 23323155, 0x1e0ffff0, 1, 0);
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256("0x0000041e482b9b9691d98eefb48473405c0b8ec31b76df3797c74a78680ef818"));
+        assert(genesis.hashMerkleRoot == uint256("0x1b2ef6e2f28be914103a277377ae7729dcd125dfeb8bf97bd5964ba72b6dc39b"));
+
         nEnforceBlockUpgradeMajority = 4320; // 75%
         nRejectBlockOutdatedMajority = 5472; // 95%
         nToCheckBlockUpgradeMajority = 5760; // 4 days
@@ -270,53 +290,15 @@ public:
         nPoABlockTime = 30 * 60;  //1 PoA block every 30 minutes
         nMinNumPoSBlocks = 29;
         nMaxNumPoSBlocks = 33;
-        nMaturity = 15;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT
         nMNCollateralAmt = 5000 * COIN;
         nSoftForkBlock = 600; // Soft fork block for difficulty change - testnet started with it
         nPoANewDiff = 650;
-        nBIP65ActivationHeight = 0;
         nPoAFixTime = 1616277580; // Fork time for PoA fix - Saturday, March 20, 2021 22:00:00 AM (GMT)
         nPoAPaddingBlock = 0;
         nPoAPadding = 5; // Current PoA Padding
         nHardForkBlock = 700; // Add hard fork block for Consensus/PoA Padding
-
-        //! Modify the testnet genesis block so the timestamp is valid for a later start.
-        genesis.nTime = 1608422400;
-        genesis.nNonce = 23323155;
-
-        if(genesis.GetHash()!=uint256("000001488be8bb442cd72cb737ade49a31de90dbbe5dce36f7d7e07f5dde2b77"))
-        {
-            printf("Searchingforgenesisblock...\n");
-            uint256 hashTarget=uint256().SetCompact(genesis.nBits);
-
-            printf("hashTarget:%s\n",hashTarget.ToString().c_str());
-
-            while(uint256(genesis.GetHash())>hashTarget)
-            {
-                printf("loop:%s\n",genesis.GetHash().ToString().c_str());
-                ++genesis.nNonce;
-                if(genesis.nNonce==0)
-                {
-                    printf("NONCEWRAPPED,incrementingtime");
-                    std::cout<<std::string("NONCEWRAPPED,incrementingtime:\n");
-                    ++genesis.nTime;
-                }
-                if(genesis.nNonce%10000==0)
-                {
-                    printf("Mainnet:nonce%08u:hash=%s\n",genesis.nNonce,genesis.GetHash().ToString().c_str());
-                }
-            }
-            printf("block.nTime=%u\n",genesis.nTime);
-            printf("block.nNonce=%u\n",genesis.nNonce);
-            printf("block.GetHash=%s\n",genesis.GetHash().ToString().c_str());
-            printf("hashMerkleRoot=%s\n",genesis.hashMerkleRoot.ToString().c_str());
-
-        }
-
-        hashGenesisBlock = genesis.GetHash();
-        assert(hashGenesisBlock == uint256("000001488be8bb442cd72cb737ade49a31de90dbbe5dce36f7d7e07f5dde2b77"));
 
         vFixedSeeds.clear();
         vSeeds.clear();
@@ -374,51 +356,18 @@ public:
         pchMessageStart[1] = 0xb3;
         pchMessageStart[2] = 0x97;
         pchMessageStart[3] = 0xd1;
-        nSubsidyHalvingInterval = 150;
         nEnforceBlockUpgradeMajority = 750;
         nRejectBlockOutdatedMajority = 950;
         nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 1;
         nTargetTimespan = 24 * 60 * 60; // Prcycoin: 1 day
         nTargetSpacing = 1 * 60;        // Prcycoin: 1 minutes
-        bnProofOfWorkLimit = ~uint256(0) >> 1;
-        genesis.nTime = 1608422399;
-        genesis.nBits = 0x207fffff;
-        genesis.nNonce = 12361;
-
-        if(genesis.GetHash()!=uint256("690cbb5c7ae999de1de49948a3c109d3b15fe4de4297980de8ff0cbfe3c7823a"))
-        {
-            printf("Searchingforgenesisblock...\n");
-            uint256 hashTarget=uint256().SetCompact(genesis.nBits);
-
-            printf("hashTarget:%s\n",hashTarget.ToString().c_str());
-
-            while(uint256(genesis.GetHash())>hashTarget)
-            {
-                printf("loop:%s\n",genesis.GetHash().ToString().c_str());
-                ++genesis.nNonce;
-                if(genesis.nNonce==0)
-                {
-                    printf("NONCEWRAPPED,incrementingtime");
-                    std::cout<<std::string("NONCEWRAPPED,incrementingtime:\n");
-                    ++genesis.nTime;
-                }
-                if(genesis.nNonce%10000==0)
-                {
-                    printf("Mainnet:nonce%08u:hash=%s\n",genesis.nNonce,genesis.GetHash().ToString().c_str());
-                }
-            }
-            printf("block.nTime=%u\n",genesis.nTime);
-            printf("block.nNonce=%u\n",genesis.nNonce);
-            printf("block.GetHash=%s\n",genesis.GetHash().ToString().c_str());
-            printf("hashMerkleRoot=%s\n",genesis.hashMerkleRoot.ToString().c_str());
-
-        }
-
-        hashGenesisBlock = genesis.GetHash();
         nDefaultPort = 51476;
 
-        assert(hashGenesisBlock == uint256("690cbb5c7ae999de1de49948a3c109d3b15fe4de4297980de8ff0cbfe3c7823a"));
+        genesis = CreateGenesisBlock(1608422399, 12361, 0x207fffff, 1, 0 * COIN);
+        consensus.hashGenesisBlock = genesis.GetHash();
+        assert(consensus.hashGenesisBlock == uint256("690cbb5c7ae999de1de49948a3c109d3b15fe4de4297980de8ff0cbfe3c7823a"));
+        assert(genesis.hashMerkleRoot == uint256("0x1b2ef6e2f28be914103a277377ae7729dcd125dfeb8bf97bd5964ba72b6dc39b"));
 
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
         vSeeds.clear();      //! Testnet mode doesn't have any DNS seeds.
