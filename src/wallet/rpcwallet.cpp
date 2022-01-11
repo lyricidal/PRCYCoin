@@ -2077,6 +2077,32 @@ UniValue gettxcount(const UniValue& params, bool fHelp)
     return obj;
 }
 
+UniValue getrewardcount(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw std::runtime_error(
+            "getrewardcount\n"
+            "Returns the total number of reward transactions in the wallet.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"masternode\": xxxxxxx,       (numeric) the total number of masternode rewards in the wallet\n"
+            "  \"mining\": xxxxxxx,           (numeric) the total number of mining rewards in the wallet\n"
+            "  \"staking\": xxxxxxx,          (numeric) the total number of staking transactions in the wallet\n"
+            "  \"total\": xxxxxxx,          (numeric) the total number of staking transactions in the wallet\n"
+            "}\n"
+            "\nExamples:\n" +
+            HelpExampleCli("getrewardcount", "") + HelpExampleRpc("getrewardcount", ""));
+
+    LOCK2(cs_main, pwalletMain->cs_wallet);
+
+    UniValue obj(UniValue::VOBJ);
+    obj.push_back(Pair("masternode", (int)pwalletMain->mapWallet.size()));
+    obj.push_back(Pair("mining", (int)pwalletMain->mapWallet.size()));
+    obj.push_back(Pair("staking", (int)pwalletMain->mapWallet.size()));
+    obj.push_back(Pair("total", (int)pwalletMain->mapWallet.size()));
+    return obj;
+}
+
 // ppcoin: reserve balance from being staked for network protection
 UniValue reservebalance(const UniValue& params, bool fHelp)
 {
