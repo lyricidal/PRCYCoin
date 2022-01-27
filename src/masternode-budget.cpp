@@ -1810,13 +1810,13 @@ void CFinalizedBudget::AutoCheck()
 
         for (unsigned int i = 0; i < vecBudgetPayments.size(); i++) {
             LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - nProp %d %s\n", i, vecBudgetPayments[i].nProposalHash.ToString());
-            LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - Payee %d %s\n", i, vecBudgetPayments[i].payee.ToString());
+            LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - Payee %d %s\n", i, HexStr(vecBudgetPayments[i].payee));
             LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - nAmount %d %lli\n", i, vecBudgetPayments[i].nAmount);
         }
 
         for (unsigned int i = 0; i < vBudgetProposals.size(); i++) {
             LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - nProp %d %s\n", i, vBudgetProposals[i]->GetHash().ToString());
-            LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - Payee %d %s\n", i, vBudgetProposals[i]->GetPayee().ToString());
+            LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - Payee %d %s\n", i, HexStr(vBudgetProposals[i]->GetPayee()));
             LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - nAmount %d %lli\n", i, vBudgetProposals[i]->GetAmount());
         }
 
@@ -1844,8 +1844,8 @@ void CFinalizedBudget::AutoCheck()
             }
 
             // if(vecBudgetPayments[i].payee != vBudgetProposals[i]->GetPayee()){ -- triggered with false positive
-            if (vecBudgetPayments[i].payee.ToString() != vBudgetProposals[i]->GetPayee().ToString()) {
-                LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - item #%d payee doesn't match %s %s\n", i, vecBudgetPayments[i].payee.ToString(), vBudgetProposals[i]->GetPayee().ToString());
+            if (HexStr(vecBudgetPayments[i].payee) != HexStr(vBudgetProposals[i]->GetPayee())) {
+                LogPrint(BCLog::MASTERNODE,"CFinalizedBudget::AutoCheck - item #%d payee doesn't match %s %s\n", i, HexStr(vecBudgetPayments[i].payee), HexStr(vBudgetProposals[i]->GetPayee()));
                 return;
             }
 

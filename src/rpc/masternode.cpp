@@ -649,7 +649,7 @@ UniValue getmasternodestatus (const UniValue& params, bool fHelp)
 
     if (!fMasterNode) throw std::runtime_error("This is not a masternode");
 
-    std::cout << "Vin Script Sig:" << activeMasternode.vin.scriptSig.ToString() << std::endl;
+    std::cout << "Vin Script Sig:" << HexStr(activeMasternode.vin.scriptSig) << std::endl;
     std::cout << "Vin Tx hash:" << activeMasternode.vin.prevout.hash.GetHex() << std::endl;
     CMasternode* pmn = mnodeman.Find(activeMasternode.vin);
 

@@ -7,6 +7,7 @@
 #include "masternode.h"
 
 #include "addrman.h"
+#include "core_io.h"
 #include "init.h"
 #include "masternode-payments.h"
 #include "masternode-sync.h"
@@ -533,7 +534,7 @@ bool CMasternodeBroadcast::CheckAndUpdate(int& nDos)
 
     CScript pubkeyScript;
     pubkeyScript = GetScriptForDestination(pubKeyCollateralAddress);
-    LogPrint(BCLog::MASTERNODE, "CMasternodeBroadcast::CheckAndUpdate: pubKeyCollateralAddress=%s\n", pubkeyScript.ToString());
+    LogPrint(BCLog::MASTERNODE, "CMasternodeBroadcast::CheckAndUpdate: pubKeyCollateralAddress=%s\n", ScriptToAsmStr(pubkeyScript));
     if ((pubkeyScript.size() != 35) && (pubkeyScript.size() != 67)) {
         LogPrint(BCLog::MASTERNODE,"mnb - pubkey the wrong size\n");
         nDos = 100;
