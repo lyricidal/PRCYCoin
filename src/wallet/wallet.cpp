@@ -5816,18 +5816,6 @@ int CMerkleTx::GetBlocksToMaturity() const
     return std::max(0, (Params().COINBASE_MATURITY() + 1) - GetDepthInMainChain());
 }
 
-bool CMerkleTx::IsInMainChain() const
-{
-    return GetDepthInMainChain(pindexRet, false) > 0;
-}
-
-bool CMerkleTx::IsInMainChainImmature() const
-{
-    if (!IsCoinBase() && !IsCoinStake()) return false;
-    const int depth = GetDepthInMainChain(false);
-    return (depth > 0 && depth <= Params().COINBASE_MATURITY());
-}
-
 bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)
 {
     CValidationState state;
