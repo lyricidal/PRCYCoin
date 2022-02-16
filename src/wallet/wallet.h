@@ -717,7 +717,6 @@ struct COutputEntry {
 class CMerkleTx : public CTransaction
 {
 private:
-    int GetDepthInMainChainINTERNAL(const CBlockIndex*& pindexRet) const;
     /** Constant used in hashBlock to indicate tx has been abandoned */
     static const uint256 ABANDON_HASH;
 
