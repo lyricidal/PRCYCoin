@@ -1095,8 +1095,9 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn, bool fFromLoadWallet, CWalletD
             wtx.nTimeSmart = ComputeTimeSmart(wtx);
             AddToSpends(hash);
             for (const CTxIn& txin : wtx.vin) {
-                if (mapWallet.count(txin.prevout.hash)) {
-                    CWalletTx& prevtx = mapWallet[txin.prevout.hash];
+                COutPoint prevout = findMyOutPoint(txin);
+                if (mapWallet.count(prevout.hash)) {
+                    CWalletTx& prevtx = mapWallet[prevout.hash];
                     if (prevtx.nIndex == -1 && !prevtx.hashUnset()) {
                         MarkConflicted(prevtx.hashBlock, wtx.GetHash());
                     }
@@ -1163,7 +1164,8 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
         AssertLockHeld(cs_wallet);
         if (pblock && !tx.IsCoinBase()) {
             for (const CTxIn& txin : tx.vin) {
-                std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
+                COutPoint prevout = findMyOutPoint(txin);
+                std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(prevout);
                 while (range.first != range.second) {
                     if (range.first->second != tx.GetHash()) {
                         LogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), pblock->GetHash().ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
@@ -1247,8 +1249,9 @@ bool CWallet::AbandonTransaction(const uint256& hashTx)
             // available of the outputs it spends. So force those to be recomputed
             for (const CTxIn& txin: wtx.vin)
             {
-                if (mapWallet.count(txin.prevout.hash))
-                    mapWallet[txin.prevout.hash].MarkDirty();
+                COutPoint prevout = findMyOutPoint(txin);
+                if (mapWallet.count(prevout.hash))
+                    mapWallet[prevout.hash].MarkDirty();
             }
         }
     }
@@ -1304,8 +1307,9 @@ void CWallet::MarkConflicted(const uint256& hashBlock, const uint256& hashTx)
             // available of the outputs it spends. So force those to be recomputed
             for (const CTxIn& txin : wtx.vin)
             {
-                if (mapWallet.count(txin.prevout.hash))
-                    mapWallet[txin.prevout.hash].MarkDirty();
+                COutPoint prevout = findMyOutPoint(txin);
+                if (mapWallet.count(prevout.hash))
+                    mapWallet[prevout.hash].MarkDirty();
             }
         }
     }
