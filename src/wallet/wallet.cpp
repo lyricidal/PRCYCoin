@@ -1163,7 +1163,8 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
         AssertLockHeld(cs_wallet);
         if (pblock && !tx.IsCoinBase()) {
             for (const CTxIn& txin : tx.vin) {
-                std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(txin.prevout);
+                COutPoint prevout = findMyOutPoint(txin);
+                std::pair<TxSpends::const_iterator, TxSpends::const_iterator> range = mapTxSpends.equal_range(prevout);
                 while (range.first != range.second) {
                     if (range.first->second != tx.GetHash()) {
                         LogPrintf("Transaction %s (in block %s) conflicts with wallet transaction %s (both spend %s:%i)\n", tx.GetHash().ToString(), pblock->GetHash().ToString(), range.first->second.ToString(), range.first->first.hash.ToString(), range.first->first.n);
