@@ -213,8 +213,16 @@ void TransactionRecord::updateStatus(const CWalletTx& wtx)
         (wtx.IsCoinBase() ? 1 : 0),
         wtx.nTimeReceived,
         idx);
-    status.countsForBalance = wtx.IsTrusted() && !(wtx.GetBlocksToMaturity() > 0);
-    status.depth = wtx.GetDepthInMainChain();
+    //status.countsForBalance = wtx.IsTrusted() && !(wtx.GetBlocksToMaturity() > 0);
+
+    bool fConflicted;
+    status.depth = wtx.GetDepthAndMempool(fConflicted);
+    const bool isOffline = (GetAdjustedTime() - wtx.nTimeReceived > 2 * 60 && wtx.GetRequestCount() == 0);
+
+    //Determine the depth of the block
+    int nBlocksToMaturity = wtx.GetBlocksToMaturity();
+
+    status.countsForBalance = wtx.IsTrusted() && !(nBlocksToMaturity > 0);
     status.cur_num_blocks = chainActive.Height();
     status.cur_num_ix_locks = nCompleteTXLocks;
 
@@ -236,7 +244,7 @@ void TransactionRecord::updateStatus(const CWalletTx& wtx)
                 status.matures_in = wtx.GetBlocksToMaturity();
 
                 // Check if the block was requested by anyone
-                if (GetAdjustedTime() - wtx.nTimeReceived > 2 * 60 && wtx.GetRequestCount() == 0)
+                if (isOffline)
                     status.status = TransactionStatus::MaturesWarning;
             } else {
                 status.status = TransactionStatus::NotAccepted;
@@ -245,9 +253,9 @@ void TransactionRecord::updateStatus(const CWalletTx& wtx)
             status.status = TransactionStatus::Confirmed;
         }
     } else {
-        if (status.depth < 0) {
+        if (status.depth < 0 || fConflicted) {
             status.status = TransactionStatus::Conflicted;
-        } else if (GetAdjustedTime() - wtx.nTimeReceived > 2 * 60 && wtx.GetRequestCount() == 0) {
+        } else if (isOffline) {
             status.status = TransactionStatus::Offline;
         } else if (status.depth == 0) {
             status.status = TransactionStatus::Unconfirmed;

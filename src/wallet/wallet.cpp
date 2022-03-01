@@ -1899,7 +1899,7 @@ bool CWalletTx::InMempool() const
 void CWalletTx::RelayWalletTransaction(std::string strCommand)
 {
     LOCK(cs_main);
-    if (!IsCoinBase()) {
+    if (!IsCoinBase() && !IsCoinStake()) {
         if (GetDepthInMainChain() == 0 && !isAbandoned()) {
             uint256 hash = GetHash();
             LogPrintf("Relaying wtx %s\n", hash.ToString());
@@ -2148,14 +2148,17 @@ bool CWallet::AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, std::v
 
         if ((pcoin->IsCoinBase() || pcoin->IsCoinStake()) && pcoin->GetBlocksToMaturity() > 0)
             return false;
+
         int nDepth = pcoin->GetDepthInMainChain(false);
         // do not use IX for inputs that have less then 6 blockchain confirmations
         if (fUseIX && nDepth < 6)
             return false;
+
         // We should not consider coins which aren't at least in our mempool
         // It's possible for these to be conflicted via ancestors which we may never be able to detect
         if (nDepth == 0 && !pcoin->InMempool())
             return false;
+
         for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
             if (pcoin->vout[i].IsEmpty()) {
                 cannotSpend++;
@@ -4688,7 +4691,10 @@ std::map<CTxDestination, CAmount> CWallet::GetAddressBalances()
             if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0)
                 continue;
 
-            int nDepth = pcoin->GetDepthInMainChain();
+            bool fConflicted;
+            int nDepth = pcoin->GetDepthAndMempool(fConflicted);
+            if (fConflicted)
+                continue;
             if (nDepth < (pcoin->IsFromMe(ISMINE_ALL) ? 0 : 1))
                 continue;
 
@@ -6110,6 +6116,13 @@ bool CWalletTx::IsTrusted() const
             return false;
     }
     return true;
+}
+
+int CWalletTx::GetDepthAndMempool(bool& fConflicted, bool enableIX) const
+{
+    int ret = GetDepthInMainChain(enableIX);
+    fConflicted = (ret == 0 && !InMempool());  // not in chain nor in mempool
+    return ret;
 }
 
 void CWalletTx::MarkDirty()
