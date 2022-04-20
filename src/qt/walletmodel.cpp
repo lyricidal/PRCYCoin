@@ -11,7 +11,6 @@
 #include "bitcoinunits.h"
 #include "guiconstants.h"
 #include "guiutil.h"
-#include "recentrequeststablemodel.h"
 #include "transactionrecord.h"
 #include "transactiontablemodel.h"
 #include "init.h" // for ShutdownRequested(). Future: move to an interface wrapper
@@ -36,11 +35,9 @@
 #include <stdint.h>
 #include <QTextStream>
 
-using namespace std;
 
 WalletModel::WalletModel(CWallet* wallet, OptionsModel* optionsModel, QObject* parent) : QObject(parent), wallet(wallet), optionsModel(optionsModel), addressTableModel(0),
                                                                                          transactionTableModel(0),
-                                                                                         recentRequestsTableModel(0),
                                                                                          cachedBalance(0), cachedUnconfirmedBalance(0), spendableBalance(0), cachedImmatureBalance(0), cachedWatchOnlyBalance(0),
                                                                                          cachedWatchUnconfBalance(0), cachedWatchImmatureBalance(0),
                                                                                          cachedEncryptionStatus(Unencrypted),
@@ -53,7 +50,6 @@ WalletModel::WalletModel(CWallet* wallet, OptionsModel* optionsModel, QObject* p
 
     addressTableModel = new AddressTableModel(wallet, this);
     transactionTableModel = new TransactionTableModel(wallet, this);
-    recentRequestsTableModel = new RecentRequestsTableModel(wallet, this);
 
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
@@ -265,7 +261,7 @@ void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
 bool WalletModel::validateAddress(const QString& address)
 {
     CBitcoinAddress addressParsed(address.toStdString());
-    bool valid = (regex_match(address.toStdString(), regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
+    bool valid = (regex_match(address.toStdString(), std::regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
     return valid||addressParsed.IsValid();
 }
 
@@ -388,17 +384,12 @@ TransactionTableModel* WalletModel::getTransactionTableModel()
     return transactionTableModel;
 }
 
-RecentRequestsTableModel* WalletModel::getRecentRequestsTableModel()
-{
-    return recentRequestsTableModel;
-}
-
 WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
 {
     if (!wallet->IsLocked()) {
         return Unencrypted;
-    } else if (wallet->fWalletUnlockAnonymizeOnly) {
-        return UnlockedForAnonymizationOnly;
+    } else if (wallet->fWalletUnlockStakingOnly) {
+        return UnlockedForStakingOnly;
     } else if (wallet->IsLocked()) {
         return Locked;
     } else {
@@ -421,7 +412,7 @@ bool WalletModel::setWalletLocked(bool locked, const SecureString& passPhrase, b
 {
     if (locked) {
         // Lock
-        wallet->fWalletUnlockAnonymizeOnly = false;
+        wallet->fWalletUnlockStakingOnly = false;
         return wallet->Lock();
     } else {
         // Unlock
@@ -432,7 +423,7 @@ bool WalletModel::setWalletLocked(bool locked, const SecureString& passPhrase, b
 bool WalletModel::lockForStakingOnly(const SecureString& passPhrase)
 {
     if (!wallet->IsLocked()) {
-        wallet->fWalletUnlockAnonymizeOnly = true;
+        wallet->fWalletUnlockStakingOnly = true;
         return true;
     } else {
         setWalletLocked(false, passPhrase, true);
@@ -442,7 +433,7 @@ bool WalletModel::lockForStakingOnly(const SecureString& passPhrase)
 
 bool WalletModel::isAnonymizeOnlyUnlocked()
 {
-    return wallet->fWalletUnlockAnonymizeOnly;
+    return wallet->fWalletUnlockStakingOnly;
 }
 
 bool WalletModel::changePassphrase(const SecureString& oldPass, const SecureString& newPass)
@@ -494,7 +485,7 @@ static std::vector<std::pair<uint256, ChangeType> > vQueueNotifications;
 static void NotifyTransactionChanged(WalletModel* walletmodel, CWallet* wallet, const uint256& hash, ChangeType status)
 {
     if (fQueueNotifications) {
-        vQueueNotifications.push_back(make_pair(hash, status));
+        vQueueNotifications.push_back(std::make_pair(hash, status));
         return;
     }
 
@@ -519,10 +510,10 @@ static void NotifyWatchonlyChanged(WalletModel* walletmodel, bool fHaveWatchonly
         Q_ARG(bool, fHaveWatchonly));
 }
 
-static void NotifyWalletBacked(WalletModel* model, const bool& fSuccess, const string& filename)
+static void NotifyWalletBacked(WalletModel* model, const bool& fSuccess, const std::string& filename)
 {
     std::string message;
-    string title = "Backup ";
+    std::string title = "Backup ";
     CClientUIInterface::MessageBoxFlags method;
 
     if (fSuccess) {
@@ -572,7 +563,7 @@ WalletModel::UnlockContext WalletModel::requestUnlock(AskPassphraseDialog::Conte
 
     if (!was_locked && isAnonymizeOnlyUnlocked()) {
         setWalletLocked(true);
-        wallet->fWalletUnlockAnonymizeOnly = false;
+        wallet->fWalletUnlockStakingOnly = false;
         was_locked = getEncryptionStatus() == Locked;
     }
 
@@ -771,9 +762,9 @@ std::map<QString, QString> getTx(CWallet* wallet, uint256 hash)
     return getTx(wallet, *wallet->GetWalletTx(hash));
 }
 
-vector<std::map<QString, QString> > getTXs(CWallet* wallet)
+std::vector<std::map<QString, QString> > getTXs(CWallet* wallet)
 {
-    vector<std::map<QString, QString> > txs;
+    std::vector<std::map<QString, QString> > txs;
     if (!wallet || wallet->IsLocked()) return txs;
     std::map<uint256, CWalletTx> txMap = wallet->mapWallet;
     {
@@ -797,7 +788,7 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
     if (wallet && !wallet->IsLocked()) {
         for (CTxIn in: tx.vin) {
             COutPoint prevout = wallet->findMyOutPoint(in);
-            map<uint256, CWalletTx>::const_iterator mi = wallet->mapWallet.find(prevout.hash);
+            std::map<uint256, CWalletTx>::const_iterator mi = wallet->mapWallet.find(prevout.hash);
             if (mi != wallet->mapWallet.end()) {
                 const CWalletTx& prev = (*mi).second;
                 if (prevout.n < prev.vout.size()) {

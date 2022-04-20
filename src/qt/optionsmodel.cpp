@@ -18,6 +18,7 @@
 #include "init.h"
 #include "main.h"
 #include "net.h"
+#include "netbase.h"
 #include "txdb.h" // for -dbcache defaults
 
 #ifdef ENABLE_WALLET
@@ -129,7 +130,7 @@ void OptionsModel::Init()
     if (!settings.contains("digits"))
         settings.setValue("digits", "2");
     if (!settings.contains("theme"))
-        settings.setValue("theme", "dark");
+        settings.setValue("theme", "webwallet");
     if (!settings.contains("fCSSexternal"))
         settings.setValue("fCSSexternal", false);
     if (!settings.contains("language"))

@@ -6,8 +6,9 @@
 #ifndef BITCOIN_MINER_H
 #define BITCOIN_MINER_H
 
+#include "primitives/block.h"
+
 #include <stdint.h>
-#include "enum.h"
 #include "key.h"
 
 class CBlock;
@@ -34,10 +35,16 @@ void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& 
 /** Check mined block */
 void UpdateTime(CBlockHeader* block, const CBlockIndex* pindexPrev);
 
-void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType=MineType::MINETYPE_POW);
+void BitcoinMiner(CWallet* pwallet, bool fProofOfStake);
 void ThreadStakeMinter();
 
 extern double dHashesPerSec;
 extern int64_t nHPSTimerStart;
+
+struct CBlockTemplate {
+    CBlock block;
+    std::vector<CAmount> vTxFees;
+    std::vector<int64_t> vTxSigOps;
+};
 
 #endif // BITCOIN_MINER_H

@@ -122,7 +122,7 @@ void HistoryPage::on_cellClicked(int row, int column)
                 CWalletTx tx = pwalletMain->mapWallet[hash];
                 for (size_t i = 0; i < tx.vout.size(); i++) {
                     txnouttype type;
-                    vector<CTxDestination> addresses;
+                    std::vector<CTxDestination> addresses;
                     int nRequired;
 
                     if (ExtractDestinations(tx.vout[i].scriptPubKey, type, addresses, nRequired)) {
@@ -146,6 +146,12 @@ void HistoryPage::on_cellClicked(int row, int column)
                 }
                 txdlg.setTxAmount(amount);
                 txdlg.setTxFee(tx.nTxFee);
+                if (tx.hasPaymentID) {
+                    txdlg.setTxPaymentID(tx.paymentID);
+                } else {
+                    txdlg.setTxPaymentID(0);
+                }
+                txdlg.setTxRingSize(tx.vin[0].decoys.size() + 1);
             }
         }
         std::string txdlgMsg = "Request from Sender (if applicable)";
@@ -199,11 +205,11 @@ void HistoryPage::updateTableData(CWallet* wallet)
             ui->tableView->removeRow(0);
         }
         ui->tableView->setRowCount(0);
-        vector<std::map<QString, QString> > txs;
+        std::vector<std::map<QString, QString> > txs;
         if (wallet->IsLocked()) {
             {
                 LOCK(pwalletMain->cs_wallet);
-                vector<std::map<QString, QString>> txs;// = WalletUtil::getTXs(pwalletMain);
+                std::vector<std::map<QString, QString>> txs;// = WalletUtil::getTXs(pwalletMain);
 
                 std::map<uint256, CWalletTx> txMap = pwalletMain->mapWallet;
                 std::vector<CWalletTx> latestTxes;
@@ -235,6 +241,8 @@ void HistoryPage::updateTableData(CWallet* wallet)
                 case 3: /*amount*/
                     if (wallet->IsLocked()) {
                         cell->setData(0, QString("Locked; Hidden"));
+                    } else if (settings.value("fHideBalance", false).toBool()) {
+                        cell->setData(0, QString("Hidden"));
                     } else {
                         cell->setData(0, data);
                     }
@@ -290,9 +298,20 @@ void HistoryPage::updateFilter()
             hide = true;
         if (selectedType != tr("All Types")) {
             if (selectedType == tr("Received")) {
-                hide = !(type == tr("Received") || type == tr("Masternode Reward") || type == tr("Staking Reward") || type == ("PoA Reward"));
-            } else
-                hide = (selectedType != type) || hide;
+                hide = !(type == tr("Received"));
+            } else if (selectedType == tr("Sent")) {
+                hide = !(type == tr("Sent"));
+            } else if (selectedType == tr("Mined")) {
+                hide = !(type == tr("Mined"));
+            } else if (selectedType == tr("Minted")) {
+                hide = !(type == tr("Minted"));
+            } else if (selectedType == tr("Masternode")) {
+                hide = !(type == tr("Masternode"));
+            } else if (selectedType == tr("Payment to yourself")) {
+                hide = !(type == tr("Payment to yourself"));
+            }
+        } else {
+            hide = !(type == tr("Received")) && !(type == tr("Sent")) && !(type == tr("Mined")) && !(type == tr("Minted")) && !(type == tr("Masternode")) && !(type == tr("Payment to yourself"));
         }
         if (ui->lineEditDesc->currentText() != allAddressString) {
             bool found = false;
@@ -302,7 +321,7 @@ void HistoryPage::updateFilter()
             hide = !found || hide;
         }
 
-        ui->tableView->setRowHidden(row, false);
+        ui->tableView->setRowHidden(row, hide);
     }
 }
 

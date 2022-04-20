@@ -6,6 +6,7 @@
 #include "chainparams.h"
 #include "hash.h"
 #include "net.h"
+#include "netbase.h"
 #include "serialize.h"
 #include "streams.h"
 
@@ -18,26 +19,31 @@
 class CAddrManSerializationMock : public CAddrMan
 {
 public:
-    virtual void Serialize(CDataStream& s, int nType, int nVersionDummy) const = 0;
+    virtual void Serialize(CDataStream& s, int nType, int nVersion) const = 0;
+
+    //! Ensure that bucket placement is always the same for testing purposes.
+    void MakeDeterministic()
+    {
+        nKey.SetNull();
+        SeedInsecureRand(true);
+    }
 };
 
 class CAddrManUncorrupted : public CAddrManSerializationMock
 {
 public:
-    void Serialize(CDataStream& s, int nType, int nVersionDummy) const
+    void Serialize(CDataStream& s, int nType, int nVersion) const
     {
-        CAddrMan::Serialize(s, nType, nVersionDummy);
+        CAddrMan::Serialize(s, nType, nVersion);
     }
 };
 
 class CAddrManCorrupted : public CAddrManSerializationMock
 {
 public:
-    void Serialize(CDataStream& s, int nType, int nVersionDummy) const
+    void Serialize(CDataStream& s, int nType, int nVersion) const
     {
         // Produces corrupt output that claims addrman has 20 addrs when it only has one addr.
-        unsigned char nVersion = 1;
-        s << nVersion;
         s << ((unsigned char)32);
         s << nKey;
         s << 10; // nNew
@@ -46,8 +52,12 @@ public:
         int nUBuckets = ADDRMAN_NEW_BUCKET_COUNT ^ (1 << 30);
         s << nUBuckets;
 
-        CAddress addr = CAddress(CService("252.1.1.1", 7777));
-        CAddrInfo info = CAddrInfo(addr, CNetAddr("252.2.2.2"));
+        CService serv;
+        Lookup("252.1.1.1", serv, 7777, false);
+        CAddress addr = CAddress(serv, NODE_NONE);
+        CNetAddr resolved;
+        LookupHost("252.2.2.2", resolved, false);
+        CAddrInfo info = CAddrInfo(addr, resolved);
         s << info;
     }
 };
@@ -67,15 +77,19 @@ BOOST_FIXTURE_TEST_SUITE(net_tests, BasicTestingSetup)
 BOOST_AUTO_TEST_CASE(caddrdb_read)
 {
     CAddrManUncorrupted addrmanUncorrupted;
+    addrmanUncorrupted.MakeDeterministic();
 
-    CService addr1 = CService("250.7.1.1", 8333);
-    CService addr2 = CService("250.7.2.2", 9999);
-    CService addr3 = CService("250.7.3.3", 9999);
+    CService addr1, addr2, addr3;
+    Lookup("250.7.1.1", addr1, 8333, false);
+    Lookup("250.7.2.2", addr2, 9999, false);
+    Lookup("250.7.3.3", addr3, 9999, false);
 
     // Add three addresses to new table.
-    addrmanUncorrupted.Add(CAddress(addr1), CService("252.5.1.1", 8333));
-    addrmanUncorrupted.Add(CAddress(addr2), CService("252.5.1.1", 8333));
-    addrmanUncorrupted.Add(CAddress(addr3), CService("252.5.1.1", 8333));
+    CService source;
+    Lookup("252.5.1.1", source, 8333, false);
+    addrmanUncorrupted.Add(CAddress(addr1, NODE_NONE), source);
+    addrmanUncorrupted.Add(CAddress(addr2, NODE_NONE), source);
+    addrmanUncorrupted.Add(CAddress(addr3, NODE_NONE), source);
 
     // Test that the de-serialization does not throw an exception.
     CDataStream ssPeers1 = AddrmanToStream(addrmanUncorrupted);
@@ -108,6 +122,7 @@ BOOST_AUTO_TEST_CASE(caddrdb_read)
 BOOST_AUTO_TEST_CASE(caddrdb_read_corrupted)
 {
     CAddrManCorrupted addrmanCorrupted;
+    addrmanCorrupted.MakeDeterministic();
 
     // Test that the de-serialization of corrupted addrman throws an exception.
     CDataStream ssPeers1 = AddrmanToStream(addrmanCorrupted);

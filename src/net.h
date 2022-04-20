@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2015 The Bitcoin developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
 // Distributed under the MIT/X11 software license, see the accompanying
@@ -11,9 +11,10 @@
 #include "bloom.h"
 #include "compat.h"
 #include "hash.h"
+#include "fs.h"
 #include "limitedmap.h"
 #include "mruset.h"
-#include "netbase.h"
+#include "netaddress.h"
 #include "protocol.h"
 #include "random.h"
 #include "streams.h"
@@ -28,7 +29,6 @@
 #include <arpa/inet.h>
 #endif
 
-#include <boost/filesystem/path.hpp>
 #include <boost/signals2/signal.hpp>
 
 class CAddrMan;
@@ -68,18 +68,19 @@ static const size_t MAPASKFOR_MAX_SZ = MAX_INV_SZ;
 /** The maximum number of peer connections to maintain. */
 static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
 
+static const ServiceFlags REQUIRED_SERVICES = NODE_NETWORK;
+
 unsigned int ReceiveFloodSize();
 unsigned int SendBufferSize();
 
 void AddOneShot(std::string strDest);
-bool RecvLine(SOCKET hSocket, std::string& strLine);
 void AddressCurrentlyConnected(const CService& addr);
 CNode* FindNode(const CNetAddr& ip);
 CNode* FindNode(const CSubNet& subNet);
 CNode* FindNode(const std::string& addrName);
 CNode* FindNode(const CService& ip);
-CNode* ConnectNode(CAddress addrConnect, const char* pszDest = NULL, bool obfuScationMaster = false);
-void OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant* grantOutbound = NULL, const char* strDest = NULL, bool fOneShot = false);
+CNode* ConnectNode(CAddress addrConnect, const char* pszDest = NULL, bool obfuScationMaster = false, bool fCountFailure = false);
+bool OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant* grantOutbound = NULL, const char* strDest = NULL, bool fOneShot = false);
 void MapPort(bool fUseUPnP);
 unsigned short GetListenPort();
 bool BindListenPort(const CService& bindAddr, std::string& strError, bool fWhitelisted = false);
@@ -126,11 +127,12 @@ bool GetLocal(CService& addr, const CNetAddr* paddrPeer = NULL);
 bool IsReachable(enum Network net);
 bool IsReachable(const CNetAddr& addr);
 CAddress GetLocalAddress(const CNetAddr* paddrPeer = NULL);
+bool validateMasternodeIP(const std::string& addrStr);          // valid, reachable and routable address
 
 
 extern bool fDiscover;
 extern bool fListen;
-extern uint64_t nLocalServices;
+extern ServiceFlags nLocalServices;
 extern uint64_t nLocalHostNonce;
 extern CAddrMan addrman;
 extern int nMaxConnections;
@@ -163,7 +165,7 @@ class CNodeStats
 {
 public:
     NodeId nodeid;
-    uint64_t nServices;
+    ServiceFlags nServices;
     int64_t nLastSend;
     int64_t nLastRecv;
     int64_t nTimeConnected;
@@ -289,7 +291,8 @@ class CNode
 {
 public:
     // socket
-    uint64_t nServices;
+    ServiceFlags nServices;
+    ServiceFlags nServicesExpected;
     SOCKET hSocket;
     CDataStream ssSend;
     size_t nSendSize;   // total size of all vSendMsg entries
@@ -750,7 +753,7 @@ void RelayInv(CInv& inv);
 class CAddrDB
 {
 private:
-    boost::filesystem::path pathAddr;
+    fs::path pathAddr;
 
 public:
     CAddrDB();
@@ -763,7 +766,7 @@ public:
 class CBanDB
 {
 private:
-    boost::filesystem::path pathBanlist;
+    fs::path pathBanlist;
 public:
     CBanDB();
     bool Write(const banmap_t& banSet);
@@ -771,5 +774,14 @@ public:
 };
 void DumpBanlist();
 bool IsUnsupportedVersion(std::string strSubVer, int nHeight);
+
+struct AddedNodeInfo {
+    std::string strAddedNode;
+    CService resolvedAddress;
+    bool fConnected;
+    bool fInbound;
+};
+
+std::vector<AddedNodeInfo> GetAddedNodeInfo();
 
 #endif // BITCOIN_NET_H

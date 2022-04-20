@@ -1,9 +1,9 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2015 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
-// Copyright (c) 2020-2021 The PRCY developers
+// Copyright (c) 2020-2022 The PRCY developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -20,11 +20,9 @@
 
 typedef unsigned char MessageStartChars[MESSAGE_START_SIZE];
 
-class CDNSSeedData {
-public:
+struct CDNSSeedData {
     std::string name, host;
     bool supportsServiceBitsFiltering;
-    std::string getHost(uint64_t requiredServiceBits) const;
     CDNSSeedData(const std::string& strName, const std::string& strHost, bool supportsServiceBitsFilteringIn = false) : name(strName), host(strHost), supportsServiceBitsFiltering(supportsServiceBitsFilteringIn) {}
 };
 
@@ -84,7 +82,6 @@ public:
     int64_t TargetSpacing() const { return nTargetSpacing; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
-    CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
     CAmount MNCollateralAmt() const { return nMNCollateralAmt; }
     CAmount MinimumStakeAmount() const { return nMinimumStakeAmount; }
     /** The masternode count that we will allow the see-saw reward payments to be off by */
@@ -104,6 +101,7 @@ public:
     int64_t StartMasternodePayments() const { return nStartMasternodePayments; }
     int64_t Budget_Fee_Confirmations() const { return nBudget_Fee_Confirmations; }
     CBaseChainParams::Network NetworkID() const { return networkID; }
+    bool IsRegTestNet() const { return NetworkID() == CBaseChainParams::REGTEST; }
     int ExtCoinType() const { return nExtCoinType; }
 
     /** Height or Time Based Activations **/
@@ -117,13 +115,13 @@ public:
     int PoAPadding() const { return nPoAPadding;}
     int BIP65ActivationHeight() const { return nBIP65ActivationHeight; }
     int HardFork() const { return nHardForkBlock;}
+    int HardForkRingSize() const { return nHardForkBlockRingSize;}
 
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
     int MIN_NUM_POS_BLOCKS_AUDITED() const {return nMinNumPoSBlocks;}
     int MAX_NUM_POS_BLOCKS_AUDITED() const {return nMaxNumPoSBlocks;}
     int nLastPOWBlock;
-    double MAX_MONEY;
     CAmount TOTAL_SUPPLY = 70000000 * COIN; //70M PRCY
 
 protected:
@@ -145,6 +143,7 @@ protected:
     int nStartPOABlock;
     int nSoftForkBlock;
     int nHardForkBlock;
+    int nHardForkBlockRingSize;
     int nPoANewDiff;
     int nPoAFixTime;
     int nPoAPaddingBlock;
@@ -152,7 +151,6 @@ protected:
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;
-    CAmount nMaxMoneyOut;
     CAmount nMNCollateralAmt;
     CAmount nMinimumStakeAmount;
     int nMinerThreads;

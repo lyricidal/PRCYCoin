@@ -13,7 +13,7 @@
 #include "peertablemodel.h"
 
 #include "chainparams.h"
-#include "main.h"
+#include "netbase.h"
 #include "rpc/client.h"
 #include "rpc/server.h"
 #include "util.h"
@@ -957,6 +957,11 @@ void RPCConsole::showDataDir()
     GUIUtil::showDataDir();
 }
 
+void RPCConsole::showQtDir()
+{
+    GUIUtil::showQtDir();
+}
+
 void RPCConsole::showBackups()
 {
     GUIUtil::showBackups();
@@ -1012,8 +1017,18 @@ void RPCConsole::banSelectedNode(int bantime)
 
     // Find possible nodes, ban it and clear the selected node
     const CNodeCombinedStats *stats = clientModel->getPeerTableModel()->getNodeStats(detailNodeRow);
-    if(stats) {
-        CNode::Ban(stats->nodeStats.addr, BanReasonManuallyAdded, bantime);
+
+    if (FindNode(stats->nodeStats.addr.ToString())) {
+        std::string nStr = stats->nodeStats.addr.ToString();
+        std::string addr;
+        int port = 0;
+        SplitHostPort(nStr, port, addr);
+
+        CNetAddr resolved;
+        if (!LookupHost(addr.c_str(), resolved, false))
+            return;
+        CNode::Ban(resolved, BanReasonManuallyAdded, bantime);
+
         clearSelectedNode();
         clientModel->getBanTableModel()->refresh();
     }
@@ -1025,7 +1040,9 @@ void RPCConsole::unbanSelectedNode()
         return;
     // Get currently selected ban address
     QString strNode = GUIUtil::getEntryData(ui->banlistWidget, 0, BanTableModel::Address).toString();
-    CSubNet possibleSubnet(strNode.toStdString());
+    CSubNet possibleSubnet;
+
+    LookupSubNet(strNode.toStdString().c_str(), possibleSubnet);
     if (possibleSubnet.IsValid())
     {
         CNode::Unban(possibleSubnet);

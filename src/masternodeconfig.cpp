@@ -4,7 +4,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "net.h"
+#include "netbase.h"
 #include "masternodeconfig.h"
 #include "util.h"
 #include "guiinterface.h"
@@ -21,11 +21,11 @@ void CMasternodeConfig::add(std::string alias, std::string ip, std::string privK
 bool CMasternodeConfig::read(std::string& strErr)
 {
     int linenumber = 1;
-    boost::filesystem::path pathMasternodeConfigFile = GetMasternodeConfigFile();
-    boost::filesystem::ifstream streamConfig(pathMasternodeConfigFile);
+    fs::path pathMasternodeConfigFile = GetMasternodeConfigFile();
+    fs::ifstream streamConfig(pathMasternodeConfigFile);
 
     if (!streamConfig.good()) {
-        FILE* configFile = fopen(pathMasternodeConfigFile.string().c_str(), "a");
+        FILE* configFile = fsbridge::fopen(pathMasternodeConfigFile, "a");
         if (configFile != NULL) {
             std::string strHeader = "# Masternode config file\n"
                                     "# Format: alias IP:port masternodeprivkey collateral_output_txid collateral_output_index\n"
@@ -60,6 +60,7 @@ bool CMasternodeConfig::read(std::string& strErr)
         }
 
         int port = 0;
+        int nDefaultPort = Params().GetDefaultPort();
         std::string hostname = "";
         SplitHostPort(ip, port, hostname);
         if(port == 0 || hostname == "") {
@@ -69,18 +70,10 @@ bool CMasternodeConfig::read(std::string& strErr)
             return false;
         }
 
-        if (Params().NetworkID() == CBaseChainParams::MAIN) {
-            if (port != 59682) {
-                strErr = _("Invalid port detected in masternode.conf") + "\n" +
-                         strprintf(_("Line: %d"), linenumber) + "\n\"" + line + "\"" + "\n" +
-                         _("(must be 59682 for mainnet)");
-                streamConfig.close();
-                return false;
-            }
-        } else if (port == 59682) {
-            strErr = _("Invalid port detected in masternode.conf") + "\n" +
-                     strprintf(_("Line: %d"), linenumber) + "\n\"" + line + "\"" + "\n" +
-                     _("(59682 could be used only on mainnet)");
+        if (port != nDefaultPort) {
+            strErr = strprintf(_("Invalid port %d detected in masternode.conf"), port) + "\n" +
+                     strprintf(_("Line: %d"), linenumber) + "\n\"" + ip + "\"" + "\n" +
+                     strprintf(_("(must be %d for %s-net)"), nDefaultPort, Params().NetworkIDString());
             streamConfig.close();
             return false;
         }

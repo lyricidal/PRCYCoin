@@ -7,6 +7,7 @@
 #define BITCOIN_DB_H
 
 #include "clientversion.h"
+#include "fs.h"
 #include "serialize.h"
 #include "streams.h"
 #include "sync.h"
@@ -16,7 +17,6 @@
 #include <string>
 #include <vector>
 
-#include <boost/filesystem/path.hpp>
 
 #include <db_cxx.h>
 
@@ -35,7 +35,7 @@ class CDBEnv
 private:
     bool fDbEnvInit;
     bool fMockDb;
-    // Don't change into boost::filesystem::path, as that can result in
+    // Don't change into fs::path, as that can result in
     // shutdown problems/crashes caused by a static initialized internal pointer.
     std::string strPath;
 
@@ -43,12 +43,14 @@ private:
 
 public:
     mutable RecursiveMutex cs_db;
-    DbEnv dbenv;
+    DbEnv *dbenv;
     std::map<std::string, int> mapFileUseCount;
     std::map<std::string, Db*> mapDb;
 
     CDBEnv();
     ~CDBEnv();
+    void Reset();
+
     void MakeMock();
     bool IsMock() { return fMockDb; }
 
@@ -72,7 +74,7 @@ public:
     typedef std::pair<std::vector<unsigned char>, std::vector<unsigned char> > KeyValPair;
     bool Salvage(std::string strFile, bool fAggressive, std::vector<KeyValPair>& vResult);
 
-    bool Open(const boost::filesystem::path& path);
+    bool Open(const fs::path& path);
     void Close();
     void Flush(bool fShutdown);
     void CheckpointLSN(const std::string& strFile);
@@ -83,7 +85,7 @@ public:
     DbTxn* TxnBegin(int flags = DB_TXN_WRITE_NOSYNC)
     {
         DbTxn* ptxn = NULL;
-        int ret = dbenv.txn_begin(NULL, &ptxn, flags);
+        int ret = dbenv->txn_begin(NULL, &ptxn, flags);
         if (!ptxn || ret != 0)
             return NULL;
         return ptxn;

@@ -21,9 +21,12 @@
 
 #include <QAbstractItemDelegate>
 #include <QPainter>
-#include <QSettings>
 #include <QTimer>
 #include <QtMath>
+#include <QNetworkAccessManager>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 
 #define DECORATION_SIZE 48
 #define ICON_OFFSET 16
@@ -122,6 +125,11 @@ OverviewPage::OverviewPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMe
     pingNetworkInterval->setInterval(3000);
     pingNetworkInterval->start();
 
+    checkCurrencyValueInterval = new QTimer(this);
+    connect(checkCurrencyValueInterval, SIGNAL(timeout()), this, SLOT(checkCurrencyValue()));
+    checkCurrencyValueInterval->setInterval(300000);
+    checkCurrencyValueInterval->start();
+
     initSyncCircle(.8);
 
     connect(ui->btnLockUnlock, SIGNAL(clicked()), this, SLOT(on_lockUnlock()));
@@ -170,11 +178,15 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
     }
     // PRCY labels
     //TODO-NOTE: Remove immatureBalance from showing on qt wallet (as requested)
-    if (walletStatus == WalletModel::Locked || walletStatus == WalletModel::UnlockedForAnonymizationOnly) {
+    if (walletStatus == WalletModel::Locked || walletStatus == WalletModel::UnlockedForStakingOnly) {
         ui->labelBalance_2->setText("Locked; Hidden");
         ui->labelBalance->setText("Locked; Hidden");
         ui->labelUnconfirmed->setText("Locked; Hidden");
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/lock) 0 0 0 0 stretch stretch; width: 20px;");
+    } else if (settings.value("fHideBalance", false).toBool()) {
+        ui->labelBalance_2->setText("Hidden");
+        ui->labelBalance->setText("Hidden");
+        ui->labelUnconfirmed->setText("Hidden");
     } else {
         if (stkStatus && !nLastCoinStakeSearchInterval && !fLiteMode) {
             ui->labelBalance_2->setText("Enabling Staking...");
@@ -194,6 +206,7 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
     ui->labelBalance_2->setFont(font);   
 
     updateRecentTransactions();
+    checkCurrencyValue();
 }
 
 // show/hide watch-only labels
@@ -268,7 +281,6 @@ void OverviewPage::setWalletModel(WalletModel* model)
     updateDisplayUnit();
 
     // Hide orphans
-    QSettings settings;
     hideOrphans(settings.value("fHideOrphans", false).toBool());
 }
 
@@ -456,7 +468,7 @@ void OverviewPage::updateRecentTransactions() {
         }
         if (pwalletMain) {
             {
-                vector<std::map<QString, QString>> txs;// = WalletUtil::getTXs(pwalletMain);
+                std::vector<std::map<QString, QString>> txs;// = WalletUtil::getTXs(pwalletMain);
 
                 std::map<uint256, CWalletTx> txMap = pwalletMain->mapWallet;
                 std::vector<CWalletTx> latestTxes;
@@ -493,6 +505,8 @@ void OverviewPage::updateRecentTransactions() {
                     int64_t txTime = wtx.GetComputedTxTime();
                     if (pwalletMain->IsLocked()) {
                         entry->setData(txTime, "Locked; Hidden", "Locked; Hidden", "Locked; Hidden", "Locked; Hidden");
+                    } else if (settings.value("fHideBalance", false).toBool()) {
+                        entry->setData(txTime, "Hidden", "Hidden", "Hidden", "Hidden");
                     } else {
                         entry->setData(txTime, txs[i]["address"] , txs[i]["amount"], txs[i]["id"], txs[i]["type"]);
                     }
@@ -511,7 +525,7 @@ void OverviewPage::updateRecentTransactions() {
 }
 
 void OverviewPage::on_lockUnlock() {
-    if (walletModel->getEncryptionStatus() == WalletModel::Locked || walletModel->getEncryptionStatus() == WalletModel::UnlockedForAnonymizationOnly) {
+    if (walletModel->getEncryptionStatus() == WalletModel::Locked || walletModel->getEncryptionStatus() == WalletModel::UnlockedForStakingOnly) {
         WalletModel::UnlockContext ctx(walletModel->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
         if (ctx.isValid()) {
             ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/unlock) 0 0 0 0 stretch stretch; width: 30px;");
@@ -519,6 +533,7 @@ void OverviewPage::on_lockUnlock() {
             ui->labelBalance->setText(BitcoinUnits::formatHtmlWithUnit(0, walletModel->getSpendableBalance(), false, BitcoinUnits::separatorAlways));
             ui->labelUnconfirmed->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getUnconfirmedBalance(), false, BitcoinUnits::separatorAlways));
             pwalletMain->combineMode = CombineMode::ON;
+            checkCurrencyValue();
         }
     }
     else {
@@ -530,6 +545,7 @@ void OverviewPage::on_lockUnlock() {
             ui->labelBalance_2->setText("Locked; Hidden");
             ui->labelBalance->setText("Locked; Hidden");
             ui->labelUnconfirmed->setText("Locked; Hidden");
+            checkCurrencyValue();
         }
     }
 }
@@ -539,8 +555,79 @@ void OverviewPage::updateLockStatus(int status) {
         return;
 
     // update wallet state
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly)
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly)
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/lock) 0 0 0 0 stretch stretch; width: 20px;");
     else
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/unlock) 0 0 0 0 stretch stretch; width: 30px;");
+}
+
+void OverviewPage::checkCurrencyValue()
+{
+    QSettings settings;
+    // Get Default Currency from Settings
+    bool fDisplayCurrencyValue = settings.value("fDisplayCurrencyValue").toBool();
+    QString defaultCurrency = settings.value("strDefaultCurrency").toString();
+
+    // Don't check value if wallet is locked, balance is 0, or fDisplayCurrencyValue is set to false
+    if (pwalletMain->IsLocked() || pwalletMain->GetBalance() == 0 || !fDisplayCurrencyValue) {
+        ui->labelCurrencyValue->setText("");
+        return;
+    }
+    if (isRuninngQuery) {
+        return;
+    }
+    isRuninngQuery = true;
+    QUrl serviceUrl = QUrl("https://api.coingecko.com/api/v3/simple/price?ids=prcy-coin&vs_currencies=" + defaultCurrency + "&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false");
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(checkCurrencyValueserviceRequestFinished(QNetworkReply*)));
+    QNetworkRequest request;
+    request.setUrl(serviceUrl);
+    QNetworkReply* reply = manager->get(request);
+}
+
+void OverviewPage::checkCurrencyValueserviceRequestFinished(QNetworkReply* reply)
+{
+    QSettings settings;
+    // Get Default Currency from Settings
+    QString defaultCurrency = settings.value("strDefaultCurrency").toString();
+    QString defaultCurrencySymbol;
+
+    // Set the Default Currency symbol to match
+    if (defaultCurrency == "USD" || defaultCurrency == "CAD") {
+        defaultCurrencySymbol = "$";
+    } else if (defaultCurrency == "EUR") {
+        defaultCurrencySymbol = "€";
+    } else if (defaultCurrency == "GBP") {
+        defaultCurrencySymbol = "£";
+    } else if (defaultCurrency == "BTC") {
+        defaultCurrencySymbol = "₿";
+    } else if (defaultCurrency == "ETH") {
+        defaultCurrencySymbol = "Ξ";
+    } else if (defaultCurrency == "XAU") {
+        defaultCurrencySymbol = "XAU";
+    } else if (defaultCurrency == "XAG") {
+        defaultCurrencySymbol = "XAG";
+    }
+
+    reply->deleteLater();
+    if(reply->error() == QNetworkReply::NoError) {
+        // Parse data
+        QByteArray data = reply->readAll();
+        QJsonDocument jsonDocument(QJsonDocument::fromJson(data));
+        const QJsonObject item  = jsonDocument.object();
+        const QJsonObject currency  = item["prcy-coin"].toObject();
+        auto currencyValue = currency[defaultCurrency.toLower()].toDouble();
+
+        // Get current balance
+        int balance = pwalletMain->GetBalance() / COIN;
+
+        // Calculate value
+        double currentValue = balance *  currencyValue;
+
+        // Set value
+        ui->labelCurrencyValue->setText(defaultCurrency + " Value: " + defaultCurrencySymbol + QString::number(currentValue, 'f', 2));
+    } else {
+        LogPrintf("%s: Error checking for Alternative Currency value.\n", __func__);
+    }
+    isRuninngQuery = false;
 }

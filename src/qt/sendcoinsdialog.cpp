@@ -122,8 +122,10 @@ void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfir
                               const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance)
 {
     int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
         ui->labelBalance->setText("Locked; Hidden");
+    } else if (settings.value("fHideBalance", false).toBool()) {
+        ui->labelBalance->setText("Hidden");
     } else {
         ui->labelBalance->setText(BitcoinUnits::formatHtmlWithUnit(0, balance, false, BitcoinUnits::separatorAlways));
     }
@@ -151,14 +153,12 @@ void SendCoinsDialog::on_sendButton_clicked(){
     QString address = recipient.address;
     send_address = recipient.address;
     send_amount = recipient.amount;
-    bool isValidAddresss = (regex_match(address.toStdString(), regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
+    bool isValidAddresss = (regex_match(address.toStdString(), std::regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
     bool isValidAmount = ((recipient.amount>0) && (recipient.amount<=model->getBalance()));
-    bool isMinimumAmount = (recipient.amount >= 5  * COIN);
     bool fAlwaysRequest2FA = settings.value("fAlwaysRequest2FA").toBool();
 
     form->errorAddress(isValidAddresss);
     form->errorAmount(isValidAmount);
-    form->errorAmount(isMinimumAmount);
 
     if (!isValidAddresss) {
         QMessageBox msgBox;
@@ -180,22 +180,12 @@ void SendCoinsDialog::on_sendButton_clicked(){
         return;
     }
 
-    if (!isMinimumAmount) {
-        QMessageBox msgBox;
-        msgBox.setWindowTitle("Invalid Amount");
-        msgBox.setText("Invalid amount entered. The minimum amount is 5 PRCY.");
-        msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
-        msgBox.setIcon(QMessageBox::Warning);
-        msgBox.exec();
-        return;
-    }
-
     // request unlock only if was locked or unlocked for mixing:
     // this way we let users unlock by walletpassphrase or by menu
     // and make many transactions while unlocking through this dialog
     // will call relock
     WalletModel::EncryptionStatus encStatus = model->getEncryptionStatus();
-    if (encStatus == model->Locked || encStatus == model->UnlockedForAnonymizationOnly) {
+    if (encStatus == model->Locked || encStatus == model->UnlockedForStakingOnly) {
         WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::Send, true));
         if (!ctx.isValid()) {
             // Unlock wallet was cancelled
@@ -216,6 +206,7 @@ void SendCoinsDialog::on_sendButton_clicked(){
     recipientElement.append("<br/><span class='h3'>"+tr("Destination")+": <br/><b>"+recipient.address+"</b></span><br/>");
 
     formatted.append(recipientElement);
+    SetRingSize(0);
     QString strFee = BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), (pwalletMain->ComputeFee(1, 1, MAX_RING_SIZE)));
     QString questionString = "<br/><span class='h2'><center><b>"+tr("Are you sure you want to send?")+"</b></center></span>";
     questionString.append("%1");

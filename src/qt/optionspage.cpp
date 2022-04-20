@@ -14,7 +14,6 @@
 #include "masternode-sync.h"
 #include "optionsmodel.h"
 #include "receiverequestdialog.h"
-#include "recentrequeststablemodel.h"
 #include "walletmodel.h"
 #include "2faqrdialog.h"
 #include "2fadialog.h"
@@ -34,7 +33,6 @@
 #include <QFile>
 #include <QTextStream>
 
-using namespace std;
 
 OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
                                                           ui(new Ui::OptionsPage),
@@ -157,11 +155,19 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
     ui->minimizeToTray->setChecked(settings.value("fMinimizeToTray", false).toBool());
     ui->minimizeOnClose->setChecked(settings.value("fMinimizeOnClose", false).toBool());
     ui->alwaysRequest2FA->setChecked(settings.value("fAlwaysRequest2FA", false).toBool());
+    ui->hideBalanceStaking->setChecked(settings.value("fHideBalance", false).toBool());
+    ui->lockSendStaking->setChecked(settings.value("fLockSendStaking", false).toBool());
+    ui->displayCurrencyValue->setChecked(settings.value("fDisplayCurrencyValue", false).toBool());
+    ui->defaultCurrency->setCurrentText(settings.value("strDefaultCurrency").toString());
     connect(ui->addNewFunds, SIGNAL(stateChanged(int)), this, SLOT(setAutoConsolidate(int)));
     connect(ui->mapPortUpnp, SIGNAL(stateChanged(int)), this, SLOT(mapPortUpnp_clicked(int)));
     connect(ui->minimizeToTray, SIGNAL(stateChanged(int)), this, SLOT(minimizeToTray_clicked(int)));
     connect(ui->minimizeOnClose, SIGNAL(stateChanged(int)), this, SLOT(minimizeOnClose_clicked(int)));
     connect(ui->alwaysRequest2FA, SIGNAL(stateChanged(int)), this, SLOT(alwaysRequest2FA_clicked(int)));
+    connect(ui->hideBalanceStaking, SIGNAL(stateChanged(int)), this, SLOT(hideBalanceStaking_clicked(int)));
+    connect(ui->lockSendStaking, SIGNAL(stateChanged(int)), this, SLOT(lockSendStaking_clicked(int)));
+    connect(ui->displayCurrencyValue, SIGNAL(stateChanged(int)), this, SLOT(displayCurrencyValue_clicked(int)));
+    connect(ui->defaultCurrency, SIGNAL(currentIndexChanged(int)), this, SLOT(setDefaultCurrency(int)));
 }
 
 void OptionsPage::setStakingToggle()
@@ -173,10 +179,6 @@ void OptionsPage::setModel(WalletModel* model)
 {
     this->model = model;
     this->options = model->getOptionsModel();
-
-    if (model && model->getOptionsModel()) {
-        model->getRecentRequestsTableModel()->sort(RecentRequestsTableModel::Date, Qt::DescendingOrder);
-    }
 
     mapper->setModel(options);
     setMapper();
@@ -443,7 +445,7 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
         return;
     }
     int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
         QMessageBox msgBox;
         msgBox.setWindowTitle("Staking Setting");
         msgBox.setIcon(QMessageBox::Information);
@@ -487,6 +489,7 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
             } else if (stt == UNSTAKABLE_BALANCE_RESERVE_TOO_HIGH) {
                 errorMessage = "Your stakeable balance is under the threshold of 2500 PRCY. This is due to your reserve balance being too high. Please deposit more PRCY into your account or reduce your reserved amount in order to enable staking.";
             } else {
+                SetRingSize(0);
                 CAmount totalFee = maxFee + pwalletMain->ComputeFee(1, 2, MAX_RING_SIZE);
                 errorMessage = "Your stakeable balance is under the threshold of 2500 PRCY. This is due to your reserve balance of " + FormatMoney(nReserveBalance) + " PRCY being too high. The wallet software has tried to consolidate your funds with the reserve balance but without success because of a consolidation fee of " + FormatMoney(totalFee) + " PRCY. Please wait around 10 minutes for the wallet to resolve the reserve to enable staking.";
             }
@@ -638,7 +641,7 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
 void OptionsPage::on_Enable2FA(ToggleButton* widget)
 {
     int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
         QMessageBox msgBox;
         msgBox.setWindowTitle("2FA Setting");
         msgBox.setIcon(QMessageBox::Information);
@@ -833,7 +836,7 @@ void OptionsPage::on_month() {
 
 void OptionsPage::onShowMnemonic() {
     int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
         WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
         if (!ctx.isValid()) {
             QMessageBox msgBox;
@@ -903,16 +906,7 @@ void OptionsPage::onShowMnemonic() {
 }
 
 void OptionsPage::setAutoConsolidate(int state) {
-    int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
-        QMessageBox msgBox;
-        msgBox.setWindowTitle("Staking Settings");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Please unlock the keychain wallet with your passphrase before attempting to change this setting.");
-        msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
-        msgBox.exec();
-        return;
-    }
+    checkForUnlock();
     LOCK(pwalletMain->cs_wallet);
     saveConsolidationSettingTime(ui->addNewFunds->isChecked());
 }
@@ -961,16 +955,7 @@ void OptionsPage::minimizeOnClose_clicked(int state)
 
 void OptionsPage::changeDigits(int digit)
 {
-    int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
-        QMessageBox msgBox;
-        msgBox.setWindowTitle("2FA Digit Settings");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Please unlock the keychain wallet with your passphrase before attempting to change this setting.");
-        msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
-        msgBox.exec();
-        return;
-    }
+    checkForUnlock();
     bool twofastatus = pwalletMain->Read2FA();
     if (twofastatus) {
         QMessageBox::StandardButton reply;
@@ -1002,20 +987,117 @@ void OptionsPage::changeDigits(int digit)
 
 void OptionsPage::alwaysRequest2FA_clicked(int state)
 {
-    int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
-        QMessageBox msgBox;
-        msgBox.setWindowTitle("2FA Settings");
-        msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Please unlock the keychain wallet with your passphrase before attempting to change this setting.");
-        msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
-        msgBox.exec();
-        return;
-    }
+    checkForUnlock();
     bool twofastatus = pwalletMain->Read2FA();
     if (twofastatus && ui->alwaysRequest2FA->isChecked()) {
         settings.setValue("fAlwaysRequest2FA", true);
     } else {
         settings.setValue("fAlwaysRequest2FA", false);
+    }
+}
+
+void OptionsPage::hideBalanceStaking_clicked(int state) {
+    checkForUnlock();
+    if (ui->hideBalanceStaking->isChecked()) {
+        settings.setValue("fHideBalance", true);
+    } else {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Are You Sure?", "Are you sure you would like to disable your 'Hide Balance when unlocked'?\nYou will be required to enter your passphrase. Failed or canceled attempts will be logged.", QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            model->setWalletLocked(true);
+            WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
+            if (!ctx.isValid()) {
+                QMessageBox msgBox;
+                msgBox.setWindowTitle("Hide Balance When Unlocked");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText("Attempt to Disable 'Hide Balance when unlocked' failed or canceled. Wallet Locked for security.");
+                msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
+                msgBox.exec();
+                LogPrintf("Attempt to Disable 'Hide Balance when unlocked' failed or canceled. Wallet Locked for security.\n");
+                settings.setValue("fHideBalance", true);
+                ui->hideBalanceStaking->setChecked(true);
+                return;
+            } else {
+                SecureString pass;
+                model->setWalletLocked(false, pass);
+                settings.setValue("fHideBalance", false);
+                LogPrintf("Disable 'Hide Balance when unlocked' successful.\n");
+            }
+        } else {
+            LogPrintf("Attempt to Disable 'Hide Balance when unlocked' canceled.\n");
+            settings.setValue("fHideBalance", true);
+            ui->hideBalanceStaking->setChecked(true);
+            return;
+        }
+    }
+}
+
+void OptionsPage::lockSendStaking_clicked(int state) {
+    checkForUnlock();
+    if (ui->lockSendStaking->isChecked()) {
+        settings.setValue("fLockSendStaking", true);
+    } else {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Are You Sure?", "Are you sure you would like to disable your Lock Send Tab when unlocked?\nYou will be required to enter your passphrase. Failed or canceled attempts will be logged.", QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+            model->setWalletLocked(true);
+            WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
+            if (!ctx.isValid()) {
+                QMessageBox msgBox;
+                msgBox.setWindowTitle("Lock Send Tab When Unlocked");
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.setText("Attempt to Disable 'Lock Send Tab when unlocked' failed or canceled. Wallet Locked for security.");
+                msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
+                msgBox.exec();
+                LogPrintf("Attempt to Disable 'Lock Send Tab when unlocked' failed or canceled. Wallet Locked for security.\n");
+                settings.setValue("fLockSendStaking", true);
+                ui->lockSendStaking->setChecked(true);
+                return;
+            } else {
+                SecureString pass;
+                model->setWalletLocked(false, pass);
+                settings.setValue("fLockSendStaking", false);
+                LogPrintf("Disable 'Lock Send Tab when unlocked' successful.\n");
+            }
+        } else {
+            LogPrintf("Attempt to Disable 'Lock Send Tab when unlocked' canceled.\n");
+            settings.setValue("fLockSendStaking", true);
+            ui->lockSendStaking->setChecked(true);
+            return;
+        }
+    }
+}
+
+
+void OptionsPage::displayCurrencyValue_clicked(int)
+{
+    checkForUnlock();
+    if (ui->displayCurrencyValue->isChecked()) {
+        settings.setValue("fDisplayCurrencyValue", true);
+        // Only set default USD if one doesn't already exist
+        if (!settings.contains("strDefaultCurrency"))
+            settings.setValue("strDefaultCurrency", "USD");
+    } else {
+        settings.setValue("fDisplayCurrencyValue", false);
+    }
+}
+
+void OptionsPage::setDefaultCurrency(int)
+{
+    checkForUnlock();
+    settings.setValue("strDefaultCurrency", ui->defaultCurrency->currentText());
+}
+
+void OptionsPage::checkForUnlock()
+{
+    int status = model->getEncryptionStatus();
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
+        QMessageBox msgBox;
+        msgBox.setWindowTitle("Password Locked Setting");
+        msgBox.setIcon(QMessageBox::Information);
+        msgBox.setText("Please unlock the keychain wallet with your passphrase before changing this setting.");
+        msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
+        msgBox.exec();
+        return;
     }
 }

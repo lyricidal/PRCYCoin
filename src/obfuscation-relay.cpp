@@ -15,7 +15,7 @@ CObfuScationRelay::CObfuScationRelay()
     out = CTxOut();
 }
 
-CObfuScationRelay::CObfuScationRelay(CTxIn& vinMasternodeIn, vector<unsigned char>& vchSigIn, int nBlockHeightIn, int nRelayTypeIn, CTxIn& in2, CTxOut& out2)
+CObfuScationRelay::CObfuScationRelay(CTxIn& vinMasternodeIn, std::vector<unsigned char>& vchSigIn, int nBlockHeightIn, int nRelayTypeIn, CTxIn& in2, CTxOut& out2)
 {
     vinMasternode = vinMasternodeIn;
     vchSig = vchSigIn;
@@ -101,9 +101,9 @@ void CObfuScationRelay::RelayThroughNode(int nRank)
     CMasternode* pmn = mnodeman.GetMasternodeByRank(nRank, nBlockHeight, ActiveProtocol());
 
     if (pmn != NULL) {
-        CNode* pnode = ConnectNode((CAddress)pmn->addr, NULL, false);
+        CNode* pnode = ConnectNode(CAddress(pmn->addr, NODE_NETWORK), NULL, false, true);
         if (pnode) {
-            pnode->PushMessage("dsr", (*this));
+            pnode->PushMessage(NetMsgType::DSR, (*this));
             pnode->Release();
             return;
         }

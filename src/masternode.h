@@ -23,12 +23,11 @@
 #define MASTERNODE_REMOVAL_SECONDS (130 * 60)
 #define MASTERNODE_CHECK_SECONDS 5
 
-using namespace std;
 
 class CMasternode;
 class CMasternodeBroadcast;
 class CMasternodePing;
-extern map<int64_t, uint256> mapCacheBlockHashes;
+extern std::map<int64_t, uint256> mapCacheBlockHashes;
 
 bool GetBlockHash(uint256& hash, int nBlockHeight);
 
@@ -144,9 +143,6 @@ public:
     int nScanningErrorCount;
     int nLastScanningErrorBlockHeight;
     CMasternodePing lastPing;
-
-    int64_t nLastDsee;  // temporary, do not save. Remove after migration to v12
-    int64_t nLastDseep; // temporary, do not save. Remove after migration to v12
 
     CMasternode();
     CMasternode(const CMasternode& other);
@@ -296,8 +292,7 @@ public:
     bool Sign(CKey& keyCollateralAddress);
     bool VerifySignature();
     void Relay();
-    std::string GetOldStrMessage();
-    std::string GetNewStrMessage();
+    std::string GetStrMessage();
 
     ADD_SERIALIZE_METHODS;
 
@@ -326,7 +321,7 @@ public:
     /// Create Masternode broadcast, needs to be relayed manually after that
     static bool Create(CTxIn vin, CService service, CKey keyCollateralAddressNew, CPubKey pubKeyCollateralAddressNew, CKey keyMasternodeNew, CPubKey pubKeyMasternodeNew, std::string& strErrorRet, CMasternodeBroadcast& mnbRet);
     static bool Create(std::string strService, std::string strKey, std::string strTxHash, std::string strOutputIndex, std::string& strErrorRet, CMasternodeBroadcast& mnbRet, bool fOffline = false);
-    static bool CheckDefaultPort(std::string strService, std::string& strErrorRet, std::string strContext);
+    static bool CheckDefaultPort(CService service, std::string& strErrorRet, const std::string& strContext);
 };
 
 #endif

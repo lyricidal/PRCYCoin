@@ -64,6 +64,7 @@ INCLUDEPATH += . \
 HEADERS += src/activemasternode.h \
            src/addrman.h \
            src/allocators.h \
+           src/arith_uint256.h \
            src/amount.h \
            src/base58.h \
            src/bignum.h \
@@ -88,7 +89,6 @@ HEADERS += src/activemasternode.h \
            src/eccryptoverify.h \
            src/ecdhutil.h \
            src/ecwrapper.h \
-           src/enum.h \
            src/guiinterface.h \
            src/hash.h \
            src/hdchain.h \
@@ -99,7 +99,7 @@ HEADERS += src/activemasternode.h \
            src/kernel.h \
            src/key.h \
            src/keystore.h \
-           src/leveldbwrapper.h \
+           src/dbwrapper.h \
            src/limitedmap.h \
            src/main.h \
            src/masternode-budget.h \
@@ -134,6 +134,8 @@ HEADERS += src/activemasternode.h \
            src/txdb.h \
            src/txmempool.h \
            src/uint256.h \
+           src/uint512.h \
+           src/blob_uint256.h \
            src/undo.h \
            src/util.h \
            src/utilmoneystr.h \
@@ -148,6 +150,9 @@ HEADERS += src/activemasternode.h \
            src/wallet/wallet.h \
            src/wallet/wallet_ismine.h \
            src/wallet/walletdb.h \
+           src/consensus/consensus.h \
+           src/consensus/validation.h \
+           src/consensus/tx_verify.h \
            src/compat/sanity.h \
            src/config/prcycoin-config.h \
            src/crypto/common.h \
@@ -212,13 +217,11 @@ HEADERS += src/activemasternode.h \
            src/qt/paymentrequestplus.h \
            src/qt/paymentserver.h \
            src/qt/peertablemodel.h \
-           src/qt/platformstyle.h \
            src/qt/qgoogleauth.h \
            src/qt/qvalidatedlineedit.h \
            src/qt/qvaluecombobox.h \
            src/qt/receivecoinsdialog.h \
            src/qt/receiverequestdialog.h \
-           src/qt/recentrequeststablemodel.h \
            src/qt/revealtxdialog.h \
            src/qt/rpcconsole.h \
            src/qt/sendcoinsdialog.h \
@@ -324,7 +327,6 @@ HEADERS += src/activemasternode.h \
            src/secp256k1/src/testrand.h \
            src/secp256k1/src/testrand_impl.h \
            src/secp256k1/src/util.h \
-           src/test/data/alertTests.raw \
            src/test/data/base58_encode_decode.json \
            src/test/data/base58_keys_invalid.json \
            src/test/data/base58_keys_valid.json \
@@ -426,7 +428,7 @@ SOURCES += src/activemasternode.cpp \
            src/kernel.cpp \
            src/key.cpp \
            src/keystore.cpp \
-           src/leveldbwrapper.cpp \
+           src/dbwrapper.cpp \
            src/main.cpp \
            src/masternode-budget.cpp \
            src/masternode-payments.cpp \
@@ -475,6 +477,7 @@ SOURCES += src/activemasternode.cpp \
            src/wallet/wallet.cpp \
            src/wallet/wallet_ismine.cpp \
            src/wallet/walletdb.cpp \
+           src/consensus/tx_verify.cpp \
            src/compat/glibc_compat.cpp \
            src/compat/glibc_sanity.cpp \
            src/compat/glibcxx_compat.cpp \
@@ -542,13 +545,11 @@ SOURCES += src/activemasternode.cpp \
            src/qt/paymentrequestplus.cpp \
            src/qt/paymentserver.cpp \
            src/qt/peertablemodel.cpp \
-           src/qt/platformstyle.cpp \
            src/qt/qgoogleauth.cpp \
            src/qt/qvalidatedlineedit.cpp \
            src/qt/qvaluecombobox.cpp \
            src/qt/receivecoinsdialog.cpp \
            src/qt/receiverequestdialog.cpp \
-           src/qt/recentrequeststablemodel.cpp \
            src/qt/revealtxdialog.cpp \
            src/qt/rpcconsole.cpp \
            src/qt/sendcoinsdialog.cpp \
@@ -578,6 +579,7 @@ SOURCES += src/activemasternode.cpp \
            src/script/sign.cpp \
            src/script/standard.cpp \
            src/test/accounting_tests.cpp \
+           src/test/addrman_tests.cpp \
            src/test/alert_tests.cpp \
            src/test/allocator_tests.cpp \
            src/test/base32_tests.cpp \
@@ -593,12 +595,12 @@ SOURCES += src/activemasternode.cpp \
            src/test/DoS_tests.cpp \
            src/test/getarg_tests.cpp \
            src/test/hash_tests.cpp \
+           src/test/hdchain_tests.cpp \
            src/test/key_tests.cpp \
            src/test/main_tests.cpp \
            src/test/mempool_tests.cpp \
            src/test/miner_tests.cpp \
            src/test/mruset_tests.cpp \
-           src/test/multisig_tests.cpp \
            src/test/netbase_tests.cpp \
            src/test/pmt_tests.cpp \
            src/test/rpc_tests.cpp \

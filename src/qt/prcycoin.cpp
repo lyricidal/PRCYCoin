@@ -31,6 +31,7 @@
 #include "masternodeconfig.h"
 
 #include "init.h"
+#include "fs.h"
 #include "main.h"
 #include "rpc/server.h"
 #include "guiinterface.h"
@@ -51,7 +52,6 @@
 #include <execinfo.h>
 #endif
 
-#include <boost/filesystem/operations.hpp>
 #include <boost/thread.hpp>
 
 #include <QApplication>
@@ -163,8 +163,11 @@ static void initTranslations(QTranslator& qtTranslatorBase, QTranslator& qtTrans
 void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     Q_UNUSED(context);
-    const char* category = (type == QtDebugMsg) ? "qt" : NULL;
-    LogPrint(category, "GUI: %s\n", msg.toStdString());
+    if (type == QtDebugMsg) {
+        LogPrint(BCLog::QT, "GUI: %s\n", msg.toStdString());
+    } else {
+        LogPrintf("GUI: %s\n", msg.toStdString());
+    }
 }
 
 /** Class encapsulating PRCY startup and shutdown.
@@ -510,7 +513,7 @@ void BitcoinApplication::initializeResult(int retval)
             window, SLOT(message(QString, QString, unsigned int)));
         QTimer::singleShot(100, paymentServer, SLOT(uiReady()));
         if (pwalletMain) {
-            if (walletModel->getEncryptionStatus() == WalletModel::Locked) {
+            if (walletModel->getEncryptionStatus() == WalletModel::Locked && !GetBoolArg("-min", false)) {
                 WalletModel::UnlockContext ctx(walletModel->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
                 if (ctx.isValid()) {
                     walletUnlocked = true;
@@ -518,7 +521,6 @@ void BitcoinApplication::initializeResult(int retval)
                         pwalletMain->WriteStakingStatus(false);
                     }
                 }
-                Q_EMIT requestedRegisterNodeSignal();
             }
             if (!walletUnlocked && walletModel->getEncryptionStatus() == WalletModel::Unencrypted) {
                 EncryptDialog dlg;
@@ -527,9 +529,9 @@ void BitcoinApplication::initializeResult(int retval)
                 dlg.setStyleSheet(GUIUtil::loadStyleSheet());
                 dlg.exec();
 
-                Q_EMIT requestedRegisterNodeSignal();
                 walletModel->updateStatus();
             }
+            Q_EMIT requestedRegisterNodeSignal();
         }
 #endif
         pollShutdownTimer->start(200);
@@ -619,7 +621,6 @@ int main(int argc, char* argv[])
     QApplication::setOrganizationName(QAPP_ORG_NAME);
     QApplication::setOrganizationDomain(QAPP_ORG_DOMAIN);
     QApplication::setApplicationName(QAPP_APP_NAME_DEFAULT);
-    GUIUtil::SubstituteFonts(GetLangTerritory());
 
     /// 4. Initialization of translations, so that intro dialog is in user's language
     // Now that QSettings are accessible, initialize translations
@@ -642,7 +643,7 @@ int main(int argc, char* argv[])
 
     /// 6. Determine availability of data directory and parse prcycoin.conf
     /// - Do not call GetDataDir(true) before this step finishes
-    if (!boost::filesystem::is_directory(GetDataDir(false))) {
+    if (!fs::is_directory(GetDataDir(false))) {
         QMessageBox::critical(0, QObject::tr("PRCY"),
             QObject::tr("Error: Specified data directory \"%1\" does not exist.").arg(QString::fromStdString(mapArgs["-datadir"])));
         return 1;
@@ -680,7 +681,7 @@ int main(int argc, char* argv[])
 
 #ifdef ENABLE_WALLET
     /// 7a. parse masternode.conf
-    string strErr;
+    std::string strErr;
     if (!masternodeConfig.read(strErr)) {
         QMessageBox::critical(0, QObject::tr("PRCY"),
             QObject::tr("Error reading masternode configuration file: %1").arg(strErr.c_str()));

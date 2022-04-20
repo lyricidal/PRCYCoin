@@ -1,8 +1,11 @@
 #include "revealtxdialog.h"
 #include "ui_revealtxdialog.h"
 #include "bitcoinunits.h"
+#include "chainparams.h"
 
 #include <QClipboard>
+#include <QDesktopServices>
+#include <QUrl>
 
 RevealTxDialog::RevealTxDialog(QWidget *parent) :
     QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
@@ -29,6 +32,24 @@ RevealTxDialog::RevealTxDialog(QWidget *parent) :
     ui->pushButtonCopyTxFee->setStyleSheet("background:transparent;");
     ui->pushButtonCopyTxFee->setIcon(QIcon(":/icons/editcopy"));
     connect(ui->pushButtonCopyTxFee, SIGNAL(clicked()), this, SLOT(copyTxFee()));
+
+    ui->pushButtonCopyTxPaymentID->setStyleSheet("background:transparent;");
+    ui->pushButtonCopyTxPaymentID->setIcon(QIcon(":/icons/editcopy"));
+    connect(ui->pushButtonCopyTxPaymentID, SIGNAL(clicked()), this, SLOT(copyTxPaymentID()));
+
+    ui->pushButtonCopyTxRingSize->setStyleSheet("background:transparent;");
+    ui->pushButtonCopyTxRingSize->setIcon(QIcon(":/icons/editcopy"));
+    connect(ui->pushButtonCopyTxRingSize, SIGNAL(clicked()), this, SLOT(copyTxRingSize()));
+
+    ui->pushButtonOpenTXID->setStyleSheet("background:transparent;");
+    ui->pushButtonOpenTXID->setIcon(QIcon(":/icons/eye"));
+    connect(ui->pushButtonOpenTXID, SIGNAL(clicked()), this, SLOT(openTXinExplorer()));
+
+    // Hide View in Explorer on any other network but Main
+    bool fMainNet = Params().NetworkID() == CBaseChainParams::MAIN;
+    if (!fMainNet) {
+        ui->pushButtonOpenTXID->hide();
+    }
 }
 
 RevealTxDialog::~RevealTxDialog()
@@ -63,6 +84,21 @@ void RevealTxDialog::setTxFee(CAmount fee)
     ui->lblTxFee->setText(BitcoinUnits::formatHtmlWithUnit(0, fee, false, BitcoinUnits::separatorAlways));
 }
 
+void RevealTxDialog::setTxPaymentID(uint64_t paymentID)
+{
+    if (paymentID == 0) {
+        ui->pushButtonCopyTxPaymentID->hide();
+        ui->label_7->hide();
+        ui->lblTxPaymentID->hide();
+    }
+    ui->lblTxPaymentID->setText(QString::number(paymentID));
+}
+
+void RevealTxDialog::setTxRingSize(int64_t ringSize)
+{
+    ui->lblTxRingSize->setText(QString::number(ringSize));
+}
+
 void RevealTxDialog::on_buttonBox_accepted()
 {
 
@@ -91,4 +127,20 @@ void RevealTxDialog::copyTxAmount(){
 void RevealTxDialog::copyTxFee(){
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(ui->lblTxFee->text());
+}
+
+void RevealTxDialog::copyTxPaymentID(){
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(ui->lblTxPaymentID->text());
+}
+
+void RevealTxDialog::copyTxRingSize(){
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(ui->lblTxRingSize->text());
+}
+
+void RevealTxDialog::openTXinExplorer()
+{
+    QString URL = "https://explorer.prcycoin.com/tx/";
+    QDesktopServices::openUrl(QUrl(URL.append(ui->lblTxID->text())));
 }

@@ -11,6 +11,7 @@
 
 #include "amount.h"
 #include "base58.h"
+#include "consensus/tx_verify.h"
 #include "crypter.h"
 #include "kernel.h"
 #include "key.h"
@@ -25,7 +26,9 @@
 #include "wallet/walletdb.h"
 
 #include <algorithm>
+#include <atomic>
 #include <map>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <stdint.h>
@@ -33,17 +36,13 @@
 #include <utility>
 #include <vector>
 
-
-#include <memory>
-
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/deque.hpp>
-#include <atomic>
 
-
+extern CWallet* pwalletMain;
 
 /**
  * Settings
@@ -273,7 +272,7 @@ public:
     bool WriteAutoConsolidateSettingTime(uint32_t settingTime);
     uint32_t ReadAutoConsolidateSettingTime();
     bool IsAutoConsolidateOn();
-    string GetUniqueWalletBackupName() const;
+    std::string GetUniqueWalletBackupName() const;
     /*
      * Main wallet lock.
      * This lock protects all the fields added by CWallet
@@ -284,7 +283,7 @@ public:
     mutable RecursiveMutex cs_wallet;
 
     bool fFileBacked;
-    bool fWalletUnlockAnonymizeOnly;
+    bool fWalletUnlockStakingOnly;
     std::string strWalletFile;
     bool fBackupMints;
 
@@ -502,7 +501,7 @@ public:
     bool CreateTransaction(CScript scriptPubKey, const CAmount &nValue, CWalletTx &wtxNew, CReserveKey &reservekey,
                            CAmount &nFeeRet, std::string &strFailReason, const CCoinControl *coinControl = NULL,
                            AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0);
-    bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, std::string strCommand = "tx");
+    bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, std::string strCommand = NetMsgType::TX);
     bool AddAccountingEntry(const CAccountingEntry&, CWalletDB & pwalletdb);
     int GenerateObfuscationOutputs(int nTotalValue, std::vector<CTxOut>& vout);
     bool CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, CMutableTransaction& txNew, unsigned int& nTxNewTime);
@@ -618,7 +617,7 @@ public:
     CAmount getCOutPutValue(const COutput& output) const;
     CAmount getCTxOutValue(const CTransaction &tx, const CTxOut &out) const;
     bool findCorrespondingPrivateKey(const CTxOut &txout, CKey &key) const;
-    bool AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, vector<COutput>& vCoins, int cannotSpend, bool fOnlyConfirmed = true, const CCoinControl* coinControl = NULL, bool fIncludeZeroValue = false, AvailableCoinsType nCoinType = ALL_COINS, bool fUseIX = false);
+    bool AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, std::vector<COutput>& vCoins, int cannotSpend, bool fOnlyConfirmed = true, const CCoinControl* coinControl = NULL, bool fIncludeZeroValue = false, AvailableCoinsType nCoinType = ALL_COINS, bool fUseIX = false);
     void CreatePrivacyAccount(bool force = false);
     bool mySpendPrivateKey(CKey& spend) const;
     bool myViewPrivateKey(CKey& view) const;
@@ -640,6 +639,9 @@ public:
     bool computeSharedSec(const CTransaction& tx, const CTxOut& out, CPubKey& sharedSec) const;
     void AddComputedPrivateKey(const CTxOut& out);
     bool IsCollateralized(const COutPoint& outpoint);
+
+    /* Wallets parameter interaction */
+    static bool ParameterInteraction();
 private:
     bool encodeStealthBase58(const std::vector<unsigned char>& raw, std::string& stealth);
     bool allMyPrivateKeys(std::vector<CKey>& spends, std::vector<CKey>& views);
@@ -732,7 +734,7 @@ public:
 
     void Init()
     {
-        hashBlock = 0;
+        hashBlock = UINT256_ZERO;
         nIndex = -1;
         fMerkleVerified = false;
     }
@@ -904,7 +906,7 @@ public:
     int64_t GetTxTime() const;
     int64_t GetComputedTxTime() const;
     int GetRequestCount() const;
-    void RelayWalletTransaction(std::string strCommand = "tx");
+    void RelayWalletTransaction(std::string strCommand = NetMsgType::TX);
 
     std::set<uint256> GetConflicts() const;
 };

@@ -8,19 +8,20 @@
 #include "base58.h"
 #include "wallet/wallet.h"
 
+#include "test/test_prcycoin.h"
+
 #include <boost/algorithm/string.hpp>
 #include <boost/test/unit_test.hpp>
 
 #ifdef DISABLE_FAILED_TEST
 #include <univalue.h>
-using namespace std;
 
 extern UniValue createArgs(int nRequired, const char* address1 = NULL, const char* address2 = NULL);
 extern UniValue CallRPC(string args);
 
 extern CWallet* pwalletMain;
 
-BOOST_AUTO_TEST_SUITE(rpc_wallet_tests)
+BOOST_FIXTURE_TEST_SUITE(rpc_wallet_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(rpc_addmultisig)
 {
