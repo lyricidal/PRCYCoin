@@ -2440,7 +2440,7 @@ void SetRingSize(int nHeight)
         MAX_RING_SIZE = 32;
     }
 
-    LogPrint(BCLog::SELECTCOINS, "%s: height %d: min ring size %d, max ring size: %d\n", __func__, nHeight, MIN_RING_SIZE, MAX_RING_SIZE);
+    LogPrint("selectcoins", "%s: height %d: min ring size %d, max ring size: %d\n", __func__, nHeight, MIN_RING_SIZE, MAX_RING_SIZE);
     return;
 }
 
