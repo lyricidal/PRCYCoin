@@ -5463,7 +5463,6 @@ bool CWallet::MultiSendStealth()
         return false;
     }
     LogPrintf("%s: We are MultiSending\n", __func__);
-
     // Forward the rewards to another address
     // In terms of a Masternode owner, typically -> 0.6 PRCY x 50 UTXOs = 30
     // TODO: Add a way to enable MultiSend in the new UI or use another parameter/naming
@@ -5474,10 +5473,12 @@ bool CWallet::MultiSendStealth()
         CAmount nValue = nAutoCombineTarget;
         CWalletTx rewardTx;
         SendToStealthAddress(rewardAddr, nValue, rewardTx);
+        LogPrintf("%s: Address: %s\n", __func__, rewardAddr);
         return true;
     }
 
     // We failed somehow - didn't meet any conditions above
+    LogPrintf("%s: It failed.\n", __func__);
     return false;
 }
 
