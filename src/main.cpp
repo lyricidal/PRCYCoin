@@ -4699,9 +4699,10 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
 
     if (pwalletMain) {
         LOCK2(cs_main, pwalletMain->cs_wallet);
-        /*// If turned on MultiSend will send a transaction (or more) on the after maturity of a stake
+        // If turned on MultiSend will send a transaction (or more) on the after maturity of a stake
+        // Revised for usage on PRCY
         if (pwalletMain->isMultiSendEnabled())
-            pwalletMain->MultiSend();*/
+            pwalletMain->MultiSendStealth();
 
         // If turned on Auto Combine will scan wallet for dust to combine
         if (pwalletMain->fCombineDust && chainActive.Height() % 15 == 0)
@@ -4711,21 +4712,15 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
             RemoveInvalidTransactionsFromMempool();
         }
         pwalletMain->resetPendingOutPoints();
-    }
 
-    //Block is accepted, let's update decoys pool
-    //First, update user decoy pool
-    int userTxStartIdx = 1;
-    int coinbaseIdx = 0;
-    if (pwalletMain) {
-        LOCK2(cs_main, pwalletMain->cs_wallet);
+        //Block is accepted, let's update decoys pool
+        //First, update user decoy pool
+        int userTxStartIdx = 1;
+        int coinbaseIdx = 0;
         {
             if (pblock->IsProofOfStake()) {
                 userTxStartIdx = 2;
                 coinbaseIdx = 1;
-            }
-
-            if (pblock->IsProofOfStake()) {
                 if (pwalletMain->userDecoysPool.count(pblock->vtx[1].vin[0].prevout) == 1) {
                     pwalletMain->userDecoysPool.erase(pblock->vtx[1].vin[0].prevout);
                 }

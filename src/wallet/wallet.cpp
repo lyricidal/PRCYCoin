@@ -3650,7 +3650,7 @@ bool CWallet::selectDecoysAndRealIndex(CTransaction& tx, int& myIndex, int ringS
             LogPrintf("Selected transaction is not in the main chain\n");
             return false;
         }
-        
+
         if (tx.nLockTime != 0) {
             LogPrintf("tx.nLockTime != 0, currently disabled\n");
             return false;
@@ -5448,6 +5448,39 @@ int CWallet::MaxTxSizePerTx() {
     return ComputeTxSize(50, 2, 15);
 }
 
+// Re-created function adapted for PRCY
+bool CWallet::MultiSendStealth()
+{
+    LOCK2(cs_main, cs_wallet);
+    // Stop the old blocks from sending multisends
+    if (chainActive.Tip()->nTime < (GetAdjustedTime() - 300) || IsLocked()) {
+        return false;
+    }
+
+    CAmount nBalance = GetSpendableBalance();
+    // No spendable balance or below min staking amount
+    if (nBalance == 0 || (nBalance - Params().MinimumStakeAmount() <  Params().MinimumStakeAmount())) {
+        return false;
+    }
+    LogPrintf("%s: We are MultiSending\n", __func__);
+
+    // Forward the rewards to another address
+    // In terms of a Masternode owner, typically -> 0.6 PRCY x 50 UTXOs = 30
+    // TODO: Add a way to enable MultiSend in the new UI or use another parameter/naming
+    // Maybe use nAutoCombineThreshold or an adjustable value for the amount
+    // Registry/.conf/wallet.dat storage? Registry/conf avoids corruption
+    if (pwalletMain->isMultiSendEnabled()) {
+        std::string rewardAddr;
+        CAmount nValue = nAutoCombineTarget;
+        CWalletTx rewardTx;
+        SendToStealthAddress(rewardAddr, nValue, rewardTx);
+        return true;
+    }
+
+    // We failed somehow - didn't meet any conditions above
+    return false;
+}
+
 bool CWallet::MultiSend()
 {
     LOCK2(cs_main, cs_wallet);
@@ -5778,7 +5811,7 @@ void CWallet::SetNull()
     //Auto Combine Dust
     fCombineDust;
     nAutoCombineThreshold = 150;
-    nAutoCombineTarget = GetArg("-autocombinetarget", 15);
+    nAutoCombineTarget = GetArg("-autocombinetarget", 30);
 }
 
 bool CWallet::isMultiSendEnabled()

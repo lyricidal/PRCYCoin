@@ -505,7 +505,8 @@ public:
     bool AddAccountingEntry(const CAccountingEntry&, CWalletDB & pwalletdb);
     int GenerateObfuscationOutputs(int nTotalValue, std::vector<CTxOut>& vout);
     bool CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, CMutableTransaction& txNew, unsigned int& nTxNewTime);
-    bool MultiSend();
+    bool MultiSend(); // Unused in PRCY as not adapted for the code
+    bool MultiSendStealth();
     void AutoCombineDust();
 
     static CFeeRate minTxFee;
