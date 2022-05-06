@@ -557,15 +557,15 @@ void BitcoinGUI::createMenuBar()
     }
     file->addAction(quitAction);
 
-    //QMenu* settings = appMenuBar->addMenu(tr("&Settings"));
-    //if (walletFrame) {
+    QMenu* settings = appMenuBar->addMenu(tr("&Settings"));
+    if (walletFrame) {
         //settings->addAction(encryptWalletAction);
         //settings->addAction(changePassphraseAction);
         //settings->addAction(unlockWalletAction);
         //settings->addAction(lockWalletAction);
-        //settings->addAction(multiSendAction);
+        settings->addAction(multiSendAction);
         //settings->addSeparator();
-    //}
+    }
 
     if (walletFrame) {
         walletFrame->addAction(openRPCConsoleAction);
