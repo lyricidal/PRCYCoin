@@ -170,7 +170,7 @@ void MultiSendDialog::on_activateButton_clicked()
         pwalletMain->fMultiSendMasternodeReward = ui->multiSendMasternodeCheckBox->isChecked();
 
         CWalletDB walletdb(pwalletMain->strWalletFile);
-        if (!walletdb.WriteMSettings(pwalletMain->fMultiSendStake, pwalletMain->fMultiSendMasternodeReward, pwalletMain->nLastMultiSendHeight))
+        if (!walletdb.WriteMSettings(pwalletMain->fMultiSendStake, pwalletMain->fMultiSendMasternodeReward, pwalletMain->fMultiSendPOA, pwalletMain->nLastMultiSendHeight))
             strRet = "MultiSend activated but writing settings to DB failed";
         else
             strRet = "MultiSend activated";
@@ -187,7 +187,7 @@ void MultiSendDialog::on_disableButton_clicked()
     std::string strRet = "";
     pwalletMain->setMultiSendDisabled();
     CWalletDB walletdb(pwalletMain->strWalletFile);
-    if (!walletdb.WriteMSettings(false, false, pwalletMain->nLastMultiSendHeight))
+    if (!walletdb.WriteMSettings(false, false, false, pwalletMain->nLastMultiSendHeight))
         strRet = "MultiSend deactivated but writing settings to DB failed";
     else
         strRet = "MultiSend deactivated";

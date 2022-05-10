@@ -217,7 +217,7 @@ bool CWalletDB::EraseMultiSend(std::vector<std::pair<std::string, int> > vMultiS
     return ret;
 }
 //presstab HyperStake
-bool CWalletDB::WriteMSettings(bool fMultiSendStake, bool fMultiSendMasternode, int nLastMultiSendHeight)
+bool CWalletDB::WriteMSettings(bool fMultiSendStake, bool fMultiSendMasternode, bool fMultiSendPOA, int nLastMultiSendHeight)
 {
     nWalletDBUpdated++;
     std::pair<bool, bool> enabledMS(fMultiSendStake, fMultiSendMasternode);

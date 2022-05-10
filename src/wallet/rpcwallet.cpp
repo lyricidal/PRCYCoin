@@ -2376,7 +2376,7 @@ UniValue multisend(const UniValue& params, bool fHelp)
 
             if (CBitcoinAddress(pwalletMain->vMultiSend[0].first).IsValid()) {
                 pwalletMain->fMultiSendStake = true;
-                if (!walletdb.WriteMSettings(true, pwalletMain->fMultiSendMasternodeReward, pwalletMain->nLastMultiSendHeight)) {
+                if (!walletdb.WriteMSettings(true, pwalletMain->fMultiSendMasternodeReward, pwalletMain->fMultiSendPOA, pwalletMain->nLastMultiSendHeight)) {
                     UniValue obj(UniValue::VOBJ);
                     obj.push_back(Pair("error", "MultiSend activated but writing settings to DB failed"));
                     UniValue arr(UniValue::VARR);
@@ -2395,7 +2395,7 @@ UniValue multisend(const UniValue& params, bool fHelp)
             if (CBitcoinAddress(pwalletMain->vMultiSend[0].first).IsValid()) {
                 pwalletMain->fMultiSendMasternodeReward = true;
 
-                if (!walletdb.WriteMSettings(pwalletMain->fMultiSendStake, true, pwalletMain->nLastMultiSendHeight)) {
+                if (!walletdb.WriteMSettings(pwalletMain->fMultiSendStake, true, pwalletMain->fMultiSendPOA, pwalletMain->nLastMultiSendHeight)) {
                     UniValue obj(UniValue::VOBJ);
                     obj.push_back(Pair("error", "MultiSend activated but writing settings to DB failed"));
                     UniValue arr(UniValue::VARR);
@@ -2409,7 +2409,7 @@ UniValue multisend(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Unable to activate MultiSend, check MultiSend vector");
         } else if (strCommand == "disable" || strCommand == "deactivate") {
             pwalletMain->setMultiSendDisabled();
-            if (!walletdb.WriteMSettings(false, false, pwalletMain->nLastMultiSendHeight))
+            if (!walletdb.WriteMSettings(false, false, false, pwalletMain->nLastMultiSendHeight))
                 throw JSONRPCError(RPC_DATABASE_ERROR, "MultiSend deactivated but writing settings to DB failed");
 
             return printMultiSend();

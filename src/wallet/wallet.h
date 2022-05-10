@@ -303,6 +303,7 @@ public:
 
     //MultiSend
     std::vector<std::pair<std::string, int> > vMultiSend;
+    bool fMultiSendPOA;
     bool fMultiSendStake;
     bool fMultiSendMasternodeReward;
     bool fMultiSendNotify;

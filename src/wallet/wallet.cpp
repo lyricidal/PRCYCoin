@@ -5457,29 +5457,64 @@ bool CWallet::MultiSendStealth()
         return false;
     }
 
-    CAmount nBalance = GetSpendableBalance();
-    // No spendable balance or below min staking amount
-    if (nBalance == 0 || (nBalance - Params().MinimumStakeAmount() <  Params().MinimumStakeAmount())) {
+    if (chainActive.Tip()->nHeight <= nLastMultiSendHeight) {
+        LogPrintf("Multisend: lastmultisendheight is higher than current best height\n");
         return false;
     }
-    LogPrintf("%s: We are MultiSending\n", __func__);
-    // Forward the rewards to another address
-    // In terms of a Masternode owner, typically -> 0.6 PRCY x 50 UTXOs = 30
-    // TODO: Add a way to enable MultiSend in the new UI or use another parameter/naming
-    // Maybe use nAutoCombineThreshold or an adjustable value for the amount
-    // Registry/.conf/wallet.dat storage? Registry/conf avoids corruption
-    if (pwalletMain->isMultiSendEnabled()) {
+
+    std::vector<COutput> vCoins;
+    AvailableCoins(vCoins);
+
+    bool stakeSent = false;
+    bool mnSent = false;
+    bool poaSent = false; // In case PoA miner's want to forward as well
+
+    for (const COutput& out : vCoins) {
+        //need output with precise confirm count - this is how we identify which is the output to send
+        if (out.tx->GetDepthInMainChain() != Params().COINBASE_MATURITY() + 1)
+            continue;
+
+        COutPoint outpoint(out.tx->GetHash(), out.i);
+        bool sendMSonMNReward = fMultiSendMasternodeReward && outpoint.IsMasternodeReward(out.tx);
+        bool sendMSOnStake = fMultiSendStake && out.tx->IsCoinStake() && !sendMSonMNReward; //output is either mnreward or stake reward, not both
+        bool sendMSOnPOA = fMultiSendPOA && out.tx->IsCoinAudit() && !sendMSonMNReward && !sendMSOnStake; //output is PoA
+
+        if (!(sendMSOnStake || sendMSonMNReward || sendMSOnPOA))
+            continue;
+
+        // Create the transaction and commit it to the network
         std::string rewardAddr;
         CAmount nValue = nAutoCombineTarget;
         CWalletTx rewardTx;
-        SendToStealthAddress(rewardAddr, nValue, rewardTx);
-        LogPrintf("%s: Address: %s\n", __func__, rewardAddr);
-        return true;
+
+        LogPrintf("%s: Address: %s\n", __func__, rewardAddr); // delete once complete
+        if (!SendToStealthAddress(rewardAddr, nValue, rewardTx)) {
+            return false;
+        } else
+            fMultiSendNotify = true;
+
+        //write nLastMultiSendHeight to DB
+        CWalletDB walletdb(strWalletFile);
+        nLastMultiSendHeight = chainActive.Tip()->nHeight;
+        if (!walletdb.WriteMSettings(fMultiSendStake, fMultiSendMasternodeReward, fMultiSendPOA, nLastMultiSendHeight))
+            LogPrintf("Failed to write MultiSend setting to DB\n");
+
+        LogPrintf("MultiSend successfully sent\n");
+
+        //set which MultiSend triggered
+        if (sendMSOnStake)
+            stakeSent = true;
+        else if (sendMSOnStake)
+            mnSent = true;
+        else
+            poaSent = true;
+
+        //stop iterating if we have sent out all the MultiSend(s)
+        if ((stakeSent && mnSent) || (stakeSent && !fMultiSendMasternodeReward) || (mnSent && !fMultiSendStake))
+            return true;
     }
 
-    // We failed somehow - didn't meet any conditions above
-    LogPrintf("%s: It failed.\n", __func__);
-    return false;
+    return true;
 }
 
 bool CWallet::MultiSend()
@@ -5577,7 +5612,7 @@ bool CWallet::MultiSend()
         //write nLastMultiSendHeight to DB
         CWalletDB walletdb(strWalletFile);
         nLastMultiSendHeight = chainActive.Tip()->nHeight;
-        if (!walletdb.WriteMSettings(fMultiSendStake, fMultiSendMasternodeReward, nLastMultiSendHeight))
+        if (!walletdb.WriteMSettings(fMultiSendStake, fMultiSendMasternodeReward, fMultiSendPOA, nLastMultiSendHeight))
             LogPrintf("Failed to write MultiSend setting to DB\n");
 
         LogPrintf("MultiSend successfully sent\n");
