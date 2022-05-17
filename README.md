@@ -25,7 +25,7 @@ PRivaCY Coin is a non-ICO community driven project. The project has funded itsel
 
 ## PRivaCY Coin Team
 
-The team consists of a total of 10 members located worldwide. https://prcycoin.com/our-team/
+The team consists of a total of 18 members located worldwide. https://prcycoin.com/our-team/
 
 ## How to Contribute to PRivaCY Coin
 
