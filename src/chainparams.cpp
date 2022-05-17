@@ -130,6 +130,9 @@ public:
         nHardForkBlock = 375000; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 750000; // Add hard fork block for Ring Size bump
         nHardForkBlockRingSize2 = nHardForkBlockRingSize; // For testnet & compile purposes
+        nBurntAmount = 0; // Burnt Amount
+        strBurntKeyImage1 = "0"; // Add Key image/tx hash
+        strBurntKeyImage2 = "0"; // Add Key image/tx hash
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -285,6 +288,9 @@ public:
         nHardForkBlock = 700; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump to 25-30
         nHardForkBlockRingSize2 = 126000; // Add hard fork block for Ring Size bump to 30-32
+        nBurntAmount = 200; // Burnt Amount
+        strBurntKeyImage1 = "0f46c700068f327f2760317afe23e127790eeff494f86ad38d84890274d3fb0902"; // Testnet KeyImage, 100 tPRCY
+        strBurntKeyImage2 = "0b8e50196c53d20139a66f1de7638d61d4de7394d07bb473d4b35309556a6bcf"; // Testnet KeyImage2, 100 tPRCY
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;

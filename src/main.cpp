@@ -259,6 +259,10 @@ double GetPriority(const CTransaction& tx, int nHeight)
 bool IsSpentKeyImage(const std::string& kiHex, const uint256& againsHash)
 {
     if (kiHex.empty()) return false;
+    if (kiHex == Params().BurntKeyImage1() || kiHex == Params().BurntKeyImage2()) {
+        LogPrintf("Attempting to spend a Burnt Key Image\n");
+        return true; // Immediately mark Burn Key Images as spent
+    }
     std::vector<uint256> bhs;
     if (!pblocktree->ReadKeyImages(kiHex, bhs)) {
         //not spent yet because not found in database
@@ -2890,7 +2894,7 @@ bool RecalculatePRCYSupply(int nHeightStart)
         }
 
         // Rewrite money supply
-        pindex->nMoneySupply = nSupplyPrev + nValueOut - nValueIn - nFees;
+        pindex->nMoneySupply = nSupplyPrev + nValueOut - nValueIn - nFees - Params().BurntAmount();
         nSupplyPrev = pindex->nMoneySupply;
 
         assert(pblocktree->WriteBlockIndex(CDiskBlockIndex(pindex)));

@@ -118,6 +118,11 @@ public:
     int HardForkRingSize() const { return nHardForkBlockRingSize;}
     int HardForkRingSize2() const { return nHardForkBlockRingSize2;}
 
+    /** Burn related parameters **/
+    int BurntAmount() const { return nBurntAmount;}
+    std::string BurntKeyImage1() const { return strBurntKeyImage1; }
+    std::string BurntKeyImage2() const { return strBurntKeyImage2; }
+
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
     int MIN_NUM_POS_BLOCKS_AUDITED() const {return nMinNumPoSBlocks;}
@@ -181,6 +186,11 @@ protected:
     int nPoABlockTime;
     int nMinNumPoSBlocks;
     int nMaxNumPoSBlocks;
+
+    // For Burnt coins
+    int nBurntAmount;
+    std::string strBurntKeyImage1;
+    std::string strBurntKeyImage2;
 public:
     void ChangeMaxReorg(int num) const {
         nMaxReorganizationDepth = num;
