@@ -2094,12 +2094,26 @@ UniValue getrewardcount(const UniValue& params, bool fHelp)
             HelpExampleCli("getrewardcount", "") + HelpExampleRpc("getrewardcount", ""));
 
     LOCK2(cs_main, pwalletMain->cs_wallet);
+    int mnRewardCount, poaRewardCount, stakingRewardCount, totalCount = 0;
 
     UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("masternode", (int)pwalletMain->mapWallet.size()));
-    obj.push_back(Pair("mining", (int)pwalletMain->mapWallet.size()));
-    obj.push_back(Pair("staking", (int)pwalletMain->mapWallet.size()));
-    obj.push_back(Pair("total", (int)pwalletMain->mapWallet.size()));
+    // Loop through each UTXO
+    for (int i = 0; i < (int)pwalletMain->mapWallet.size(); i++) {
+        //if (outpoint.IsMasternodeReward(out.tx)) {
+            mnRewardCount = mnRewardCount + 1;
+        //}
+        //if (out.tx->IsCoinAudit()) {
+            poaRewardCount = poaRewardCount + 1;
+        //}
+        //if (out.tx->IsCoinStake()) {
+            stakingRewardCount = stakingRewardCount + 1;
+        //}
+    }
+    totalCount = mnRewardCount + poaRewardCount + stakingRewardCount;
+    obj.push_back(Pair("masternode", mnRewardCount));
+    obj.push_back(Pair("mining", poaRewardCount));
+    obj.push_back(Pair("staking", stakingRewardCount));
+    obj.push_back(Pair("total", totalCount));
     return obj;
 }
 
