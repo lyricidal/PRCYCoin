@@ -3,7 +3,7 @@
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
-// Copyright (c) 2020-2022 The PRCY developers
+// Copyright (c) 2020-2022 The PRivaCY Coin Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -58,11 +58,12 @@ static Checkpoints::MapCheckpoints mapCheckpoints =
     (369757, uint256S("445cc1e7abeca5bd13669704241efb9c045bf414d80c5173c7f80018381ba5a3"))
     (370034, uint256S("2c98b9b6fc800b0ba9836669c1474a95d1e4afd2a91edbec25d3bc05636deab3"))
     (385916, uint256S("05c5ff466e345d9ab1a8a029b748f130c8707b8c4ce9dd315fc7f6760d1857c8"))
+    (847850, uint256S("afae3a69feb6ac01b0382375e1db2a3dafea4d87321095581238858fcadbe050")) // Incorrectly marked invalid block
     ;
 static const Checkpoints::CCheckpointData data = {
     &mapCheckpoints,
-    1630614117,          // * UNIX timestamp of last checkpoint block
-    812753,          // * total number of transactions between genesis and last checkpoint
+    1658266031,          // * UNIX timestamp of last checkpoint block
+    1777053,          // * total number of transactions between genesis and last checkpoint
                 //   (the tx=... number in the SetBestChain debug.log lines)
     1440        // * estimated number of transactions per day after checkpoint
 };
@@ -129,6 +130,7 @@ public:
         nPoAPadding = 10; // Current PoA Padding
         nHardForkBlock = 375000; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 750000; // Add hard fork block for Ring Size bump
+        nHardForkBlockRingSize2 = nHardForkBlockRingSize; // For testnet & compile purposes
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -282,7 +284,8 @@ public:
         nPoAPaddingBlock = 0;
         nPoAPadding = 5; // Current PoA Padding
         nHardForkBlock = 700; // Add hard fork block for Consensus/PoA Padding
-        nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump
+        nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump to 25-30
+        nHardForkBlockRingSize2 = 126000; // Add hard fork block for Ring Size bump to 30-32
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;

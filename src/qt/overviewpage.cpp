@@ -397,7 +397,7 @@ void OverviewPage::onAnimTick()
     } else {
         blockSyncCircle->setStyleSheet("image:url(':/images/syncb')");
         blockAnimSyncCircle->setVisible(false);
-        ui->lblHelp->setVisible(false);
+        ui->lblHelp->setText(ui->lblHelp->text().remove("It is advised not to send or receive coins until your current sync is complete."));
     }
     if (isSyncingBalance){
         moveSyncCircle(balanceSyncCircle, balanceAnimSyncCircle, 3, -100, 130);
@@ -515,6 +515,15 @@ void OverviewPage::updateRecentTransactions() {
                         entry->setObjectName("secondaryTxEntry");
                     }
                 }
+                if (latestTxes.size() >= 10000) {
+                    QString txWarning = "Your wallet has more than 10,000 Transactions. It may run slowly. It's recommended to send your funds to a new wallet.";
+                    QString kbURL = "https://prcycoin.com/knowledge-base/wallets/sluggish-large-wallet-dat-solution/";
+                    QString kbTitle = "Need Help?";
+                    txWarning.append(" <a href=\"" + kbURL + "\">" + kbTitle + "</a>");
+                    if (!ui->lblHelp->text().contains(txWarning)) {
+                        ui->lblHelp->setText(ui->lblHelp->text() + "\n" + txWarning);
+                    }
+                }
 
                 ui->lblRecentTransaction->setVisible(true);
             }
@@ -538,7 +547,7 @@ void OverviewPage::on_lockUnlock() {
     }
     else {
         QMessageBox::StandardButton msgReply;
-        msgReply = QMessageBox::question(this, "Lock Keychain Wallet", "Would you like to lock your keychain wallet now?\n\n(Staking will also be stopped)", QMessageBox::Yes|QMessageBox::No);
+        msgReply = QMessageBox::question(this, "Lock Wallet", "Would you like to lock your wallet now?\n\n(Staking will also be stopped)", QMessageBox::Yes|QMessageBox::No);
         if (msgReply == QMessageBox::Yes) {
             walletModel->setWalletLocked(true);
             ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/lock) 0 0 0 0 stretch stretch; width: 20px;");

@@ -2021,8 +2021,6 @@ bool CWallet::AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, std::v
             }
             if (!found) continue;
 
-            if (value <= DUST) continue; //dust
-
             isminetype mine = IsMine(pcoin->vout[i]);
             if (mine == ISMINE_NO)
                 continue;
@@ -2252,7 +2250,6 @@ StakingStatusError CWallet::StakingCoinStatus(CAmount& minFee, CAmount& maxFee)
                                 continue;
                             }
                         }
-                        if (value <= DUST) continue; //dust
 
                         isminetype mine = IsMine(pcoin->vout[i]);
                         if (mine == ISMINE_NO)
@@ -4905,7 +4902,7 @@ bool CWallet::LoadDestData(const CTxDestination& dest, const std::string& key, c
     return true;
 }
 
-bool CWallet::SendAll(std::string des)
+bool CWallet::SendAll(std::string des, CWalletTx& wtxNew)
 {
     if (this->IsLocked()) {
         throw std::runtime_error("Wallet is locked! Please unlock it to make transactions.");
@@ -4981,7 +4978,6 @@ bool CWallet::SendAll(std::string des)
 
             if (ret) {
                 // Generate transaction public key
-                CWalletTx wtxNew;
                 CKey secret;
                 secret.MakeNewKey(true);
                 SetMinVersion(FEATURE_COMPRPUBKEY);

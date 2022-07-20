@@ -10,6 +10,7 @@
 #include "addresstablemodel.h"
 #include "askpassphrasedialog.h"
 #include "bitcoinunits.h"
+#include "chainparams.h"
 #include "clientmodel.h"
 #include "coincontroldialog.h"
 #include "guiutil.h"
@@ -33,6 +34,8 @@
 #include <QTextDocument>
 #include <QDateTime>
 #include <QDebug>
+#include <QDesktopServices>
+#include <QUrl>
 
 
 SendCoinsDialog::SendCoinsDialog(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
@@ -151,10 +154,11 @@ void SendCoinsDialog::on_sendButton_clicked(){
     SendCoinsEntry* form = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
     SendCoinsRecipient recipient = form->getValue();
     QString address = recipient.address;
+    CAmount balance = model->getBalance();
     send_address = recipient.address;
     send_amount = recipient.amount;
     bool isValidAddresss = (regex_match(address.toStdString(), std::regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
-    bool isValidAmount = ((recipient.amount>0) && (recipient.amount<=model->getBalance()));
+    bool isValidAmount = ((recipient.amount>0) && (recipient.amount<=balance));
     bool fAlwaysRequest2FA = settings.value("fAlwaysRequest2FA").toBool();
 
     form->errorAddress(isValidAddresss);
@@ -215,7 +219,12 @@ void SendCoinsDialog::on_sendButton_clicked(){
     questionString.append("<br/><br/>");
 
     CAmount txFee = pwalletMain->ComputeFee(1, 1, MAX_RING_SIZE);
-    CAmount totalAmount = send_amount + txFee;
+    CAmount totalAmount;
+    if (recipient.amount == balance) {
+        totalAmount = send_amount;
+    } else {
+        totalAmount = send_amount + txFee;
+    }
 
     // Show total amount + all alternative units
     questionString.append(tr("<span class='h3'>Total Amount = <b>%1</b><br/></center>")
@@ -282,13 +291,25 @@ void SendCoinsDialog::on_sendButton_clicked(){
 void SendCoinsDialog::sendTx() {
     CWalletTx resultTx;
     bool success = false;
+    CAmount spendable = model->getSpendableBalance();
+    CAmount balance = model->getBalance();
     try {
-        success = pwalletMain->SendToStealthAddress(
-            send_address.toStdString(),
-            send_amount,
-            resultTx,
-            false
-        );
+        if (send_amount == spendable && spendable == balance) {
+            // Send All
+            success = pwalletMain->SendAll(
+                send_address.toStdString(),
+                resultTx
+            );
+        } else {
+            // Send
+            success = pwalletMain->SendToStealthAddress(
+                send_address.toStdString(),
+                send_amount,
+                resultTx,
+                false
+            );
+        }
+
     } catch (const std::exception& err) {
         std::string errMes(err.what());
         if (errMes.find("You have attempted to send more than 50 UTXOs in a single transaction") != std::string::npos) {
@@ -352,15 +373,26 @@ void SendCoinsDialog::sendTx() {
         WalletUtil::getTx(pwalletMain, resultTx.GetHash());
         QString txhash = resultTx.GetHash().GetHex().c_str();
         QMessageBox msgBox;
+        QPushButton *viewButton = msgBox.addButton(tr("View on Explorer"), QMessageBox::ActionRole);
         QPushButton *copyButton = msgBox.addButton(tr("Copy"), QMessageBox::ActionRole);
         QPushButton *okButton = msgBox.addButton(tr("OK"), QMessageBox::ActionRole);
-        copyButton->setStyleSheet("background:transparent;");
-        copyButton->setIcon(QIcon(":/icons/editcopy"));
         msgBox.setWindowTitle("Transaction Initialized");
         msgBox.setText("Transaction initialized.\n\n" + txhash);
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.setIcon(QMessageBox::Information);
         msgBox.exec();
+
+        if (msgBox.clickedButton() == viewButton) {
+            QString URL;
+            // Adjust link depending on Network
+            if (Params().NetworkID() == CBaseChainParams::MAIN) {
+                URL = "https://explorer.prcycoin.com/tx/";
+            } else if (Params().NetworkID() == CBaseChainParams::TESTNET){
+                URL = "https://testnet.prcycoin.com/tx/";
+            }
+            // Open the link
+            QDesktopServices::openUrl(QUrl(URL.append(txhash)));
+        }
 
         if (msgBox.clickedButton() == copyButton) {
         //Copy txhash to clipboard

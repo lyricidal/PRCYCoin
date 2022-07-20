@@ -3,7 +3,7 @@
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
-// Copyright (c) 2020-2022 The PRCY developers
+// Copyright (c) 2020-2022 The PRivaCY Coin Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -116,6 +116,7 @@ public:
     int BIP65ActivationHeight() const { return nBIP65ActivationHeight; }
     int HardFork() const { return nHardForkBlock;}
     int HardForkRingSize() const { return nHardForkBlockRingSize;}
+    int HardForkRingSize2() const { return nHardForkBlockRingSize2;}
 
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
@@ -144,6 +145,7 @@ protected:
     int nSoftForkBlock;
     int nHardForkBlock;
     int nHardForkBlockRingSize;
+    int nHardForkBlockRingSize2;
     int nPoANewDiff;
     int nPoAFixTime;
     int nPoAPaddingBlock;

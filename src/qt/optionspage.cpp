@@ -168,6 +168,7 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
     connect(ui->lockSendStaking, SIGNAL(stateChanged(int)), this, SLOT(lockSendStaking_clicked(int)));
     connect(ui->displayCurrencyValue, SIGNAL(stateChanged(int)), this, SLOT(displayCurrencyValue_clicked(int)));
     connect(ui->defaultCurrency, SIGNAL(currentIndexChanged(int)), this, SLOT(setDefaultCurrency(int)));
+    connect(ui->showPassphraseCheckBox, SIGNAL(clicked()), this, SLOT(on_showPassphraseCheckBox_clicked()));
 }
 
 void OptionsPage::setStakingToggle()
@@ -449,7 +450,7 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
         QMessageBox msgBox;
         msgBox.setWindowTitle("Staking Setting");
         msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Please unlock the keychain wallet with your passphrase before changing this setting.");
+        msgBox.setText("Please unlock the wallet with your passphrase before changing this setting.");
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.exec();
         widget->setState(!widget->getState());
@@ -645,7 +646,7 @@ void OptionsPage::on_Enable2FA(ToggleButton* widget)
         QMessageBox msgBox;
         msgBox.setWindowTitle("2FA Setting");
         msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Please unlock the keychain wallet with your passphrase before changing this setting.");
+        msgBox.setText("Please unlock the wallet with your passphrase before changing this setting.");
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.exec();
 
@@ -1095,9 +1096,16 @@ void OptionsPage::checkForUnlock()
         QMessageBox msgBox;
         msgBox.setWindowTitle("Password Locked Setting");
         msgBox.setIcon(QMessageBox::Information);
-        msgBox.setText("Please unlock the keychain wallet with your passphrase before changing this setting.");
+        msgBox.setText("Please unlock the wallet with your passphrase before changing this setting.");
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.exec();
         return;
     }
+}
+
+void OptionsPage::on_showPassphraseCheckBox_clicked()
+{
+    ui->lineEditOldPass->setEchoMode(ui->showPassphraseCheckBox->checkState() == Qt::Checked ? QLineEdit::Normal : QLineEdit::Password);
+    ui->lineEditNewPass->setEchoMode(ui->showPassphraseCheckBox->checkState() == Qt::Checked ? QLineEdit::Normal : QLineEdit::Password);
+    ui->lineEditNewPassRepeat->setEchoMode(ui->showPassphraseCheckBox->checkState() == Qt::Checked ? QLineEdit::Normal : QLineEdit::Password);
 }
