@@ -583,6 +583,7 @@ void OverviewPage::checkCurrencyValue()
         return;
     }
     if (isRuninngQuery) {
+        LogPrintf("%s: isRuninngQuery:true, returning\n", __func__);
         return;
     }
     isRuninngQuery = true;
@@ -592,6 +593,7 @@ void OverviewPage::checkCurrencyValue()
     QNetworkRequest request;
     request.setUrl(serviceUrl);
     QNetworkReply* reply = manager->get(request);
+    reply->deleteLater();
 }
 
 void OverviewPage::checkCurrencyValueserviceRequestFinished(QNetworkReply* reply)
@@ -618,7 +620,6 @@ void OverviewPage::checkCurrencyValueserviceRequestFinished(QNetworkReply* reply
         defaultCurrencySymbol = "XAG";
     }
 
-    reply->deleteLater();
     if(reply->error() == QNetworkReply::NoError) {
         // Parse data
         QByteArray data = reply->readAll();
