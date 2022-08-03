@@ -952,6 +952,7 @@ static void AcceptConnection(const ListenSocket& hListenSocket) {
     socklen_t len = sizeof(sockaddr);
     SOCKET hSocket = accept(hListenSocket.socket, (struct sockaddr*)&sockaddr, &len);
     CAddress addr;
+    int nInbound = 0;
     int nMaxInbound = nMaxConnections - (MAX_OUTBOUND_CONNECTIONS + MAX_FEELER_CONNECTIONS);
     assert(nMaxInbound > 0);
 
