@@ -142,7 +142,6 @@ BITCOIN_CORE_H = \
   masternodeconfig.h \
   merkleblock.h \
   miner.h \
-  mruset.h \
   net.h \
   netaddress.h \
   netbase.h \
