@@ -3857,7 +3857,7 @@ ActivateBestChainStep(CValidationState& state, CBlockIndex* pindexMostWork, CBlo
  * or an activated best chain. pblock is either NULL or a pointer to a block
  * that is already loaded (to avoid loading it again from disk).
  */
-bool ActivateBestChain(CValidationState& state, CBlock* pblock, bool fAlreadyChecked)
+bool ActivateBestChain(CValidationState& state, const CBlock* pblock, bool fAlreadyChecked, CConnman* connman)
 {
     // Note that while we're often called here from ProcessNewBlock, this is
     // far from a guarantee. Things in the P2P/RPC will often end up calling
@@ -4824,7 +4824,7 @@ void CBlockIndex::BuildSkip()
         pskip = pprev->GetAncestor(GetSkipHeight(nHeight));
 }
 
-bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDiskBlockPos* dbp)
+bool ProcessNewBlock(CValidationState& state, CNode* pfrom, const CBlock* pblock, CDiskBlockPos* dbp, CConnman* connman)
 {
     AssertLockNotHeld(cs_main);
 
@@ -4907,8 +4907,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
             return error("%s : AcceptBlock FAILED", __func__);
         }
     }
-
-    if (!ActivateBestChain(state, pblock, checked))
+    if (!ActivateBestChain(state, pblock, checked, connman))
         return error("%s : ActivateBestChain failed", __func__);
     if (!fLiteMode) {
         if (masternodeSync.RequestedMasternodeAssets > MASTERNODE_SYNC_LIST) {
@@ -5458,7 +5457,7 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos* dbp)
                 // process in case the block isn't known yet
                 if (mapBlockIndex.count(hash) == 0 || (mapBlockIndex[hash] == NULL) || (mapBlockIndex[hash]->nStatus & BLOCK_HAVE_DATA) == 0) {
                     CValidationState state;
-                    if (ProcessNewBlock(state, NULL, &block, dbp))
+                    if (ProcessNewBlock(state, nullptr, &block, dbp, nullptr))
                         nLoaded++;
                     if (state.IsError())
                         break;
@@ -5482,7 +5481,7 @@ bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos* dbp)
                                 block.GetHash().ToString(),
                                 head.ToString());
                             CValidationState dummy;
-                            if (ProcessNewBlock(dummy, NULL, &block, &it->second)) {
+                            if (ProcessNewBlock(dummy, nullptr, &block, &it->second, nullptr)) {
                                 nLoaded++;
                                 queue.push_back(block.GetHash());
                             }
@@ -6004,7 +6003,7 @@ void static ProcessGetData(CNode* pfrom)
     }
 }
 
-bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vRecv, int64_t nTimeReceived)
+bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vRecv, int64_t nTimeReceived, CConnman& connman)
 {
     CNodeState* state = State(pfrom->GetId());
     if (state == NULL)
@@ -6567,7 +6566,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             pfrom->AddInventoryKnown(inv);
             CValidationState state;
             if (!mapBlockIndex.count(block.GetHash())) {
-                ProcessNewBlock(state, pfrom, &block);
+                ProcessNewBlock(state, pfrom, &block, nullptr, &connman);
                 int nDoS;
                 if (state.IsInvalid(nDoS)) {
                     pfrom->PushMessage(NetMsgType::REJECT, strCommand, state.GetRejectCode(),
@@ -6715,7 +6714,7 @@ bool static ProcessMessage(CNode* pfrom, std::string strCommand, CDataStream& vR
             pfrom->pfilter->UpdateEmptyFull();
             pfrom->fRelayTxes = true;
         }
-        
+
     } else if (strCommand == NetMsgType::FILTERADD) {
         std::vector<unsigned char> vData;
         vRecv >> vData;
@@ -6796,7 +6795,7 @@ int ActiveProtocol()
     return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
 }
 
-bool ProcessMessages(CNode* pfrom)
+bool ProcessMessages(CNode* pfrom, CConnman& connman)
 {
     // Message format
     //  (4) message start
@@ -6862,7 +6861,7 @@ bool ProcessMessages(CNode* pfrom)
         // Process message
         bool fRet = false;
         try {
-            fRet = ProcessMessage(pfrom, strCommand, vRecv, msg.nTime);
+            fRet = ProcessMessage(pfrom, strCommand, vRecv, msg.nTime, connman);
             boost::this_thread::interruption_point();
         } catch (const std::ios_base::failure& e) {
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_MALFORMED, std::string("error parsing message"));
@@ -6900,7 +6899,7 @@ bool ProcessMessages(CNode* pfrom)
 }
 
 
-bool SendMessages(CNode* pto)
+bool SendMessages(CNode* pto, CConnman& connman)
 {
     {
         // Don't send anything until we get their version message
