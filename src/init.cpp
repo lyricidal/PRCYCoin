@@ -51,6 +51,7 @@
 #include <fstream>
 #include <stdint.h>
 #include <stdio.h>
+#include <memory>
 
 #ifndef WIN32
 #include <signal.h>
@@ -73,6 +74,8 @@ int nWalletBackups = 10;
 #endif
 volatile bool fFeeEstimatesInitialized = false;
 volatile bool fRestartRequested = false; // true: restart false: shutdown
+
+std::unique_ptr<CConnman> g_connman;
 
 #if ENABLE_ZMQ
 static CZMQNotificationInterface* pzmqNotificationInterface = NULL;
@@ -200,7 +203,8 @@ void PrepareShutdown()
         bitdb.Flush(false);
     GeneratePrcycoins(false, NULL, 0);
 #endif
-    StopNode();
+    StopNode(*g_connman);
+    g_connman.reset();
 
     // After everything has been shut down, but before things get flushed, stop the
     // CScheduler/checkqueue threadGroup
@@ -1246,6 +1250,10 @@ bool AppInit2(bool isDaemon)
     if (isDaemon)
         RegisterNodeSignals(GetNodeSignals());       // block first after unlock/lock retry register
 
+    assert(!g_connman);
+    g_connman = std::unique_ptr<CConnman>(new CConnman());
+    CConnman& connman = *g_connman;
+
     // sanitize comments per BIP-0014, format user agent and check total size
     std::vector<std::string> uacomments;
     for (const std::string& cmt : mapMultiArgs["-uacomment"]) {
@@ -1912,7 +1920,9 @@ bool AppInit2(bool isDaemon)
     if (GetBoolArg("-listenonion", DEFAULT_LISTEN_ONION))
         StartTorControl(threadGroup);
 
-    StartNode(threadGroup, scheduler);
+    std::string strNodeError;
+    if(!StartNode(connman, threadGroup, scheduler, strNodeError))
+        return UIError(strNodeError);
 
 #ifdef ENABLE_WALLET
     // Generate coins in the background
