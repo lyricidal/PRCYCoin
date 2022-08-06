@@ -132,6 +132,7 @@ public:
         nHardForkBlock = 375000; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 750000; // Add hard fork block for Ring Size bump
         nHardForkBlockRingSize2 = nHardForkBlockRingSize; // For testnet & compile purposes
+        nBlockStakeModifierlV2 = 1000000; // !TODO: change me (and add others for Testnet and RegTest)
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
