@@ -81,7 +81,6 @@ public:
     bool RequireStandard() const { return fRequireStandard; }
     int64_t TargetTimespan() const { return nTargetTimespan; }
     int64_t TargetSpacing() const { return nTargetSpacing; }
-    int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
     CAmount MNCollateralAmt() const { return nMNCollateralAmt; }
     CAmount MinimumStakeAmount() const { return nMinimumStakeAmount; }
