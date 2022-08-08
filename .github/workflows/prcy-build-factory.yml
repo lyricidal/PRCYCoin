@@ -9,7 +9,7 @@ env:
 jobs:
   create-source-distribution:
     name: Create Source Distribution
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env:
       ARTIFACT_DIR: source
     steps:
@@ -45,7 +45,7 @@ jobs:
   build-x86_64-linux:
     name: Build for x86 Linux 64bit
     needs: create-source-distribution
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     env:
       ARTIFACT_DIR: rpcserver-x86_64-linux
       TEST_LOG_ARTIFACT_DIR: test-logs
