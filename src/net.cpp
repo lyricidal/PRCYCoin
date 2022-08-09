@@ -90,9 +90,6 @@ std::deque<std::pair<int64_t, CInv> > vRelayExpiration;
 RecursiveMutex cs_mapRelay;
 limitedmap<CInv, int64_t> mapAlreadyAskedFor(MAX_INV_SZ);
 
-static std::deque<std::string> vOneShots;
-RecursiveMutex cs_vOneShots;
-
 std::vector<std::string> vAddedNodes;
 RecursiveMutex cs_vAddedNodes;
 
@@ -107,7 +104,7 @@ static CNodeSignals g_signals;
 
 CNodeSignals &GetNodeSignals() { return g_signals; }
 
-void AddOneShot(std::string strDest) {
+void CConnman::AddOneShot(const std::string& strDest) {
     LOCK(cs_vOneShots);
     vOneShots.push_back(strDest);
 }
