@@ -298,11 +298,6 @@ bool IsReachable(const CNetAddr &addr) {
     return IsReachable(net);
 }
 
-void AddressCurrentlyConnected(const CService &addr) {
-    addrman.Connected(addr);
-}
-
-
 uint64_t CNode::nTotalBytesRecv = 0;
 uint64_t CNode::nTotalBytesSent = 0;
 RecursiveMutex CNode::cs_totalBytesRecv;
@@ -388,6 +383,7 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char* pszDest, bool obf
 
         // Add node
         CNode *pnode = new CNode(hSocket, addrConnect, pszDest ? pszDest : "", false);
+        GetNodeSignals().InitializeNode(pnode->GetId(), pnode);
         pnode->AddRef();
 
         {
@@ -989,6 +985,7 @@ void CConnman::AcceptConnection(const ListenSocket& hListenSocket) {
     }
 
     CNode* pnode = new CNode(hSocket, addr, "", true);
+    GetNodeSignals().InitializeNode(pnode->GetId(), pnode);
     pnode->AddRef();
     pnode->fWhitelisted = whitelisted;
 
@@ -1052,7 +1049,7 @@ void CConnman::ThreadSocketHandler() {
                     }
                     if (fDelete) {
                         vNodesDisconnected.remove(pnode);
-                        delete pnode;
+                        DeleteNode(pnode);
                     }
                 }
             }
@@ -1954,6 +1951,7 @@ bool CConnman::Start(boost::thread_group& threadGroup, std::string& strNodeError
         CNetAddr local;
         LookupHost("127.0.0.1", local, false);
         pnodeLocalHost = new CNode(INVALID_SOCKET, CAddress(CService(local, 0), nLocalServices));
+        GetNodeSignals().InitializeNode(pnodeLocalHost->GetId(), pnodeLocalHost);
     }
 
     //
@@ -2035,17 +2033,30 @@ void CConnman::Stop()
                 LogPrintf("CloseSocket(hListenSocket) failed with error %s\n", NetworkErrorString(WSAGetLastError()));
 
     // clean up some globals (to help leak detection)
-    for(CNode* pnode : vNodes)
-        delete pnode;
-    for(CNode* pnode : vNodesDisconnected)
-        delete pnode;
+    for(CNode* pnode : vNodes) {
+        DeleteNode(pnode);
+    }
+    for(CNode* pnode : vNodesDisconnected) {
+        DeleteNode(pnode);
+    }
     vNodes.clear();
     vNodesDisconnected.clear();
     vhListenSocket.clear();
     delete semOutbound;
     semOutbound = NULL;
-    delete pnodeLocalHost;
+    if(pnodeLocalHost)
+        DeleteNode(pnodeLocalHost);
     pnodeLocalHost = NULL;
+}
+
+void CConnman::DeleteNode(CNode* pnode)
+{
+    assert(pnode);
+    bool fUpdateConnectionTime = false;
+    GetNodeSignals().FinalizeNode(pnode->GetId(), fUpdateConnectionTime);
+    if(fUpdateConnectionTime)
+        addrman.Connected(pnode->addr);
+    delete pnode;
 }
 
 CConnman::~CConnman()
@@ -2227,7 +2238,6 @@ CNode::CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn, bool fIn
     if (hSocket != INVALID_SOCKET && !fInbound)
         PushVersion();
 
-    GetNodeSignals().InitializeNode(GetId(), this);
 }
 
 CNode::~CNode() {
@@ -2236,7 +2246,6 @@ CNode::~CNode() {
     if (pfilter)
         delete pfilter;
 
-    GetNodeSignals().FinalizeNode(GetId());
 }
 
 void CNode::AskFor(const CInv &inv, bool fImmediateRetry) {
