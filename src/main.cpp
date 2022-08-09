@@ -4728,7 +4728,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, const CBlock* pblock
 
         // If turned on Auto Combine will scan wallet for dust to combine
         if (pwalletMain->fCombineDust && chainActive.Height() % 15 == 0)
-            pwalletMain->AutoCombineDust();
+            pwalletMain->AutoCombineDust(connman);
 
         if (chainActive.Height() % 15 == 0) {
             RemoveInvalidTransactionsFromMempool();
@@ -6873,7 +6873,7 @@ bool SendMessages(CNode* pto, CConnman& connman)
         // Except during reindex, importing and IBD, when old wallet
         // transactions become unconfirmed and spams other nodes.
         if (!fReindex) {
-            GetMainSignals().Broadcast();
+            GetMainSignals().Broadcast(&connman);
         }
 
         //
