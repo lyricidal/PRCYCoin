@@ -68,13 +68,13 @@ void RevealTxDialog::setTxPrivKey(QString strPrivKey)
 
 void RevealTxDialog::setTxAmount(QString amount)
 {
-    int nDisplayUnit;
+    //int nDisplayUnit;
     ui->lblTxAmount->setText(amount.append(" PRCY"));
 }
 
 void RevealTxDialog::setTxFee(CAmount fee)
 {
-    int nDisplayUnit;
+    //int nDisplayUnit;
     ui->lblTxFee->setText(BitcoinUnits::formatHtmlWithUnit(0, fee, false, BitcoinUnits::separatorAlways));
 }
 

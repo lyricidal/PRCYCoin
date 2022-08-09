@@ -275,7 +275,6 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
 
             if (!CheckHaveInputs(view, tx)) continue;
 
-            COrphan* porphan = NULL;
             double dPriority = 0;
             CAmount nTotalIn = 0;
 
@@ -305,7 +304,6 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
         // Collect transactions into block
         uint64_t nBlockSize = 1000;
         uint64_t nBlockTx = 0;
-        int nBlockSigOps = 100;
         bool fSortedByFee = (nBlockPrioritySize <= 0);
 
         TxPriorityCompare comparer(fSortedByFee);

@@ -980,7 +980,7 @@ void BitcoinGUI::checkForUpdatesClicked()
     connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(serviceRequestFinished(QNetworkReply*)));
     QNetworkRequest request;
     request.setUrl(serviceUrl);
-    QNetworkReply* reply = manager->get(request);
+    manager->get(request);
 }
 
 void BitcoinGUI::serviceRequestFinished(QNetworkReply* reply)

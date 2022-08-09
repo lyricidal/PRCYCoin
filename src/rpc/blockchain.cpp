@@ -949,7 +949,6 @@ UniValue getfeeinfo(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_DATABASE_ERROR, "failed to read block from disk");
 
         CAmount nValueIn = 0;
-        CAmount nValueOut = 0;
         for (const CTransaction& tx : block.vtx) {
             if (tx.IsCoinBase() || tx.IsCoinStake())
                 continue;

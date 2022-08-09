@@ -244,8 +244,6 @@ UniValue generatepoa(const UniValue& params, bool fHelp)
         nHeightEnd = nHeightStart + nGenerate;
     }
 
-    unsigned int nExtraNonce = 0;
-
     UniValue blockHashes(UniValue::VARR);
 
     bool createPoABlock = false;

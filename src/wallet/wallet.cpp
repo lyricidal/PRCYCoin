@@ -2123,7 +2123,6 @@ bool CWallet::MintableCoins()
 
     {
         LOCK2(cs_main, cs_wallet);
-        CAmount nBalance = GetBalance();
 
         for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it) {
             const uint256& wtxid = it->first;
@@ -2167,7 +2166,6 @@ StakingStatusError CWallet::StakingCoinStatus(CAmount& minFee, CAmount& maxFee)
 
     std::vector<COutput> vCoins, coinsUnderThreshold, coinsOverThreshold;
     StakingStatusError ret = StakingStatusError::STAKING_OK;
-    CAmount nSpendableBalance = GetSpendableBalance();
 
     {
         LOCK2(cs_main, cs_wallet);
@@ -2367,7 +2365,6 @@ bool CWallet::SelectCoinsMinConf(bool needFee, CAmount& feeNeeded, int ringSize,
         nValueRet += coinLowestLarger.first;
         return true;
     } else {
-        CAmount maxFee = ComputeFee(50, numOut, ringSize);
         if (vValue.size() <= MAX_TX_INPUTS) {
             //putting all into the transaction
             s = "";
@@ -2710,7 +2707,6 @@ bool CWallet::CreateTransactionBulletProof(const CKey& txPrivDes, const CPubKey&
                 wtxNew.fFromMe = true;
 
                 CAmount nTotalValue = nValue + nFeeRet;
-                double dPriority = 0;
 
                 // vouts to the payees
                 for (const PAIRTYPE(CScript, CAmount) & s : vecSend) {
@@ -3747,7 +3743,6 @@ void CWallet::AddComputedPrivateKey(const CTxOut& out)
         //Compute private key to spend
         //x = Hs(aR) + b, b = spend private key
         unsigned char HStemp[32];
-        unsigned char spendTemp[32];
         memcpy(HStemp, HS.begin(), 32);
         if (!secp256k1_ec_privkey_tweak_add(HStemp, spend.begin()))
             throw std::runtime_error("Failed to do secp256k1_ec_privkey_tweak_add");
@@ -4953,8 +4948,6 @@ bool CWallet::SendAll(std::string des, CWalletTx& wtxNew)
                                 txNew.vout.clear();
                                 wtxNew.fFromMe = true;
 
-                                double dPriority = 0;
-
                                 // vouts to the payees
                                 CTxOut txout(nValue, scriptPubKey);
                                 CPubKey txPub = wtxNew.txPrivM.GetPubKey();
@@ -5203,13 +5196,11 @@ bool CWallet::CreateSweepingTransaction(CAmount target, CAmount threshold, uint3
                         txNew.paymentID = wtxNew.paymentID;
 
                         {
-                            unsigned int nBytes = 0;
                             while (true) {
                                 txNew.vin.clear();
                                 txNew.vout.clear();
                                 wtxNew.fFromMe = true;
 
-                                double dPriority = 0;
                                 // vouts to the payees
                                 CTxOut txout(nValue, scriptPubKey);
                                 CPubKey txPub = wtxNew.txPrivM.GetPubKey();
@@ -5363,7 +5354,7 @@ bool CWallet::estimateStakingConsolidationFees(CAmount& minFee, CAmount& maxFee)
     minFee = 0;
     maxFee = 0;
     if (total < Params().MinimumStakeAmount()) return false; //no staking sweeping will be created
-    size_t numUTXOs = vCoins.size();
+
     return true;
 }
 

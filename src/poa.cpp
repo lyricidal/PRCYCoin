@@ -245,7 +245,6 @@ bool CheckPoAContainRecentHash(const CBlock& block)
                 return error("CheckPoAContainRecentHash(): Being audited blocks not found");
             }
             CBlockIndex* pCurrentFirstPoSAuditedIndex = mapBlockIndex[currentFirstPoSAuditedHash];
-            CBlockIndex* pCurrentLastPoSAuditedIndex = mapBlockIndex[currentLastPoSAuditedHash];
             uint256 fixedPoSAuditedHash = pCurrentFirstPoSAuditedIndex->GetAncestor(lastAuditedPoSBlockInfo.height)->GetBlockHash();
             //check lastAuditedPoSHash and currentFirstPoSAuditedHash must be on the same fork
             //that lastAuditedPoSHash must be parent block of currentFirstPoSAuditedHash

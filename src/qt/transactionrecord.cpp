@@ -101,7 +101,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
         int nToMe = 0;
         for (const CTxOut& txout : wtx.vout) {
             if (wallet->IsMine(txout)) {
-                CAmount c = wallet->getCTxOutValue(wtx, txout);
                 nToMe++;
             }
             isminetype mine = wallet->IsMine(txout);
@@ -117,7 +116,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
             sub.address = "";
 
             for (unsigned int nOut = 0; nOut < wtx.vout.size(); nOut++) {
-                    const CTxOut& txout = wtx.vout[nOut];
                     sub.idx = parts.size();
                 }
                 CTxDestination address;

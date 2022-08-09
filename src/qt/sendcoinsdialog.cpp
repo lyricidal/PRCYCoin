@@ -375,7 +375,7 @@ void SendCoinsDialog::sendTx() {
         QMessageBox msgBox;
         QPushButton *viewButton = msgBox.addButton(tr("View on Explorer"), QMessageBox::ActionRole);
         QPushButton *copyButton = msgBox.addButton(tr("Copy"), QMessageBox::ActionRole);
-        QPushButton *okButton = msgBox.addButton(tr("OK"), QMessageBox::ActionRole);
+        msgBox.addButton(tr("OK"), QMessageBox::ActionRole);
         msgBox.setWindowTitle("Transaction Initialized");
         msgBox.setText("Transaction initialized.\n\n" + txhash);
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
