@@ -1380,8 +1380,8 @@ bool AppInit2(bool isDaemon)
         }
     }
 
-    for (std::string strDest : mapMultiArgs["-seednode"])
-        AddOneShot(strDest);
+    for (const std::string& strDest : mapMultiArgs["-seednode"])
+        connman.AddOneShot(strDest);
 
 #if ENABLE_ZMQ
     pzmqNotificationInterface = CZMQNotificationInterface::CreateWithArguments(mapArgs);
