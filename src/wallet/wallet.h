@@ -890,7 +890,6 @@ public:
     int64_t GetComputedTxTime() const;
     int GetRequestCount() const;
     void RelayWalletTransaction(CConnman* connman, std::string strCommand = NetMsgType::TX);
-
     std::set<uint256> GetConflicts() const;
 };
 
