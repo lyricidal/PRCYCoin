@@ -350,7 +350,7 @@ CNode *FindNode(const CService &addr) {
     return NULL;
 }
 
-CNode* ConnectNode(CAddress addrConnect, const char* pszDest, bool fCountFailure)
+CNode* CConnman::ConnectNode(CAddress addrConnect, const char* pszDest, bool obfuScationMaster, bool fCountFailure)
 {
     if (pszDest == NULL) {
         if (IsLocal(addrConnect))
@@ -1662,7 +1662,7 @@ void CConnman::ThreadOpenAddedConnections()
 }
 
 // if successful, this moves the passed grant to the constructed node
-bool OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant* grantOutbound, const char* pszDest, bool fOneShot, bool fFeeler)
+bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFailure, CSemaphoreGrant* grantOutbound, const char* pszDest, bool fOneShot, bool fFeeler)
 {
     //
     // Initiate outbound network connection
@@ -1989,7 +1989,7 @@ bool StopNode(CConnman& connman) {
         DumpData();
         fAddressesInitialized = false;
     }
-    
+
     connman.Stop();
     return true;
 }
@@ -2005,7 +2005,7 @@ public:
         WSACleanup();
 #endif
     }
-} 
+}
 instance_of_cnetcleanup;
 
 void CExplicitNetCleanup::callCleanup() {
