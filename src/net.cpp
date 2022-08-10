@@ -84,8 +84,6 @@ uint64_t nLocalHostNonce = 0;
 int nMaxConnections = DEFAULT_MAX_PEER_CONNECTIONS;
 std::string strSubVersion;
 
-std::vector<CNode*> vNodes;
-RecursiveMutex cs_vNodes;
 std::map<CInv, CDataStream> mapRelay;
 std::deque<std::pair<int64_t, CInv> > vRelayExpiration;
 RecursiveMutex cs_mapRelay;
@@ -296,7 +294,7 @@ uint64_t CNode::nTotalBytesSent = 0;
 RecursiveMutex CNode::cs_totalBytesRecv;
 RecursiveMutex CNode::cs_totalBytesSent;
 
-CNode *FindNode(const CNetAddr &ip) {
+CNode* CConnman::FindNode(const CNetAddr& ip) {
     LOCK(cs_vNodes);
     for (CNode * pnode : vNodes)
     if ((CNetAddr) pnode->addr == ip)
@@ -304,7 +302,7 @@ CNode *FindNode(const CNetAddr &ip) {
     return NULL;
 }
 
-CNode *FindNode(const CSubNet &subNet) {
+CNode* CConnman::FindNode(const CSubNet& subNet) {
     LOCK(cs_vNodes);
     for (CNode * pnode : vNodes)
     if (subNet.Match((CNetAddr) pnode->addr))
@@ -312,7 +310,7 @@ CNode *FindNode(const CSubNet &subNet) {
     return NULL;
 }
 
-CNode *FindNode(const std::string &addrName) {
+CNode* CConnman::FindNode(const std::string& addrName) {
     LOCK(cs_vNodes);
     for (CNode * pnode : vNodes)
     if (pnode->addrName == addrName)
@@ -320,7 +318,7 @@ CNode *FindNode(const std::string &addrName) {
     return NULL;
 }
 
-CNode *FindNode(const CService &addr) {
+CNode* CConnman::FindNode(const CService& addr) {
     LOCK(cs_vNodes);
     const bool isRegTestNet = Params().IsRegTestNet();
     for (CNode * pnode : vNodes)
@@ -837,7 +835,8 @@ public:
  *   to forge.  In order to partition a node the attacker must be
  *   simultaneously better at all of them than honest peers.
  */
-static bool AttemptToEvictConnection(bool fPreferNewConnection) {
+bool CConnman::AttemptToEvictConnection(bool fPreferNewConnection)
+{
     std::vector<NodeEvictionCandidate> vEvictionCandidates;
     {
         LOCK(cs_vNodes);
@@ -2168,14 +2167,14 @@ bool CConnman::DisconnectNode(NodeId id)
     return false;
 }
 
-void RelayTransaction(const CTransaction &tx) {
+void CConnman::RelayTransaction(const CTransaction& tx) {
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
     ss.reserve(50000);
     ss << tx;
     RelayTransaction(tx, ss);
 }
 
-void RelayTransaction(const CTransaction &tx, const CDataStream &ss) {
+void CConnman::RelayTransaction(const CTransaction& tx, const CDataStream& ss) {
     CInv inv(MSG_TX, tx.GetHash());
     {
         LOCK(cs_mapRelay);
@@ -2203,7 +2202,7 @@ void RelayTransaction(const CTransaction &tx, const CDataStream &ss) {
     }
 }
 
-void RelayTransactionLockReq(const CTransaction &tx, bool relayToAll) {
+void CConnman::RelayTransactionLockReq(const CTransaction& tx, bool relayToAll) {
     CInv inv(MSG_TXLOCK_REQUEST, tx.GetHash());
 
     //broadcast the new lock
@@ -2217,7 +2216,7 @@ void RelayTransactionLockReq(const CTransaction &tx, bool relayToAll) {
     }
 }
 
-void RelayInv(CInv &inv) {
+void CConnman::RelayInv(CInv& inv) {
     LOCK(cs_vNodes);
     for (CNode * pnode : vNodes)
     {
@@ -2443,6 +2442,63 @@ void CNode::EndMessage() UNLOCK_FUNCTION(cs_vSend) {
     LEAVE_CRITICAL_SECTION(cs_vSend);
 }
 
+bool CConnman::ForNode(NodeId id, std::function<bool(CNode* pnode)> func)
+{
+    CNode* found = nullptr;
+    LOCK(cs_vNodes);
+    for (auto&& pnode : vNodes) {
+        if(pnode->id == id) {
+            found = pnode;
+            break;
+        }
+    }
+    return found != nullptr && func(found);
+}
+
+bool CConnman::ForEachNode(std::function<bool(CNode* pnode)> func)
+{
+    LOCK(cs_vNodes);
+    for (auto&& node : vNodes)
+        if(!func(node))
+            return false;
+    return true;
+}
+
+bool CConnman::ForEachNode(std::function<bool(const CNode* pnode)> func) const
+{
+    LOCK(cs_vNodes);
+    for (const auto& node : vNodes)
+        if(!func(node))
+            return false;
+    return true;
+}
+
+bool CConnman::ForEachNodeThen(std::function<bool(CNode* pnode)> pre, std::function<void()> post)
+{
+    bool ret = true;
+    LOCK(cs_vNodes);
+    for (auto&& node : vNodes)
+        if(!pre(node)) {
+            ret = false;
+            break;
+        }
+    post();
+    return ret;
+}
+
+bool CConnman::ForEachNodeThen(std::function<bool(const CNode* pnode)> pre, std::function<void()> post) const
+{
+    bool ret = true;
+    LOCK(cs_vNodes);
+    for (const auto& node : vNodes)
+        if(!pre(node)) {
+            ret = false;
+            break;
+        }
+    post();
+    return ret;
+}
+
 // valid, reachable and routable address (except for RegTest)
 bool validateMasternodeIP(const std::string& addrStr)
 {
@@ -2456,4 +2512,25 @@ bool validateMasternodeIP(const std::string& addrStr)
 
 int64_t PoissonNextSend(int64_t nNow, int average_interval_seconds) {
     return nNow + (int64_t)(log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */) * average_interval_seconds * -1000000.0 + 0.5);
+}
+
+std::vector<CNode*> CConnman::CopyNodeVector()
+{
+    std::vector<CNode*> vecNodesCopy;
+    LOCK(cs_vNodes);
+    for(size_t i = 0; i < vNodes.size(); ++i) {
+        CNode* pnode = vNodes[i];
+        pnode->AddRef();
+        vecNodesCopy.push_back(pnode);
+    }
+    return vecNodesCopy;
+}
+
+void CConnman::ReleaseNodeVector(const std::vector<CNode*>& vecNodes)
+{
+    LOCK(cs_vNodes);
+    for(size_t i = 0; i < vecNodes.size(); ++i) {
+        CNode* pnode = vecNodes[i];
+        pnode->Release();
+    }
 }

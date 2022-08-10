@@ -518,6 +518,14 @@ UniValue setmocktime(const UniValue& params, bool fHelp) {
     RPCTypeCheck(params, boost::assign::list_of(UniValue::VNUM));
     SetMockTime(params[0].get_int64());
 
+    uint64_t t = GetTime();
+    if(g_connman) {
+        g_connman->ForEachNode([t](CNode* pnode) {
+            pnode->nLastSend = pnode->nLastRecv = t;
+            return true;
+        });
+    }
+
     return NullUniValue;
 }
 
@@ -621,7 +629,7 @@ UniValue getstakingstatus(const UniValue& params, bool fHelp)
 
 
     UniValue obj(UniValue::VOBJ);
-    obj.push_back(Pair("haveconnections", !vNodes.empty()));
+    obj.push_back(Pair("haveconnections", (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) > 0)));
     if (pwalletMain) {
         obj.push_back(Pair("walletunlocked", !pwalletMain->IsLocked()));
         obj.push_back(Pair("mintablecoins", pwalletMain->MintableCoins()));

@@ -78,7 +78,7 @@ void ProcessMessageSwiftTX(CNode* pfrom, std::string& strCommand, CDataStream& v
             fAccepted = AcceptToMemoryPool(mempool, state, tx, true, &fMissingInputs);
         }
         if (fAccepted) {
-            RelayInv(inv);
+            g_connman->RelayInv(inv);
 
             DoConsensusVote(tx, nBlockHeight);
 
@@ -161,7 +161,7 @@ void ProcessMessageSwiftTX(CNode* pfrom, std::string& strCommand, CDataStream& v
                     mapUnknownVotes[ctx.vinMasternode.prevout.hash] = GetTime() + (60 * 10);
                 }
             }
-            RelayInv(inv);
+            g_connman->RelayInv(inv);
         }
 
         if (mapTxLockReq.count(ctx.txHash) && GetTransactionLockSignatures(ctx.txHash) == SWIFTTX_SIGNATURES_REQUIRED) {
@@ -289,7 +289,7 @@ void DoConsensusVote(CTransaction& tx, int64_t nBlockHeight)
     mapTxLockVote[ctx.GetHash()] = ctx;
 
     CInv inv(MSG_TXLOCK_VOTE, ctx.GetHash());
-    RelayInv(inv);
+    g_connman->RelayInv(inv);
 }
 
 //received a consensus vote

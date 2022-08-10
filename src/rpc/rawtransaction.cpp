@@ -908,6 +908,11 @@ UniValue sendrawtransaction(const UniValue& params, bool fHelp)
     bool fHaveChain = existingCoins && existingCoins->nHeight < 1000000000;
     if (!fHaveMempool && !fHaveChain) {
         // push to local node and sync with wallets
+        if (fSwiftX) {
+            mapTxLockReq.insert(std::make_pair(tx.GetHash(), tx));
+            CreateNewLock(tx);
+            g_connman->RelayTransactionLockReq(tx, true);
+        }
         CValidationState state;
         if (!AcceptToMemoryPool(mempool, state, tx, false, NULL, !fOverrideFees)) {
             if (state.IsInvalid())
@@ -918,7 +923,16 @@ UniValue sendrawtransaction(const UniValue& params, bool fHelp)
     } else if (fHaveChain) {
         throw JSONRPCError(RPC_TRANSACTION_ALREADY_IN_CHAIN, "transaction already in block chain");
     }
-    RelayTransaction(tx);
+
+    if(!g_connman)
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+
+    CInv inv(MSG_TX, hashTx);
+    g_connman->ForEachNode([&inv](CNode* pnode)
+    {
+        pnode->PushInventory(inv);
+        return true;
+    });
 
     return hashTx.GetHex();
 }
