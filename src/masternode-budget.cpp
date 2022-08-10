@@ -895,11 +895,12 @@ void CBudgetManager::NewBlock()
             ResetSync();
         }
 
-        LOCK(cs_vNodes);
-        for (CNode* pnode : vNodes)
+        std::vector<CNode*> vNodesCopy = g_connman->CopyNodeVector();
+        for (CNode* pnode : vNodesCopy)
             if (pnode->nVersion >= ActiveProtocol())
                 Sync(pnode, UINT256_ZERO, true);
 
+        g_connman->ReleaseNodeVector(vNodesCopy);
         MarkSynced();
     }
 
@@ -1649,7 +1650,7 @@ CBudgetProposalBroadcast::CBudgetProposalBroadcast(std::string strProposalNameIn
 void CBudgetProposalBroadcast::Relay()
 {
     CInv inv(MSG_BUDGET_PROPOSAL, GetHash());
-    RelayInv(inv);
+    g_connman->RelayInv(inv);
 }
 
 CBudgetVote::CBudgetVote()
@@ -1675,7 +1676,7 @@ CBudgetVote::CBudgetVote(CTxIn vinIn, uint256 nProposalHashIn, int nVoteIn)
 void CBudgetVote::Relay()
 {
     CInv inv(MSG_BUDGET_VOTE, GetHash());
-    RelayInv(inv);
+    g_connman->RelayInv(inv);
 }
 
 bool CBudgetVote::Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode)
@@ -2084,7 +2085,7 @@ CFinalizedBudgetBroadcast::CFinalizedBudgetBroadcast(std::string strBudgetNameIn
 void CFinalizedBudgetBroadcast::Relay()
 {
     CInv inv(MSG_BUDGET_FINALIZED, GetHash());
-    RelayInv(inv);
+    g_connman->RelayInv(inv);
 }
 
 CFinalizedBudgetVote::CFinalizedBudgetVote()
@@ -2110,7 +2111,7 @@ CFinalizedBudgetVote::CFinalizedBudgetVote(CTxIn vinIn, uint256 nBudgetHashIn)
 void CFinalizedBudgetVote::Relay()
 {
     CInv inv(MSG_BUDGET_FINALIZED_VOTE, GetHash());
-    RelayInv(inv);
+    g_connman->RelayInv(inv);
 }
 
 bool CFinalizedBudgetVote::Sign(CKey& keyMasternode, CPubKey& pubKeyMasternode)
