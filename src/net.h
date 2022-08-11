@@ -74,9 +74,6 @@ static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
 
 static const ServiceFlags REQUIRED_SERVICES = NODE_NETWORK;
 
-unsigned int ReceiveFloodSize();
-unsigned int SendBufferSize();
-
 typedef int NodeId;
 
 struct AddedNodeInfo
@@ -166,6 +163,8 @@ public:
     bool DisconnectNode(NodeId id);
     bool DisconnectSubnet(const CSubNet& subnet);
 
+    unsigned int GetSendBufferSize() const;
+
     void AddWhitelistedRange(const CSubNet& subnet);
 
     uint64_t GetTotalBytesRecv();
@@ -210,6 +209,8 @@ private:
     void DumpData();
     void DumpBanlist();
 
+    unsigned int GetReceiveFloodSize() const;
+
     // Network stats
     void RecordBytesRecv(uint64_t bytes);
     void RecordBytesSent(uint64_t bytes);
@@ -224,6 +225,9 @@ private:
     // whitelisted (as well as those connecting to whitelisted binds).
     std::vector<CSubNet> vWhitelistedRange;
     RecursiveMutex cs_vWhitelistedRange;
+
+    unsigned int nSendBufferMaxSize;
+    unsigned int nReceiveFloodSize;
 
     std::vector<ListenSocket> vhListenSocket;
 
