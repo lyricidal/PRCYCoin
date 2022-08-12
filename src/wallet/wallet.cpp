@@ -1730,7 +1730,6 @@ void CWalletTx::RelayWalletTransaction(CConnman* connman, std::string strCommand
                     connman->ForEachNode([&inv](CNode* pnode)
                     {
                         pnode->PushInventory(inv);
-                        return true;
                     });
                 }
             } else {
@@ -1739,7 +1738,6 @@ void CWalletTx::RelayWalletTransaction(CConnman* connman, std::string strCommand
                     connman->ForEachNode([&inv](CNode* pnode)
                     {
                         pnode->PushInventory(inv);
-                        return true;
                     });
                 }
             }
