@@ -174,6 +174,8 @@ void Interrupt()
     InterruptRPC();
     InterruptREST();
     InterruptTorControl();
+    if (g_connman)
+        g_connman->Interrupt();
 }
 
 /** Preparing steps before shutting down or restarting the wallet */
@@ -203,7 +205,6 @@ void PrepareShutdown()
     GeneratePrcycoins(false, NULL, 0);
 #endif
     MapPort(false);
-    g_connman->Stop();
     g_connman.reset();
 
     // After everything has been shut down, but before things get flushed, stop the
@@ -1956,7 +1957,7 @@ bool AppInit2(bool isDaemon)
     connOptions.nSendBufferMaxSize = 1000*GetArg("-maxsendbuffer", DEFAULT_MAXSENDBUFFER);
     connOptions.nReceiveFloodSize = 1000*GetArg("-maxreceivebuffer", DEFAULT_MAXRECEIVEBUFFER);
 
-    if(!connman.Start(threadGroup, scheduler, strNodeError, connOptions))
+    if (!connman.Start(scheduler, strNodeError, connOptions))
         return UIError(strNodeError);
 
 #ifdef ENABLE_WALLET
