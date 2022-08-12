@@ -1963,7 +1963,7 @@ bool CConnman::Start(CScheduler& scheduler, ServiceFlags nLocalServicesIn, Servi
     //
     // Start threads
     //
-
+    InterruptSocks5(false);
     interruptNet.reset();
     flagInterruptMsgProc = false;
 
@@ -2021,6 +2021,7 @@ void CConnman::Interrupt()
     condMsgProc.notify_all();
 
     interruptNet();
+    InterruptSocks5(true);
 
     if (semOutbound)
         for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++)
