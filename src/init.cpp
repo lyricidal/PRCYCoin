@@ -1031,6 +1031,8 @@ bool AppInit2(bool isDaemon)
     fIsBareMultisigStd = GetBoolArg("-permitbaremultisig", true) != 0;
     nMaxDatacarrierBytes = GetArg("-datacarriersize", nMaxDatacarrierBytes);
 
+    ServiceFlags nLocalServices = NODE_NETWORK;
+    ServiceFlags nRelevantServices = NODE_NETWORK;
 
     if (GetBoolArg("-peerbloomfilters", DEFAULT_PEERBLOOMFILTERS))
         nLocalServices = ServiceFlags(nLocalServices | NODE_BLOOM);
@@ -1934,7 +1936,7 @@ bool AppInit2(bool isDaemon)
         StartTorControl(threadGroup);
 
     std::string strNodeError;
-    if(!StartNode(connman, threadGroup, scheduler, strNodeError))
+    if(!StartNode(connman, threadGroup, scheduler, nLocalServices, nRelevantServices, strNodeError))
         return UIError(strNodeError);
 
 #ifdef ENABLE_WALLET
