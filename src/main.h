@@ -225,13 +225,13 @@ void UnloadBlockIndex();
 int ActiveProtocol();
 /** Process protocol messages received from a given node */
 bool ProcessMessages(CNode* pfrom);
-bool ProcessMessages(CNode* pfrom, CConnman& connman);
+bool ProcessMessages(CNode* pfrom, CConnman& connman, std::atomic<bool>& interrupt);
 /**
  * Send queued protocol messages to be sent to a give node.
  *
  * @param[in]   pto             The node which we are sending messages to.
  */
-bool SendMessages(CNode* pto, CConnman& connman);
+bool SendMessages(CNode* pto, CConnman& connman, std::atomic<bool>& interrupt);
 /** Run an instance of the script checking thread */
 void ThreadScriptCheck();
 
