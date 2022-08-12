@@ -1027,8 +1027,13 @@ void CConnman::ThreadSocketHandler() {
                 }
             }
         }
-        if(vNodes.size() != nPrevNodeCount) {
-            nPrevNodeCount = vNodes.size();
+        size_t vNodesSize;
+        {
+            LOCK(cs_vNodes);
+            vNodesSize = vNodes.size();
+        }
+        if(vNodesSize != nPrevNodeCount) {
+            nPrevNodeCount = vNodesSize;
             if(clientInterface)
                 clientInterface->NotifyNumConnectionsChanged(nPrevNodeCount);
         }
@@ -1675,8 +1680,7 @@ bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, bool fCountFai
 void CConnman::ThreadMessageHandler() {
     boost::mutex condition_mutex;
     boost::unique_lock<boost::mutex> lock(condition_mutex);
-
-    SetThreadPriority(THREAD_PRIORITY_BELOW_NORMAL);
+    
     while (true) {
         std::vector<CNode*> vNodesCopy;
         {

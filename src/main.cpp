@@ -6882,10 +6882,9 @@ bool SendMessages(CNode* pto, CConnman& connman)
             pindexBestHeader = chainActive.Tip();
         bool fFetch = state.fPreferredDownload || (nPreferredDownload == 0 && !pto->fClient &&
                                                       !pto->fOneShot); // Download if this is a nice peer, or we have no nice peers and this one might do.
-        if (!state.fSyncStarted && !pto->fClient && fFetch /*&& !fImporting*/ && !fReindex) {
+        if (!state.fSyncStarted && !pto->fClient && !pto->fDisconnect && !fImporting && !fReindex) {
             // Only actively request headers from a single peer, unless we're close to end of initial download.
-            if (nSyncStarted == 0 || pindexBestHeader->GetBlockTime() >
-                                         GetAdjustedTime() - 6 * 60 * 60) { // NOTE: was "close to today" and 24h in Bitcoin
+            if ((nSyncStarted == 0 && fFetch) || pindexBestHeader->GetBlockTime() > GetAdjustedTime() - 6 * 60 * 60) { // NOTE: was "close to today" and 24h in Bitcoin
                 state.fSyncStarted = true;
                 nSyncStarted++;
 
