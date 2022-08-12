@@ -84,8 +84,6 @@ std::deque<std::pair<int64_t, CInv> > vRelayExpiration;
 RecursiveMutex cs_mapRelay;
 limitedmap<CInv, int64_t> mapAlreadyAskedFor(MAX_INV_SZ);
 
-static CSemaphore *semOutbound = NULL;
-
 // Signals for message handling
 static CNodeSignals g_signals;
 
@@ -1881,6 +1879,7 @@ CConnman::CConnman()
     nLastNodeId = 0;
     nSendBufferMaxSize = 0;
     nReceiveFloodSize = 0;
+    semOutbound = NULL;
 }
 
 bool StartNode(CConnman& connman, boost::thread_group& threadGroup, CScheduler& scheduler, ServiceFlags nLocalServices, ServiceFlags nRelevantServices, std::string& strNodeError)
