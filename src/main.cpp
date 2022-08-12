@@ -1017,7 +1017,6 @@ bool GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats)
 
 void RegisterNodeSignals(CNodeSignals& nodeSignals)
 {
-    nodeSignals.GetHeight.connect(&GetHeight);
     nodeSignals.ProcessMessages.connect(&ProcessMessages);
     nodeSignals.SendMessages.connect(&SendMessages);
     nodeSignals.InitializeNode.connect(&InitializeNode);
@@ -1026,7 +1025,6 @@ void RegisterNodeSignals(CNodeSignals& nodeSignals)
 
 void UnregisterNodeSignals(CNodeSignals& nodeSignals)
 {
-    nodeSignals.GetHeight.disconnect(&GetHeight);
     nodeSignals.ProcessMessages.disconnect(&ProcessMessages);
     nodeSignals.SendMessages.disconnect(&SendMessages);
     nodeSignals.InitializeNode.disconnect(&InitializeNode);
@@ -3797,6 +3795,7 @@ bool ActivateBestChain(CValidationState& state, const CBlock* pblock, bool fAlre
 
         const CBlockIndex *pindexFork;
         bool fInitialDownload;
+        int nNewHeight;
         while (true) {
             TRY_LOCK(cs_main, lockMain);
             if (!lockMain) {
@@ -3815,11 +3814,14 @@ bool ActivateBestChain(CValidationState& state, const CBlock* pblock, bool fAlre
             pindexNewTip = chainActive.Tip();
             pindexFork = chainActive.FindFork(pindexOldTip);
             fInitialDownload = IsInitialBlockDownload();
+            nNewHeight = chainActive.Height();
             break;
         }
 
         // When we reach this point, we switched to a new tip (stored in pindexNewTip).
         // Notifications/callbacks that can run without cs_main
+        if(connman)
+            connman->SetBestHeight(nNewHeight);
         // Always notify the UI if a new block tip was connected
         if (pindexFork != pindexNewTip) {
 
