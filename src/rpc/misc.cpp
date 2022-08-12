@@ -73,6 +73,27 @@ UniValue getinfo(const UniValue &params, bool fHelp) {
             "\nExamples:\n" +
             HelpExampleCli("getinfo", "") + HelpExampleRpc("getinfo", ""));
     LOCK(cs_main);
+
+#endif
+    std::string services;
+    for (int i = 0; i < 8; i++) {
+        uint64_t check = 1 << i;
+        if (nLocalServices & check) {
+        if (g_connman->GetLocalServices() & check) {
+            switch (check) {
+                case NODE_NETWORK:
+                    services+= "NETWORK/";
+                    break;
+                case NODE_BLOOM:
+                case NODE_BLOOM_WITHOUT_MN:
+                    services+= "BLOOM/";
+                    break;
+                default:
+                    services+= "UNKNOWN/";
+            }
+        }
+    }
+
     proxyType proxy;
     GetProxy(NET_IPV4, proxy);
 
