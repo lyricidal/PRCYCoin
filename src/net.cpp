@@ -763,8 +763,6 @@ size_t SocketSendData(CNode* pnode) {
     return nSentSize;
 }
 
-static std::list<CNode*> vNodesDisconnected;
-
 struct NodeEvictionCandidate
 {
     NodeId id;
