@@ -1893,9 +1893,9 @@ bool CConnman::Start(boost::thread_group& threadGroup, CScheduler& scheduler, Se
     nSendBufferMaxSize = 1000*GetArg("-maxsendbuffer", DEFAULT_MAXSENDBUFFER);
     nReceiveFloodSize = 1000*GetArg("-maxreceivebuffer", DEFAULT_MAXRECEIVEBUFFER);
 
-    SetBestHeight(nBestHeightIn);
+    SetBestHeight(connOptions.nBestHeight);
 
-    clientInterface = interfaceIn;
+    clientInterface = connOptions.uiInterface;
     if (clientInterface)
         clientInterface->InitMessage(_("Loading addresses..."));
     // Load addresses from peers.dat
