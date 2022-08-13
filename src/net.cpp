@@ -1899,7 +1899,7 @@ bool CConnman::Start(CScheduler& scheduler, ServiceFlags nLocalServicesIn, Servi
     nLocalServices = nLocalServicesIn;
     nRelevantServices = nRelevantServicesIn;
     nMaxConnections = nMaxConnectionsIn;
-    nMaxOutbound = std::min((nMaxOutboundIn), nMaxConnections);
+    nMaxOutbound = std::min(nMaxOutboundIn, nMaxConnections);
     nMaxFeeler = connOptions.nMaxFeeler;
     nSendBufferMaxSize = connOptions.nSendBufferMaxSize;
     nReceiveFloodSize = connOptions.nSendBufferMaxSize;
@@ -2529,8 +2529,7 @@ std::vector<CNode*> CConnman::CopyNodeVector()
 {
     std::vector<CNode*> vecNodesCopy;
     LOCK(cs_vNodes);
-    for(size_t i = 0; i < vNodes.size(); ++i) {
-        CNode* pnode = vNodes[i];
+    for(CNode* pnode : vNodes) {
         pnode->AddRef();
         vecNodesCopy.push_back(pnode);
     }
@@ -2540,8 +2539,7 @@ std::vector<CNode*> CConnman::CopyNodeVector()
 void CConnman::ReleaseNodeVector(const std::vector<CNode*>& vecNodes)
 {
     LOCK(cs_vNodes);
-    for(size_t i = 0; i < vecNodes.size(); ++i) {
-        CNode* pnode = vecNodes[i];
+    for(CNode* pnode : vecNodes) {
         pnode->Release();
     }
 }

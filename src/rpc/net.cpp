@@ -180,8 +180,7 @@ UniValue addnode(const UniValue& params, bool fHelp)
     if (strCommand == "add") {
         if(!g_connman->AddNode(strNode))
             throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Node already added");
-        } 
-        else if(strCommand == "remove") {
+    } else if (strCommand == "remove") {
         if (!g_connman->RemoveAddedNode(strNode))
             throw JSONRPCError(RPC_CLIENT_NODE_NOT_ADDED, "Error: Node has not been added.");
     }

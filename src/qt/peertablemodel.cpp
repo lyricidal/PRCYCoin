@@ -66,8 +66,7 @@ public:
             if(g_connman)
                 g_connman->GetNodeStats(vstats);
             cachedNodeStats.reserve(vstats.size());
-            Q_FOREACH (const CNodeStats& nodestats, vstats)
-            {
+            for (const CNodeStats& nodestats : vstats) {
                 CNodeCombinedStats stats;
                 stats.nodeStateStats.nMisbehavior = 0;
                 stats.nodeStateStats.nSyncHeight = -1;
