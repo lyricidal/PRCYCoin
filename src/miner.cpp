@@ -684,7 +684,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
                 continue;
             }
 
-            while (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 || pwallet->IsLocked() || !fMintableCoins || nReserveBalance >= pwallet->GetBalance() || !masternodeSync.IsSynced()) {
+            while (g_connman && g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 || pwallet->IsLocked() || !fStakeableCoins || nReserveBalance >= pwallet->GetBalance() || !masternodeSync.IsSynced()) {
                 nLastCoinStakeSearchInterval = 0;
                 if (!fMintableCoins) {
                     if (GetTime() - nMintableLastCheck > 1 * 60) // 1 minute check time
@@ -819,7 +819,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
             // Check for stop or if block needs to be rebuilt
             boost::this_thread::interruption_point();
             // Regtest mode doesn't require peers
-            if (g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 && Params().MiningRequiresPeers())
+            if (g_connman && g_connman->GetNodeCount(CConnman::CONNECTIONS_ALL) == 0 && Params().MiningRequiresPeers())
                 break;
             if (pblock->nNonce >= 0xffff0000)
                 break;
