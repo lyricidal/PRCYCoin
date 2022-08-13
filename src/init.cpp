@@ -1253,7 +1253,7 @@ bool AppInit2(bool isDaemon)
         RegisterNodeSignals(GetNodeSignals());       // block first after unlock/lock retry register
 
     assert(!g_connman);
-    g_connman = std::unique_ptr<CConnman>(new CConnman());
+    g_connman = MakeUnique<CConnman>();
     CConnman& connman = *g_connman;
 
     // sanitize comments per BIP-0014, format user agent and check total size
