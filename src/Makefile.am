@@ -114,8 +114,6 @@ BITCOIN_CORE_H = \
   primitives/transaction.h \
   core_io.h \
   crypter.h \
-  obfuscation.h \
-  obfuscation-relay.h \
   wallet/db.h \
   fs.h \
   eccryptoverify.h \
@@ -141,13 +139,14 @@ BITCOIN_CORE_H = \
   masternodeman.h \
   masternodeconfig.h \
   merkleblock.h \
+  messagesigner.h \
   miner.h \
-  mruset.h \
   net.h \
   netaddress.h \
   netbase.h \
   noui.h \
   poa.h \
+  prevector.h \
   protocol.h \
   pubkey.h \
   random.h \
@@ -281,8 +280,6 @@ libbitcoin_wallet_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIE_FLAGS)
 libbitcoin_wallet_a_SOURCES = \
   activemasternode.cpp \
   bip38.cpp \
-  obfuscation.cpp \
-  obfuscation-relay.cpp \
   wallet/db.cpp \
   crypter.cpp \
   swifttx.cpp \
@@ -292,6 +289,7 @@ libbitcoin_wallet_a_SOURCES = \
   masternode-sync.cpp \
   masternodeconfig.cpp \
   masternodeman.cpp \
+  messagesigner.cpp \
   wallet/rpcdump.cpp \
   wallet/rpcwallet.cpp \
   kernel.cpp \
@@ -304,6 +302,8 @@ libbitcoin_wallet_a_SOURCES = \
 crypto_libbitcoin_crypto_a_CPPFLAGS = $(AM_CPPFLAGS) $(PIC_FLAGS)
 crypto_libbitcoin_crypto_a_CXXFLAGS = $(AM_CXXFLAGS) $(PIC_FLAGS)
 crypto_libbitcoin_crypto_a_SOURCES = \
+  crypto/aes.cpp \
+  crypto/aes.h \
   crypto/sha1.cpp \
   crypto/sha256.cpp \
   crypto/sha512.cpp \
@@ -527,7 +527,13 @@ CLEANFILES += univalue/*.gcda univalue/*.gcno
 CLEANFILES += zmq/*.gcda zmq/*.gcno
 CLEANFILES += obj/build.h
 
-EXTRA_DIST =
+CTAES_DIST =  crypto/ctaes/bench.c
+CTAES_DIST += crypto/ctaes/ctaes.c
+CTAES_DIST += crypto/ctaes/ctaes.h
+CTAES_DIST += crypto/ctaes/README.md
+CTAES_DIST += crypto/ctaes/test.c
+
+EXTRA_DIST = $(CTAES_DIST)
 
 config/prcycoin-config.h: config/stamp-h1
 	@$(MAKE) -C $(top_builddir) $(subdir)/$(@)

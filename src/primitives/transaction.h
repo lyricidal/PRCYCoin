@@ -46,7 +46,8 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        READWRITE(FLATDATA(*this));
+        READWRITE(hash);
+        READWRITE(n);
     }
 
     void SetNull() { hash.SetNull(); n = (uint32_t) -1; }
@@ -110,7 +111,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(prevout);
-        READWRITE(scriptSig);
+        READWRITE(*(CScriptBase*)(&scriptSig));
         READWRITE(nSequence);
         READWRITE(encryptionKey);
         READWRITE(keyImage);
@@ -188,7 +189,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(nValue);
-        READWRITE(scriptPubKey);
+        READWRITE(*(CScriptBase*)(&scriptPubKey));
         READWRITE(txPriv);
         READWRITE(txPub);
         READWRITE(maskValue.amount);
@@ -515,7 +516,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(prevout);
-        READWRITE(scriptSig);
+        READWRITE(*(CScriptBase*)(&scriptSig));
         READWRITE(nSequence);
         READWRITE(encryptionKey);
         READWRITE(keyImage);
