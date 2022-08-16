@@ -964,7 +964,7 @@ UniValue getfeeinfo(const UniValue& params, bool fHelp)
             }
 
             nFees += tx.nTxFee;
-            nBytes += tx.GetSerializeSize(SER_NETWORK, CLIENT_VERSION);
+            nBytes += GetSerializeSize(tx, SER_NETWORK, CLIENT_VERSION);
             nTotal++;
         }
 

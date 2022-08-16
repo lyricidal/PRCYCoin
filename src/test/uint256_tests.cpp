@@ -1,6 +1,8 @@
 // Copyright (c) 2011-2013 The Bitcoin Core developers
+// Copyright (c) 2019-2020 The PIVX developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include <boost/test/unit_test.hpp>
 #include <stdint.h>
 #include <sstream>
@@ -588,8 +590,8 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     BOOST_CHECK(R1L.GetLow64()  == R1LLow64);
     BOOST_CHECK(HalfL.GetLow64() ==0x0000000000000000ULL);
     BOOST_CHECK(OneL.GetLow64() ==0x0000000000000001ULL);
-    BOOST_CHECK(R1L.GetSerializeSize(0,PROTOCOL_VERSION) == 32);
-    BOOST_CHECK(ZeroL.GetSerializeSize(0,PROTOCOL_VERSION) == 32);
+    BOOST_CHECK(GetSerializeSize(R1L, 0, PROTOCOL_VERSION) == 32);
+    BOOST_CHECK(GetSerializeSize(ZeroL, 0, PROTOCOL_VERSION) == 32);
 
     std::stringstream ss;
     R1L.Serialize(ss,0,PROTOCOL_VERSION);
@@ -636,8 +638,8 @@ BOOST_AUTO_TEST_CASE( methods ) // GetHex SetHex begin() end() size() GetLow64 G
     BOOST_CHECK(R1S.GetLow64()  == R1LLow64);
     BOOST_CHECK(HalfS.GetLow64() ==0x0000000000000000ULL);
     BOOST_CHECK(OneS.GetLow64() ==0x0000000000000001ULL);
-    BOOST_CHECK(R1S.GetSerializeSize(0,PROTOCOL_VERSION) == 20);
-    BOOST_CHECK(ZeroS.GetSerializeSize(0,PROTOCOL_VERSION) == 20);
+    BOOST_CHECK(GetSerializeSize(R1S, 0, PROTOCOL_VERSION) == 20);
+    BOOST_CHECK(GetSerializeSize(ZeroS, 0, PROTOCOL_VERSION) == 20);
 
     R1S.Serialize(ss,0,PROTOCOL_VERSION);
     BOOST_CHECK(ss.str() == std::string(R1Array,R1Array+20));
