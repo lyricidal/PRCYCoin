@@ -10,8 +10,8 @@
 
 #include "bloom.h"
 #include "compat.h"
-#include "hash.h"
 #include "fs.h"
+#include "hash.h"
 #include "limitedmap.h"
 #include "netaddress.h"
 #include "protocol.h"
@@ -241,6 +241,7 @@ public:
     int readData(const char* pch, unsigned int nBytes);
 };
 
+
 typedef enum BanReason
 {
     BanReasonUnknown          = 0,
@@ -269,6 +270,7 @@ public:
     }
 
     ADD_SERIALIZE_METHODS;
+
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(this->nVersion);
@@ -289,12 +291,12 @@ public:
     std::string banReasonToString()
     {
         switch (banReason) {
-            case BanReasonNodeMisbehaving:
-                return "node misbehaving";
-            case BanReasonManuallyAdded:
-                return "manually added";
-            default:
-                return "unknown";
+        case BanReasonNodeMisbehaving:
+            return "node misbehaving";
+        case BanReasonManuallyAdded:
+            return "manually added";
+        default:
+            return "unknown";
         }
     }
 };
@@ -737,12 +739,14 @@ public:
     static bool Unban(const CSubNet &ip);
     static void GetBanned(banmap_t &banmap);
     static void SetBanned(const banmap_t &banmap);
+
     //!check is the banlist has unwritten changes
     static bool BannedSetIsDirty();
     //!set the "dirty" flag for the banlist
     static void SetBannedSetDirty(bool dirty=true);
     //!clean unused entires (if bantime has expired)
     static void SweepBanned();
+
     void copyStats(CNodeStats& stats);
 
     static bool IsWhitelistedRange(const CNetAddr& ip);
