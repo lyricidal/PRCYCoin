@@ -503,6 +503,9 @@ target_link_libraries(prcycoin-cli
 if($ENV{target} MATCHES "Windows")
     target_link_libraries(prcycoin-cli ${WINDOWS_LDADD})
 endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    target_link_libraries(prcycoin-cli "-framework Cocoa")
+endif()
 
 set(prcycoin-tx_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/prcycoin-tx.cpp)
 if($ENV{target} MATCHES "Windows")
@@ -521,6 +524,9 @@ target_link_libraries(prcycoin-tx
         )
 if($ENV{target} MATCHES "Windows")
     target_link_libraries(prcycoin-tx ${WINDOWS_LDADD})
+endif()
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    target_link_libraries(prcycoin-tx "-framework Cocoa")
 endif()
 
 link_directories(${CMAKE_BINARY_DIR})
