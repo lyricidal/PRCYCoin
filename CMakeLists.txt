@@ -565,6 +565,10 @@ if(MINIUPNP_FOUND)
     target_include_directories(prcycoind PUBLIC ${MINIUPNP_INCLUDE_DIR})
 endif()
 
+if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
+    target_link_libraries(prcycoind "-framework Cocoa")
+endif()
+
 target_link_libraries(prcycoind -lpthread)
 
 add_subdirectory(src/qt)
