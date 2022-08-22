@@ -1,6 +1,6 @@
 CMAKE_MINIMUM_REQUIRED(VERSION 3.10)
 
-set(CMAKE_INCLUDE_CURRENT_DIR OFF)
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOUIC_SEARCH_PATHS ${CMAKE_CURRENT_SOURCE_DIR}/forms)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -38,6 +38,15 @@ if (Qt5DBus_FOUND)
     add_compile_options("-DUSE_DBUS")
 endif()
 
+find_program(MOC_BIN NAMES moc moc-qt5 qt5-moc
+        PATHS /usr/lib/qt5/bin /usr/lib/x86_64-linux-gnu/qt5/bin /usr/local/opt/qt/bin /usr/local/opt/qt5/bin
+        NO_DEFAULT_PATH
+        NO_SYSTEM_ENVIRONMENT_PATH)
+if (MOC_BIN)
+    MESSAGE(STATUS "FOUND MOC ${MOC_BIN}")
+
+endif ()
+
 # Why isn't this done automatically??
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     set(CMAKE_AUTOMOC_MOC_OPTIONS "-DQ_OS_MAC")
@@ -55,40 +64,6 @@ include_directories(${PROTOBUF_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 PROTOBUF_GENERATE_CPP(PROTO_SRCS PROTO_HDRS ${CMAKE_CURRENT_SOURCE_DIR}/paymentrequest.proto)
-
-set(GUI_FORMS
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/2faconfirmdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/2fadialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/2faqrdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/addressbookpage.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/askpassphrasedialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/bip38tooldialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/blockexplorer.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/coincontroldialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/editaddressdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/encryptdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/entermnemonics.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/helpmessagedialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/historypage.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/importorcreate.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/intro.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/masternodelist.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/multisenddialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/openuridialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/optionsdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/optionspage.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/overviewpage.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/receivecoinsdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/receiverequestdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/revealtxdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/rpcconsole.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/sendcoinsdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/sendcoinsentry.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/signverifymessagedialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/togglebutton.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/transactiondescdialog.ui
-        ${CMAKE_CURRENT_SOURCE_DIR}/forms/txentry.ui
-        )
 
 SET(QT_SOURCES
         ${CMAKE_CURRENT_SOURCE_DIR}/2faconfirmdialog.cpp
