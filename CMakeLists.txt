@@ -493,7 +493,10 @@ link_directories(
         ${CMAKE_SOURCE_DIR}/src/univalue/.libs
         ${CMAKE_SOURCE_DIR}/src/secp256k1/.libs
         ${CMAKE_SOURCE_DIR}/src/secp256k1-mw/.libs
+        ${CMAKE_SOURCE_DIR}/target/release
         )
+
+link_directories(${CMAKE_BINARY_DIR})
 
 set(prcycoin-cli_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/prcycoin-cli.cpp)
 if($ENV{target} MATCHES "Windows")
@@ -506,7 +509,7 @@ target_link_libraries(prcycoin-cli
         univalue
         UTIL_A
         BITCOIN_CRYPTO_A
-        ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBEVENT_LIB}
+        ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBEVENT_LIB} -ldl pthread
         )
 if($ENV{target} MATCHES "Windows")
     target_link_libraries(prcycoin-cli ${WINDOWS_LDADD})
@@ -528,7 +531,7 @@ target_link_libraries(prcycoin-tx
         BITCOIN_CRYPTO_A
         secp256k1
         secp256k1-mw
-        ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBEVENT_LIB}
+        ${Boost_LIBRARIES} ${OPENSSL_LIBRARIES} ${LIBEVENT_LIB} -ldl pthread
         )
 if($ENV{target} MATCHES "Windows")
     target_link_libraries(prcycoin-tx ${WINDOWS_LDADD})
@@ -536,8 +539,6 @@ endif()
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     target_link_libraries(prcycoin-tx "-framework Cocoa")
 endif()
-
-link_directories(${CMAKE_BINARY_DIR})
 
 set(prcycoind_SOURCES ${CMAKE_CURRENT_SOURCE_DIR}/src/prcycoind.cpp)
 if($ENV{target} MATCHES "Windows")
@@ -583,6 +584,6 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     target_link_libraries(prcycoind "-framework Cocoa")
 endif()
 
-target_link_libraries(prcycoind -lpthread)
+target_link_libraries(prcycoind -ldl -lpthread)
 
 add_subdirectory(src/qt)
