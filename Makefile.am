@@ -229,7 +229,6 @@ EXTRA_DIST = $(DIST_SHARE) $(DIST_CONTRIB) $(DIST_DOCS) $(WINDOWS_PACKAGING) $(L
 
 EXTRA_DIST += \
     test/util/bitcoin-util-test.py \
-    test/util/data/bitcoin-util-test.json \
     test/util/data/blanktxv1.hex \
     test/util/data/blanktxv1.json \
     test/util/data/tt-delin1-out.hex \
