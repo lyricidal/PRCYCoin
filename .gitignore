@@ -150,7 +150,6 @@ qa/pull-tester/test.*/*
 
 libbitcoinconsensus.pc
 .idea
-CMakeLists.txt
 cmake-build-debug
 .vscode/*
 BackupWallet*
