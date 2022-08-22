@@ -8,10 +8,6 @@ set(CMAKE_AUTOUIC ON)
 
 if (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-    execute_process(
-            COMMAND sed -i /HAVE_DECL_BSWAP/d prcycoin-config.h
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}/src/config
-    )
 endif ()
 
 find_package(Qrcode)
@@ -162,6 +158,7 @@ QT5_ADD_RESOURCES(QRC_LOCALE_RESOURCE prcycoin_locale.qrc)
 
 add_executable(prcycoin-qt prcycoin.cpp ${QM} ${QRC_RESOURCE} ${QRC_LOCALE_RESOURCE})
 add_dependencies(prcycoin-qt translations_target libunivalue libsecp256k1 libsecp256k1-mw leveldb leveldb_sse42 memenv)
+target_include_directories(prcycoin-qt PUBLIC ${ENDIAN_INCLUDES})
 target_link_libraries(prcycoin-qt
         qt_stuff
         univalue
