@@ -539,10 +539,10 @@ target_include_directories(prcycoind PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/src
 target_link_libraries(prcycoind
         pthread
         SERVER_A
+        WALLET_A
         COMMON_A
         univalue
         UTIL_A
-        WALLET_A
         BITCOIN_CRYPTO_A
         ${CMAKE_BINARY_DIR}/libleveldb.a
         ${CMAKE_BINARY_DIR}/libleveldb_sse42.a
