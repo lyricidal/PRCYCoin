@@ -62,7 +62,7 @@ jobs:
         config:
           - name: Linux
             os: ubuntu-18.04
-            packages: python3-zmq qttools5-dev qtbase5-dev qttools5-dev-tools libevent-dev bsdmainutils libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-test-dev libboost-thread-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev libqrencode-dev libprotobuf-dev protobuf-compiler libssl1.0-dev
+            packages: python3-zmq qttools5-dev qtbase5-dev qttools5-dev-tools libevent-dev bsdmainutils libboost-system-dev libboost-filesystem-dev libboost-chrono-dev libboost-program-options-dev libboost-test-dev libboost-thread-dev libdb5.3++-dev libminiupnpc-dev libzmq3-dev libqrencode-dev libprotobuf-dev protobuf-compiler libssl1.0-dev
             cc: gcc
             cxx: g++
 
