@@ -661,7 +661,7 @@ bool ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue, CW
             if (pwallet->nMasterKeyMaxID < nID)
                 pwallet->nMasterKeyMaxID = nID;
         } else if (strType == "ckey") {
-            std::vector<unsigned char> vchPubKey;
+            CPubKey vchPubKey;
             ssKey >> vchPubKey;
             std::vector<unsigned char> vchPrivKey;
             ssValue >> vchPrivKey;

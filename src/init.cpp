@@ -159,6 +159,7 @@ public:
 
 static CCoinsViewDB* pcoinsdbview = NULL;
 static CCoinsViewErrorCatcher* pcoinscatcher = NULL;
+static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
 
 static boost::thread_group threadGroup;
 static CScheduler scheduler;
@@ -284,6 +285,8 @@ void Shutdown()
     pwalletMain = NULL;
 #endif
     DestroyContext();
+    globalVerifyHandle.reset();
+    ECC_Stop();
     LogPrintf("%s: done\n", __func__);
 }
 
@@ -706,8 +709,7 @@ void ThreadImport(std::vector<fs::path> vImportFiles)
 bool InitSanityCheck(void)
 {
     if (!ECC_InitSanityCheck()) {
-        UIError("OpenSSL appears to lack support for elliptic curve cryptography. For more "
-                  "information, visit https://en.bitcoin.it/wiki/OpenSSL_and_EC_Libraries");
+        UIError("Elliptic curve cryptography sanity check failure. Aborting.");
         return false;
     }
 
@@ -1037,7 +1039,9 @@ bool AppInit2(bool isDaemon)
 
     // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
 
-    RandomInit();
+    // Initialize elliptic curve code
+    ECC_Start();
+    globalVerifyHandle.reset(new ECCVerifyHandle());
 
     // Sanity check
     if (!InitSanityCheck())

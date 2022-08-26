@@ -1406,7 +1406,7 @@ if test x$need_bundled_univalue = xyes; then
   AC_CONFIG_SUBDIRS([src/univalue])
 fi
 
-ac_configure_args="${ac_configure_args} --enable-module-bulletproof --enable-experimental --enable-module-generator --enable-module-commitment --disable-shared --with-pic --disable-jni"
+ac_configure_args="${ac_configure_args} --enable-module-bulletproof --enable-experimental --enable-module-generator --enable-module-commitment --enable-module-recovery --disable-shared --with-pic --disable-jni"
 
 AC_CONFIG_SUBDIRS([src/secp256k1])
 AC_CONFIG_SUBDIRS([src/secp256k1-mw])
