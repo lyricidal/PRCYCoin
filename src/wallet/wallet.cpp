@@ -3833,6 +3833,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         //iterates each utxo inside of CheckStakeKernelHash()
         nAttempts++;
         if (Stake(stakeInput, nBits, block.GetBlockTime(), nTxNewTime, hashProofOfStake)) {
+            LOCK(cs_wallet);
+
             //Double check that this will pass time requirements
             if (nTxNewTime <= chainActive.Tip()->GetMedianTimePast()) {
                 LogPrintf("CreateCoinStake() : kernel found, but it is too far in the past \n");
@@ -3904,9 +3906,9 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
     // Sign for PRCY
     int nIn = 0;
-    for(CTxIn txIn : txNew.vin) {
+    for (CTxIn txIn : txNew.vin) {
         const CWalletTx *wtx = GetWalletTx(txIn.prevout.hash);
-        if(!SignSignature(*this, *wtx, txNew, nIn++))
+        if (!SignSignature(*this, *wtx, txNew, nIn++))
             return error("CreateCoinStake : failed to sign coinstake");
     }
 
