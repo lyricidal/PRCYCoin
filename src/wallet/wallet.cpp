@@ -2093,32 +2093,34 @@ bool CWallet::SelectStakeCoins(std::list<CStakeInput*>& listInputs, CAmount nTar
     std::vector<COutput> vCoins;
     AvailableCoins(vCoins, true, NULL, false, STAKABLE_COINS);
     CAmount nAmountSelected = 0;
-    for (const COutput& out : vCoins) {
-        //make sure not to outrun target amount
-        CAmount value = getCOutPutValue(out);
-        if (nAmountSelected + value > nTargetAmount)
-            continue;
+    if (GetBoolArg("-prcystake", true)) {
+        for (const COutput &out : vCoins) {
+            //make sure not to outrun target amount
+            CAmount value = getCOutPutValue(out);
+            if (nAmountSelected + value > nTargetAmount)
+                continue;
 
-        int64_t nTxTime = out.tx->GetTxTime();
+            int64_t nTxTime = out.tx->GetTxTime();
 
-        //check for min age
-        if (GetAdjustedTime() - nTxTime < nStakeMinAge)
-            continue;
+            //check for min age
+            if (GetAdjustedTime() - nTxTime < nStakeMinAge)
+                continue;
 
-        //check that it is matured
-        if (out.nDepth < (out.tx->IsCoinStake() ? Params().COINBASE_MATURITY() : 10))
-            continue;
+            //check that it is matured
+            if (out.nDepth < (out.tx->IsCoinStake() ? Params().COINBASE_MATURITY() : 10))
+                continue;
 
-        //check that it is above Minimum Stake Amount
-        if (value < Params().MinimumStakeAmount())
-            continue;
+            //check that it is above Minimum Stake Amount
+            if (value < Params().MinimumStakeAmount())
+                continue;
 
-        //add to our stake set
-        nAmountSelected += value;
+            //add to our stake set
+            nAmountSelected += value;
 
-        CPrcyStake* input = new CPrcyStake();
-        input->SetInput((CTransaction)*out.tx, out.i);
-        listInputs.emplace_back((CStakeInput*)input);
+            CPrcyStake *input = new CPrcyStake();
+            input->SetInput((CTransaction) *out.tx, out.i);
+            listInputs.emplace_back((CStakeInput *) input);
+        }
     }
     return true;
 }
@@ -3807,6 +3809,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     if (listInputs.empty())
         return false;
     LogPrintf("%s: listInputs size=%d\n", __func__, listInputs.size());
+    if (GetAdjustedTime() - chainActive.Tip()->GetBlockTime() < 60)
+        MilliSleep(10000);
 
     CAmount nCredit = 0;
     CScript scriptPubKeyKernel;
@@ -3868,6 +3872,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
                 LogPrintf("%s : failed to create TxIn\n", __func__);
                 txNew.vin.clear();
                 txNew.vout.clear();
+                nCredit = 0;
                 continue;
             }
             txNew.vin.push_back(in);
