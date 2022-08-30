@@ -3811,6 +3811,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     CAmount nCredit = 0;
     CScript scriptPubKeyKernel;
     int nAttempts = 0;
+    bool fKernelFound = false;
     for (CStakeInput* stakeInput : listInputs) {
         //make sure that enough time has elapsed between
         CBlockIndex* pindex = stakeInput->GetIndexFrom();
@@ -3821,8 +3822,6 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
         // Read block header
         CBlockHeader block = pindex->GetBlockHeader();
-
-        bool fKernelFound = false;
         uint256 hashProofOfStake = 0;
         nTxNewTime = GetAdjustedTime();
 
@@ -3879,7 +3878,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         if (fKernelFound)
             break; // if kernel is found stop searching
     }
-    if (nCredit == 0 || nCredit > nBalance - nReserveBalance) {
+    if (!fKernelFound) {
         LogPrintf("*** attempted to stake %d coins\n", nAttempts);
         return false;
     }
