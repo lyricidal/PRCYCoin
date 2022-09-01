@@ -173,7 +173,9 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
 
 void OptionsPage::setStakingToggle()
 {
+    LogPrintf("*** %s: running...***\n", __func__);
     ui->toggleStaking->setState(fGeneratePrcycoins);
+    LogPrintf("*** %s: ending...***\n", __func__);
 }
 
 void OptionsPage::setModel(WalletModel* model)

@@ -1347,6 +1347,7 @@ void BitcoinGUI::dropEvent(QDropEvent* event)
 
 void BitcoinGUI::setStakingStatus()
 {
+    LogPrintf("*** %s: running...***\n", __func__);
     bool stkStatus = false;
     if (pwalletMain) {
         fMultiSend = pwalletMain->isMultiSendEnabled();
@@ -1399,9 +1400,11 @@ void BitcoinGUI::setStakingStatus()
         stakingState->setToolTip("Enabling Staking... Please wait up to 1.5 hours for it to be properly enabled after consolidation.");
         stakingAction->setIcon(QIcon(":/icons/staking_active"));
     }
+    LogPrintf("*** %s: ending...***\n", __func__);
 }
 void BitcoinGUI::setStakingInProgress(bool inProgress)
 {
+    LogPrintf("*** %s: running...***\n", __func__);
     if (inProgress) {
         stakingState->setText(tr("Enabling Staking..."));
         stakingState->setToolTip("Enabling Staking... Please wait up to 1.5 hours for it to be properly enabled after consolidation.");
@@ -1411,6 +1414,7 @@ void BitcoinGUI::setStakingInProgress(bool inProgress)
         stakingState->setToolTip("Disabling Staking...");
         stakingAction->setIcon(QIcon(":/icons/staking_inactive"));
     }
+    LogPrintf("*** %s: ending...***\n", __func__);
 }
 
 #ifdef ENABLE_WALLET

@@ -62,7 +62,6 @@ Q_SIGNALS:
     void transactionClicked(const QModelIndex& index);
 
 private:
-    QTimer* timer;
     QTimer* pingNetworkInterval;
     QTimer* checkCurrencyValueInterval;
     Ui::OverviewPage* ui;

@@ -435,6 +435,7 @@ void OverviewPage::updateTotalBlocksLabel(){
 }
 
 int OverviewPage::tryNetworkBlockCount(){
+    LogPrintf("*** %s: running...***\n", __func__);
     try{
         LOCK(cs_vNodes);
         if (vNodes.size()>=1){
@@ -451,6 +452,7 @@ int OverviewPage::tryNetworkBlockCount(){
     }catch(int err_code)
     {
     }
+    LogPrintf("*** %s: ending...***\n", __func__);
     return -1;
 }
 
