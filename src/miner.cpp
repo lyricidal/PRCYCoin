@@ -751,13 +751,15 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
             LogPrintf("CPUMiner : proof-of-stake block was signed %s \n", pblock->GetHash().ToString().c_str());
             SetThreadPriority(THREAD_PRIORITY_NORMAL);
             if (!ProcessBlockFound(pblock, *pwallet, reservekey)) {
+                LogPrintf("%s: before continue\n", __func__);
                 continue;
+                LogPrintf("%s: after continue\n", __func__);
             }
             SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
             continue;
         }
-        GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION);
+
         LogPrint(BCLog::STAKING, "Running PRCYcoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
             ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 

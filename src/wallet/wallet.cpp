@@ -3784,6 +3784,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     txNew.txType = TX_TYPE_REVEAL_BOTH;
 
     // Choose coins to use
+    LogPrintf("%s: // Choose coins to use\n", __func__);
     CAmount nBalance = GetSpendableBalance();
 
     if (mapArgs.count("-reservebalance") && !ParseMoney(mapArgs["-reservebalance"], nReserveBalance))
@@ -3793,25 +3794,32 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         return false;
 
     // Get the list of stakable inputs
+    LogPrintf("%s: // Get the list of stakable inputs\n", __func__);
     std::list<std::unique_ptr<CStakeInput> > listInputs;
     if (!SelectStakeCoins(listInputs, nBalance - nReserveBalance))
         return false;
 
+    LogPrintf("%s: if listInputs.empty()\n", __func__);
     if (listInputs.empty())
         return false;
 
+    LogPrintf("%s: GetAdjustedTime\n", __func__);
     if (GetAdjustedTime() - chainActive.Tip()->GetBlockTime() < 60)
         MilliSleep(10000);
 
     CAmount nCredit = 0;
     CScript scriptPubKeyKernel;
     bool fKernelFound = false;
+
+    LogPrintf("%s: for (std::unique_ptr<CStakeInput>& stakeInput : listInputs\n", __func__);
     for (std::unique_ptr<CStakeInput>& stakeInput : listInputs) {
         // Make sure the wallet is unlocked and shutdown hasn't been requested
+        LogPrintf("%s: // Make sure the wallet is unlocked and shutdown hasn't been requested\n", __func__);
         if (IsLocked() || ShutdownRequested())
             return false;
 
         //make sure that enough time has elapsed between
+        LogPrintf("%s: //make sure that enough time has elapsed between\n", __func__);
         CBlockIndex* pindex = stakeInput->GetIndexFrom();
         if (!pindex || pindex->nHeight < 1) {
             LogPrintf("*** no pindexfrom\n");
@@ -3819,11 +3827,13 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         }
 
         // Read block header
+        LogPrintf("%s: // Read block header\n", __func__);
         CBlockHeader block = pindex->GetBlockHeader();
         uint256 hashProofOfStake = 0;
         nTxNewTime = GetAdjustedTime();
 
         //iterates each utxo inside of CheckStakeKernelHash()
+        LogPrintf("%s: //iterates each utxo inside of CheckStakeKernelHash()\n", __func__);
         if (Stake(stakeInput.get(), nBits, block.GetBlockTime(), nTxNewTime, hashProofOfStake)) {
             LOCK(cs_main);
             //Double check that this will pass time requirements
@@ -3833,9 +3843,11 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             }
 
             // Found a kernel
+            LogPrintf("%s: // Found a kernel\n", __func__);
             LogPrintf("CreateCoinStake : kernel found\n");
             nCredit += stakeInput->GetValue();
             std::vector<CTxOut> vout;
+            LogPrintf("%s: stakeInput->CreateTxOuts\n", __func__);
             if (!stakeInput->CreateTxOuts(this, vout, nCredit)) {
                 LogPrintf("%s : failed to get scriptPubKey\n", __func__);
                 continue;
@@ -3843,17 +3855,21 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             txNew.vout.insert(txNew.vout.end(), vout.begin(), vout.end());
 
             // Calculate reward
+            LogPrintf("%s: // Calculate reward\n", __func__);
             CAmount nReward;
             nReward = GetBlockValue(chainActive.Height());
             txNew.vout[1].nValue = nCredit;
             txNew.vout[2].nValue = nReward;
+            LogPrintf("%s: Reward amounts: nCredit: %d nReward: %d\n", __func__, nCredit, nReward);
 
             // Limit size
+            LogPrintf("%s: Limit size\n", __func__);
             unsigned int nBytes = ::GetSerializeSize(txNew, SER_NETWORK, PROTOCOL_VERSION);
             if (nBytes >= DEFAULT_BLOCK_MAX_SIZE / 5)
                 return error("CreateCoinStake : exceeded coinstake size limit");
 
             //Masternode payment
+            LogPrintf("%s: //Masternode payment\n", __func__);
             if (!FillBlockPayee(txNew, 0, true)) {
                 LogPrintf("%s: Cannot fill block payee\n", __func__);
                 return false;
@@ -3861,6 +3877,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
 
             uint256 hashTxOut = txNew.GetHash();
             CTxIn in;
+            LogPrintf("%s: stakeInput->CreateTxIn\n", __func__);
             if (!stakeInput->CreateTxIn(this, in, hashTxOut)) {
                 LogPrintf("%s : failed to create TxIn\n", __func__);
                 txNew.vin.clear();
@@ -3870,6 +3887,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
             }
             txNew.vin.push_back(in);
 
+            LogPrintf("%s: fKernelFound = true\n", __func__);
             fKernelFound = true;
             break;
         }
@@ -3879,6 +3897,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     if (!fKernelFound)
         return false;
 
+    LogPrintf("%s: //Encoding amount\n", __func__);
     //Encoding amount
     CPubKey sharedSec1;
     //In this case, use the transaction pubkey to encode the transactiona amount
@@ -3892,7 +3911,7 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
         txNew.vout[i].commitment.clear();
         CreateCommitment(zeroBlind, txNew.vout[i].nValue, txNew.vout[i].commitment);
     }
-
+    LogPrintf("%s: // Sign for PRCY\n", __func__);
     // Sign for PRCY
     int nIn = 0;
     for (CTxIn txIn : txNew.vin) {
