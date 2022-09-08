@@ -1,0 +1,81 @@
+policy_module(prcycoin, 1.100.1)
+
+########################################
+#
+# Declarations
+#
+
+type prcycoin_t;
+type prcycoin_exec_t;
+init_daemon_domain(prcycoin_t, prcycoin_exec_t)
+
+permissive prcycoin_t;
+
+type prcycoin_initrc_exec_t;
+init_script_file(prcycoin_initrc_exec_t)
+
+type prcycoin_conf_t;
+files_type(prcycoin_conf_t)
+
+type prcycoin_var_lib_t;
+files_type(prcycoin_var_lib_t)
+
+type prcycoin_var_run_t;
+files_type(prcycoin_var_run_t)
+
+type prcycoin_port_t;
+corenet_port(prcycoin_port_t)
+
+########################################
+#
+# prcycoin local policy
+#
+allow prcycoin_t self:process { fork };
+
+allow prcycoin_t self:fifo_file rw_fifo_file_perms;
+allow prcycoin_t self:unix_stream_socket create_stream_socket_perms;
+
+manage_dirs_pattern(prcycoin_t, prcycoin_conf_t, prcycoin_conf_t)
+manage_files_pattern(prcycoin_t, prcycoin_conf_t, prcycoin_conf_t)
+
+manage_dirs_pattern(prcycoin_t, prcycoin_var_lib_t, prcycoin_var_lib_t)
+manage_files_pattern(prcycoin_t, prcycoin_var_lib_t, prcycoin_var_lib_t)
+files_var_lib_filetrans(prcycoin_t, prcycoin_var_lib_t, { dir file })
+
+manage_dirs_pattern(prcycoin_t, prcycoin_var_run_t, prcycoin_var_run_t)
+manage_files_pattern(prcycoin_t, prcycoin_var_run_t, prcycoin_var_run_t)
+
+sysnet_dns_name_resolve(prcycoin_t)
+corenet_all_recvfrom_unlabeled(prcycoin_t)
+
+allow prcycoin_t self:tcp_socket create_stream_socket_perms;
+corenet_tcp_sendrecv_generic_if(prcycoin_t)
+corenet_tcp_sendrecv_generic_node(prcycoin_t)
+corenet_tcp_sendrecv_all_ports(prcycoin_t)
+corenet_tcp_bind_generic_node(prcycoin_t)
+
+gen_require(`
+    type prcycoin_port_t;
+')
+allow prcycoin_t prcycoin_port_t:tcp_socket name_bind;
+
+gen_require(`
+    type prcycoin_port_t;
+')
+allow prcycoin_t prcycoin_port_t:tcp_socket name_connect;
+
+domain_use_interactive_fds(prcycoin_t)
+
+files_read_etc_files(prcycoin_t)
+
+miscfiles_read_localization(prcycoin_t)
+
+sysnet_dns_name_resolve(prcycoin_t)
+
+allow prcycoin_t prcycoin_exec_t:file execute_no_trans;
+allow prcycoin_t self:process setsched;
+corecmd_exec_ls(prcycoin_t)
+corenet_tcp_connect_http_port(prcycoin_t)
+dev_read_urand(prcycoin_t)
+fs_getattr_xattr_fs(prcycoin_t)
+kernel_read_system_state(prcycoin_t)
