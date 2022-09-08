@@ -3821,14 +3821,10 @@ bool CWallet::CreateCoinStake(
         return false;
     }
 
-    if (GetAdjustedTime() - chainActive.Tip()->GetBlockTime() < 60){
-
-        if(!Params().IsRegTestNet()){
-            MilliSleep(10000);
-        }else{
+    if (GetAdjustedTime() - chainActive.Tip()->GetBlockTime() < 60) {
+        if (Params().IsRegTestNet()) {
             MilliSleep(1000);
         }
-
     }
 
     CAmount nCredit = 0;
