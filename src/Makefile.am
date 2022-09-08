@@ -538,7 +538,7 @@ CTAES_DIST += crypto/ctaes/ctaes.h
 CTAES_DIST += crypto/ctaes/README.md
 CTAES_DIST += crypto/ctaes/test.c
 
-EXTRA_DIST = leveldb $(CTAES_DIST)
+EXTRA_DIST = $(CTAES_DIST)
 
 config/prcycoin-config.h: config/stamp-h1
 	@$(MAKE) -C $(top_builddir) $(subdir)/$(@)
@@ -548,7 +548,6 @@ $(top_srcdir)/$(subdir)/config/prcycoin-config.h.in:  $(am__configure_deps)
 	$(AM_V_at)$(MAKE) -C $(top_srcdir) $(subdir)/config/prcycoin-config.h.in
 	
 clean-local:
-	-$(MAKE) -C leveldb clean
 	-$(MAKE) -C secp256k1 clean
 	-$(MAKE) -C secp256k1-mw clean
 	-$(MAKE) -C univalue clean
