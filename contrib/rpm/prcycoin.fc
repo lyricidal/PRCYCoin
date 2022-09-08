@@ -1,0 +1,8 @@
+/usr/bin/prcycoin-cli		--	gen_context(system_u:object_r:prcycoin_exec_t,s0)
+/usr/sbin/prcycoind		--	gen_context(system_u:object_r:prcycoin_exec_t,s0)
+/usr/lib(64)?/prcycoin/prcycoind		--	gen_context(system_u:object_r:prcycoin_exec_t,s0)
+
+/etc/prcycoin(/.*)?		gen_context(system_u:object_r:prcycoin_conf_t,s0)
+/var/lib/prcycoin(/.*)?		gen_context(system_u:object_r:prcycoin_var_lib_t,s0)
+
+(/var)?/run/prcycoind(/.*)?   gen_context(system_u:object_r:prcycoin_var_run_t,s0)
