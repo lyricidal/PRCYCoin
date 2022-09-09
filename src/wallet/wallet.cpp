@@ -2171,6 +2171,15 @@ bool CWallet::MintableCoins()
             //nTxTime <= nTime: only stake with UTXOs that are received before nTime time
             if (Params().IsRegTestNet() || (GetAdjustedTime() > Params().StakeMinAge() + nTxTime))
                 return true;
+
+            //check that it is not MN Collateral
+            if (nVal == Params().MNCollateralAmt()) {
+                COutPoint outpoint(out.tx->GetHash(), out.i);
+                if (!IsCollateralized(outpoint)) {
+                    LogPrint(BCLog::STAKING, "%s: Skipping MN collateralized output\n", __func__);
+                    return true;
+                }
+            }
         }
     }
 
