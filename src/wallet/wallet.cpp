@@ -2110,6 +2110,19 @@ bool CWallet::SelectStakeCoins(std::list<std::unique_ptr<CStakeInput> >& listInp
             if (nAmountSelected + value > nTargetAmount)
                 continue;
 
+            //check that it is above Minimum Stake Amount
+            if (value < Params().MinimumStakeAmount())
+                continue;
+
+            //check that it is not MN Collateral
+            if (value == Params().MNCollateralAmt()) {
+                COutPoint outpoint(out.tx->GetHash(), out.i);
+                if (IsCollateralized(outpoint)) {
+                    LogPrint(BCLog::STAKING, "%s: Skipping MN collateralized output\n", __func__);
+                    continue;
+                }
+            }
+
             int64_t nTxTime = out.tx->GetTxTime();
 
             //check for min age
@@ -2118,10 +2131,6 @@ bool CWallet::SelectStakeCoins(std::list<std::unique_ptr<CStakeInput> >& listInp
 
             //check that it is matured
             if (out.nDepth < (out.tx->IsCoinStake() ? Params().COINBASE_MATURITY() : 10))
-                continue;
-
-            //check that it is above Minimum Stake Amount
-            if (value < Params().MinimumStakeAmount())
                 continue;
 
             //add to our stake set
