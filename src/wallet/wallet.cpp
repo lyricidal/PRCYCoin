@@ -2163,8 +2163,13 @@ bool CWallet::MintableCoins()
 
             //add in-wallet minimum staking
             CAmount nVal = getCOutPutValue(out);
+
+            //check that it is above Minimum Stake Amount
+            if (nVal >= Params().MinimumStakeAmount())
+                return true;
+
             //nTxTime <= nTime: only stake with UTXOs that are received before nTime time
-            if (Params().IsRegTestNet() || (GetAdjustedTime() > Params().StakeMinAge() + nTxTime) && (nVal >= Params().MinimumStakeAmount()))
+            if (Params().IsRegTestNet() || (GetAdjustedTime() > Params().StakeMinAge() + nTxTime))
                 return true;
         }
     }
