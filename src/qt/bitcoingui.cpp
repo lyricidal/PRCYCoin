@@ -251,7 +251,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
     if (!fLiteMode) {
         QTimer* timerStakingIcon = new QTimer(labelStakingIcon);
         connect(timerStakingIcon, SIGNAL(timeout()), this, SLOT(setStakingStatus()));
-        timerStakingIcon->start(10000);
+        timerStakingIcon->start(60000);
         setStakingStatus();
     }
     checkForUpdatesClicked();

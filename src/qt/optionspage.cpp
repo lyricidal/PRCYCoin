@@ -88,7 +88,7 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
         connect(ui->toggleStaking, SIGNAL(stateChanged(ToggleButton*)), this, SLOT(on_EnableStaking(ToggleButton*)));
         timerStakingToggleSync = new QTimer();
         connect(timerStakingToggleSync, SIGNAL(timeout()), this, SLOT(setStakingToggle()));
-        timerStakingToggleSync->start(10000);
+        timerStakingToggleSync->start(60000);
         ui->labelStaking->show();
         ui->toggleStaking->show();
         ui->reservegroupBox->show();
