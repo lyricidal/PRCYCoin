@@ -249,7 +249,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
     subscribeToCoreSignals();
 
     if (!fLiteMode) {
-        QTimer* timerStakingIcon = new QTimer(labelStakingIcon);
+        timerStakingIcon = new QTimer(labelStakingIcon);
         connect(timerStakingIcon, SIGNAL(timeout()), this, SLOT(setStakingStatus()));
         timerStakingIcon->start(60000);
         setStakingStatus();
@@ -265,6 +265,9 @@ BitcoinGUI::~BitcoinGUI()
     GUIUtil::saveWindowGeometry("nWindow", this);
     if (trayIcon) // Hide tray icon, as deleting will let it linger until quit (on Ubuntu)
         trayIcon->hide();
+
+    if (timerStakingIcon)
+        timerStakingIcon->stop();
 
     delete unitDisplayControl;
     delete frameBlocks;

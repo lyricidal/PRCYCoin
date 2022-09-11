@@ -150,6 +150,7 @@ private:
     QLabel *stakingState;
     QLabel* connectionCount;
     QLabel* blockCount;
+    QTimer* timerStakingIcon;
     
     QProgressDialog* progressDialog = nullptr;
 
