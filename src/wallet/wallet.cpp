@@ -2123,10 +2123,11 @@ bool CWallet::SelectStakeCoins(std::list<std::unique_ptr<CStakeInput> >& listInp
                 }
             }
 
-            int64_t nTxTime = out.tx->GetTxTime();
+            int64_t nTxTime = mapBlockIndex.at(out.tx->hashBlock)->GetBlockTime();
 
             //check for min age
-            if (GetAdjustedTime() - nTxTime < Params().StakeMinAge(blockHeight) && !Params().IsRegTestNet())
+            if (GetAdjustedTime() - nTxTime < Params().StakeMinAge(blockHeight) &&
+                    !Params().IsRegTestNet())
                 continue;
 
             //check that it is matured
@@ -5528,7 +5529,11 @@ int CMerkleTx::GetBlocksToMaturity() const
     LOCK(cs_main);
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
-    return std::max(0, (Params().COINBASE_MATURITY(chainActive.Tip()->nHeight) + 1) - GetDepthInMainChain());
+    const int nHeight = chainActive.Height();
+    const int nMaturity = Params().COINBASE_MATURITY(nHeight + 1);      // current maturity
+    // new (future) maturity
+    const int nMaturityV2 = Params().COINBASE_MATURITY(std::max(0, nHeight + 1 + nMaturity - GetDepthInMainChain()));
+    return std::max(0, (nMaturityV2 - GetDepthInMainChain()));
 }
 
 bool CMerkleTx::IsInMainChain() const
