@@ -119,7 +119,6 @@ public:
         nRejectBlockOutdatedMajority = 10260; // 95%
         nToCheckBlockUpgradeMajority = 10800; // Approximate expected amount of blocks in 7 days (1440*7.5)
         nMinerThreads = 0;
-        nTargetTimespan = 40 * 60;      // 40 minutes
         nTargetSpacing = 1 * 60;        // 1 minute
         nMaturity = 100;
         nStakeMinDepth = 600;
@@ -281,7 +280,6 @@ public:
         nRejectBlockOutdatedMajority = 5472; // 95%
         nToCheckBlockUpgradeMajority = 5760; // 4 days
         nMinerThreads = 0;
-        nTargetTimespan = 1 * 60; // PRCYcoin: 1 day
         nTargetSpacing = 1 * 60;  // PRCYcoin: 1 minute
         nLastPOWBlock = 500;
         nStartPOABlock = 560;
@@ -401,7 +399,6 @@ public:
         nRejectBlockOutdatedMajority = 950;
         nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 1;
-        nTargetTimespan = 24 * 60 * 60; // Prcycoin: 1 day
         nTargetSpacing = 1 * 60;        // Prcycoin: 1 minutes
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1;
         nLastPOWBlock = 250;
