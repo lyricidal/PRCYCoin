@@ -3565,7 +3565,7 @@ bool CWallet::selectDecoysAndRealIndex(CTransaction& tx, int& myIndex, int ringS
 
     LogPrintf("Selecting coinbase decoys for transaction\n");
     if (coinbaseDecoysPool.size() <= 100) {
-        for (int i = chainHeight - Params().COINBASE_MATURITY(chainHeight); i > 0; i--) {
+        for (int i = chainHeight - Params().COINBASE_MATURITY(); i > 0; i--) {
             if (coinbaseDecoysPool.size() > 100) break;
             CBlockIndex* p = chainActive[i];
             CBlock b;
@@ -5315,7 +5315,7 @@ bool CWallet::MultiSend()
     bool mnSent = false;
     for (const COutput& out : vCoins) {
         //need output with precise confirm count - this is how we identify which is the output to send
-        if (out.tx->GetDepthInMainChain() != Params().COINBASE_MATURITY(chainTipHeight) + 1)
+        if (out.tx->GetDepthInMainChain() != Params().COINBASE_MATURITY() + 1)
             continue;
 
         COutPoint outpoint(out.tx->GetHash(), out.i);
@@ -5514,11 +5514,7 @@ int CMerkleTx::GetBlocksToMaturity() const
     LOCK(cs_main);
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
-    const int nHeight = chainActive.Height();
-    const int nMaturity = Params().COINBASE_MATURITY(nHeight + 1);      // current maturity
-    // new (future) maturity
-    const int nMaturityV2 = Params().COINBASE_MATURITY(std::max(0, nHeight + 1 + nMaturity - GetDepthInMainChain()));
-    return std::max(0, (nMaturityV2 - GetDepthInMainChain()));
+    return std::max(0, (Params().COINBASE_MATURITY() + 1) - GetDepthInMainChain());
 }
 
 bool CMerkleTx::IsInMainChain() const
@@ -5531,7 +5527,7 @@ bool CMerkleTx::IsInMainChainImmature() const
     if (!IsCoinBase() && !IsCoinStake()) return false;
     const int depth = GetDepthInMainChain(false);
     int chainTipHeight = chainActive.Height();
-    return (depth > 0 && depth <= Params().COINBASE_MATURITY(chainTipHeight));
+    return (depth > 0 && depth <= Params().COINBASE_MATURITY());
 }
 
 bool CMerkleTx::AcceptToMemoryPool(bool fLimitFree, bool fRejectInsaneFee, bool ignoreFees)
