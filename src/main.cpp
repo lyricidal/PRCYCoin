@@ -4258,7 +4258,8 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     // because we receive the wrong transactions for it.
 
     // Check timestamp
-    if (!Params().IsRegTestNet() && !block.IsPoABlockByVersion() && block.GetBlockTime() > GetAdjustedTime() + (IsPoS ? 180 : 7200)) // 3 minute future drift for PoS
+    if (!Params().IsRegTestNet() && !block.IsPoABlockByVersion() &&
+            block.GetBlockTime() > Params().MaxFutureBlockTime(GetAdjustedTime(), IsPoS)) // 3 minute future drift for PoS
         return state.Invalid(error("%s : block timestamp too far in the future", __func__),
             REJECT_INVALID, "time-too-new");
 
