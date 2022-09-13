@@ -8,6 +8,7 @@
 #ifndef BITCOIN_CHAIN_H
 #define BITCOIN_CHAIN_H
 
+#include "chainparams.h"
 #include "primitives/block.h"
 #include "tinyformat.h"
 #include "uint256.h"
@@ -515,8 +516,10 @@ public:
         READWRITE(nMint);
         READWRITE(nMoneySupply);
         READWRITE(nFlags);
-        READWRITE(nStakeModifier);
-        if(this->nVersion > 5) {
+        // v1/v2 modifier selection.
+        if (!Params().IsStakeModifierV2(nHeight)) {
+            READWRITE(nStakeModifier);
+        } else {
             READWRITE(nStakeModifierV2);
         }
 
