@@ -178,11 +178,11 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool tx
             throw JSONRPCError(RPC_INTERNAL_ERROR, "Cannot get proof of stake hash");
 
         UniValue stakeData(UniValue::VOBJ);
-        stakeData.push_back(Pair("CS block from id", stake.get()->GetIndexFrom()->GetBlockHash().GetHex()));
-        stakeData.push_back(Pair("CS block from height", stake.get()->GetIndexFrom()->nHeight));
+        stakeData.push_back(Pair("BlockFromHash", stake.get()->GetIndexFrom()->GetBlockHash().GetHex()));
+        stakeData.push_back(Pair("BlockFromHeight", stake.get()->GetIndexFrom()->nHeight));
         stakeData.push_back(Pair("hashProofOfStake", hashProofOfStakeRet.GetHex()));
         stakeData.push_back(Pair("stakeModifierHeight", ((std::to_string(stake->getStakeModifierHeight())))));
-        result.push_back(Pair("Coin Stake", stakeData));
+        result.push_back(Pair("CoinStake", stakeData));
     }
 
     return result;
@@ -539,6 +539,12 @@ UniValue getblock(const UniValue& params, bool fHelp)
             "  \"previousblockhash\" : \"hash\",  (string) The hash of the previous block\n"
             "  \"nextblockhash\" : \"hash\"       (string) The hash of the next block\n"
             "  \"moneysupply\" : \"supply\"       (numeric) The money supply when this block was added to the blockchain\n"
+            "  },\n"
+            "  \"CoinStake\" :\n"
+            "    \"BlockFromHash\" : \"hash\",      (string) Block hash of the coin stake input\n"
+            "    \"BlockFromHeight\" : n,           (numeric) Block Height of the coin stake input\n"
+            "    \"hashProofOfStake\" : \"hash\",   (string) Proof of Stake hash\n"
+            "    \"stakeModifierHeight\" : \"nnn\"  (string) Stake modifier block height\n"
             "}\n"
             "\nResult (for verbose=false):\n"
             "\"data\"             (string) A string that is serialized, hex-encoded data for block 'hash'.\n"
