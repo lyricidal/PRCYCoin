@@ -2155,6 +2155,7 @@ bool CWallet::MintableCoins()
         std::vector<COutput> vCoins;
         AvailableCoins(vCoins, true);
 
+        int64_t time = GetAdjustedTime();
         for (const COutput& out : vCoins) {
             //add in-wallet minimum staking
             CAmount nVal = getCOutPutValue(out);
@@ -2174,7 +2175,7 @@ bool CWallet::MintableCoins()
 
             CBlockIndex* utxoBlock = mapBlockIndex.at(out.tx->hashBlock);
             //check for maturity (min age/depth)
-            if (Params().HasStakeMinAgeOrDepth(chainHeight, GetAdjustedTime(), utxoBlock->nHeight, utxoBlock->GetBlockTime()))
+            if (Params().HasStakeMinAgeOrDepth(chainHeight, time, utxoBlock->nHeight, utxoBlock->nTime))
                 return true;
         }
     }
