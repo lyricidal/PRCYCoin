@@ -84,6 +84,17 @@ static const Checkpoints::CCheckpointData dataRegtest = {
     0,
     0};
 
+bool CChainParams::HasStakeMinAgeOrDepth(const int contextHeight, const uint32_t contextTime,
+        const int utxoFromBlockHeight, const uint32_t utxoFromBlockTime) const
+{
+    // before stake modifier V2, the age required was 60 * 60 (1 hour) / not required on regtest
+    if (!IsStakeModifierV2(contextHeight))
+        return (Params().IsRegTestNet() || (utxoFromBlockTime + 3600 <= contextTime));
+
+    // after stake modifier V2, we require the utxo to be nStakeMinDepth deep in the chain
+    return (contextHeight - utxoFromBlockHeight >= nStakeMinDepth);
+}
+
 class CMainParams : public CChainParams
 {
 public:
@@ -111,13 +122,10 @@ public:
         nTargetTimespan = 40 * 60;      // 40 minutes
         nTargetSpacing = 1 * 60;        // 1 minute
         nMaturity = 100;
-        nStakeMinAge = 60 * 60;   // PRCYcoin: 1 hour
+        nStakeMinDepth = 600;
         nMasternodeCountDrift = 20;
         nMNCollateralAmt = 5000 * COIN;
         nMinimumStakeAmount = 2500 * COIN;
-
-        nMaturityV2Modifier = 600;      // 10hs
-        nStakeMinAgeV2Modifier = 36000; // 10hs
 
         /** Height or Time Based Activations **/
         nLastPOWBlock = 500;
@@ -251,6 +259,7 @@ public:
         return data;
     }
 };
+
 static CMainParams mainParams;
 
 /**
@@ -280,6 +289,7 @@ public:
         nMinNumPoSBlocks = 29;
         nMaxNumPoSBlocks = 33;
         nMaturity = 15;
+        nStakeMinDepth = 100;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT
         nMNCollateralAmt = 5000 * COIN;
@@ -292,9 +302,6 @@ public:
         nHardForkBlock = 700; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump to 25-30
         nHardForkBlockRingSize2 = 126000; // Add hard fork block for Ring Size bump to 30-32
-
-        nMaturityV2Modifier = 300;      // 5hs
-        nStakeMinAgeV2Modifier = 18000; // 5hs
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;
@@ -399,7 +406,7 @@ public:
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1;
         nLastPOWBlock = 250;
         nMaturity = 100;
-        nStakeMinAge = 0;
+        nStakeMinDepth = 0;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 0; //approx Mon, 17 Apr 2017 04:00:00 GMT
 

@@ -2123,15 +2123,9 @@ bool CWallet::SelectStakeCoins(std::list<std::unique_ptr<CStakeInput> >& listInp
                 }
             }
 
-            int64_t nTxTime = mapBlockIndex.at(out.tx->hashBlock)->GetBlockTime();
-
-            //check for min age
-            if (GetAdjustedTime() - nTxTime < Params().StakeMinAge(blockHeight) &&
-                    !Params().IsRegTestNet())
-                continue;
-
-            //check that it is matured
-            if (out.nDepth < (out.tx->IsCoinStake() ? Params().COINBASE_MATURITY(blockHeight) : 10))
+            CBlockIndex* utxoBlock = mapBlockIndex.at(out.tx->hashBlock);
+            //check for maturity (min age/depth)
+            if (!Params().HasStakeMinAgeOrDepth(blockHeight, GetAdjustedTime(), utxoBlock->nHeight, utxoBlock->GetBlockTime()))
                 continue;
 
             //add to our stake set
@@ -2178,10 +2172,9 @@ bool CWallet::MintableCoins()
                 }
             }
 
-            int64_t nTxTime = out.tx->GetTxTime();
-
-            //nTxTime <= nTime: only stake with UTXOs that are received before nTime time
-            if (Params().IsRegTestNet() || (GetAdjustedTime() > Params().StakeMinAge(chainHeight) + nTxTime))
+            CBlockIndex* utxoBlock = mapBlockIndex.at(out.tx->hashBlock);
+            //check for maturity (min age/depth)
+            if (Params().HasStakeMinAgeOrDepth(chainHeight, GetAdjustedTime(), utxoBlock->nHeight, utxoBlock->GetBlockTime()))
                 return true;
         }
     }
@@ -3860,31 +3853,18 @@ bool CWallet::CreateCoinStake(
     CScript scriptPubKeyKernel;
     bool fKernelFound = false;
     int nAttempts = 0;
-    int64_t chainTime = pindexPrev->GetMedianTimePast();
     for (std::unique_ptr<CStakeInput>& stakeInput : listInputs) {
         // Make sure the wallet is unlocked and shutdown hasn't been requested
         nCredit = 0;
         if (IsLocked() || ShutdownRequested())
             return false;
 
-        CBlockIndex* pindex = stakeInput->GetIndexFrom();
-        if (!pindex || pindex->nHeight < 1) {
-            LogPrintf("CreateCoinStake(): no pindexfrom\n");
-            continue;
-        }
-
-        CBlockHeader block = pindex->GetBlockHeader();
         uint256 hashProofOfStake = 0;
         nTxNewTime = GetAdjustedTime();
 
         nAttempts++;
         //iterates each utxo inside of CheckStakeKernelHash()
-        if (Stake(pindexPrev, stakeInput.get(), nBits, block.GetBlockTime(), nTxNewTime, hashProofOfStake)) {
-            //Double check that this will pass time requirements
-            if (nTxNewTime <= chainTime && !Params().IsRegTestNet()) {
-                LogPrintf("CreateCoinStake() : kernel found, but it is too far in the past \n");
-                continue;
-            }
+        if (Stake(pindexPrev, stakeInput.get(), nBits, nTxNewTime, hashProofOfStake)) {
 
             // Found a kernel
             LogPrintf("CreateCoinStake : kernel found\n");
