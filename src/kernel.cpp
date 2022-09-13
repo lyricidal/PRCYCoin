@@ -252,21 +252,21 @@ bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int
         return true;
     }
     const CBlockIndex* pindex = pindexFrom;
-    CBlockIndex* pindexNext = chainActive[pindexFrom->nHeight + 1];
+    CBlockIndex* pindexNext = chainActive[pindex->nHeight + 1];
     // loop to find the stake modifier later by a selection interval
-    while (nStakeModifierTime < pindexFrom->GetBlockTime() + OLD_MODIFIER_INTERVAL) {
+    do {
         if (!pindexNext) {
             // Should never happen
-            return error("%s : Null pindexNext", __func__);
+            return error("%s : Null pindexNext, current block %s ", __func__, pindex->phashBlock->GetHex());
         }
-
         pindex = pindexNext;
-        pindexNext = chainActive[pindexNext->nHeight + 1];
         if (pindex->GeneratedStakeModifier()) {
             nStakeModifierHeight = pindex->nHeight;
             nStakeModifierTime = pindex->GetBlockTime();
         }
-    }
+        pindexNext = chainActive[pindex->nHeight + 1];
+    } while (nStakeModifierTime < pindexFrom->GetBlockTime() + OLD_MODIFIER_INTERVAL);
+
     nStakeModifier = pindex->nStakeModifier;
     return true;
 }
