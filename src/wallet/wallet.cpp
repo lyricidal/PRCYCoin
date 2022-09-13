@@ -3859,6 +3859,7 @@ bool CWallet::CreateCoinStake(
     CScript scriptPubKeyKernel;
     bool fKernelFound = false;
     int nAttempts = 0;
+    int64_t chainTime = pindexPrev->GetMedianTimePast();
     for (std::unique_ptr<CStakeInput>& stakeInput : listInputs) {
         // Make sure the wallet is unlocked and shutdown hasn't been requested
         nCredit = 0;
@@ -3879,7 +3880,7 @@ bool CWallet::CreateCoinStake(
         //iterates each utxo inside of CheckStakeKernelHash()
         if (Stake(pindexPrev, stakeInput.get(), nBits, block.GetBlockTime(), nTxNewTime, hashProofOfStake)) {
             //Double check that this will pass time requirements
-            if (nTxNewTime <= chainActive.Tip()->GetMedianTimePast() && !Params().IsRegTestNet()) {
+            if (nTxNewTime <= chainTime && !Params().IsRegTestNet()) {
                 LogPrintf("CreateCoinStake() : kernel found, but it is too far in the past \n");
                 continue;
             }
