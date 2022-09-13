@@ -14,6 +14,7 @@
 #include "utilstrencodings.h"
 
 #include <boost/assign/list_of.hpp>
+#include <limits>
 
 #include <assert.h>
 
@@ -409,7 +410,7 @@ public:
         nStakeMinDepth = 0;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 0; //approx Mon, 17 Apr 2017 04:00:00 GMT
-        nBlockStakeModifierlV2 = -1;
+        nBlockStakeModifierlV2 = std::numeric_limits<int>::max(); // max integer value (never switch on regtest)
 
         //! Modify the regtest genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422399;

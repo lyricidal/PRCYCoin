@@ -1535,7 +1535,7 @@ bool CheckHaveInputs(const CCoinsViewCache& view, const CTransaction& tx)
 
                 if (mapBlockIndex.count(bh) < 1) return false;
                 if (prev.IsCoinStake() || prev.IsCoinAudit() || prev.IsCoinBase()) {
-                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY(nSpendHeight)) return false;
+                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY()) return false;
                 }
 
                 CBlockIndex* tip = chainActive.Tip();
@@ -2738,7 +2738,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
 
                 // If prev is coinbase, check that it's matured
                 if (prev.IsCoinBase() || prev.IsCoinStake()) {
-                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY(nSpendHeight))
+                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY())
                         return state.Invalid(
                             error("CheckInputs() : tried to spend coinbase at depth %d, coinstake=%d",
                                 nSpendHeight - mapBlockIndex[bh]->nHeight, prev.IsCoinStake()),
@@ -5005,9 +5005,9 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
                 }
             }
 
-            if (chainHeight > Params().COINBASE_MATURITY(chainHeight)) {
+            if (chainHeight > Params().COINBASE_MATURITY()) {
                 //read block chainHeight - Params().COINBASE_MATURITY()
-                CBlockIndex* p = chainActive[chainHeight - Params().COINBASE_MATURITY(chainHeight)];
+                CBlockIndex* p = chainActive[chainHeight - Params().COINBASE_MATURITY()];
                 CBlock b;
                 if (ReadBlockFromDisk(b, p)) {
                     coinbaseIdx = 0;
