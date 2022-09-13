@@ -15,6 +15,9 @@
 #include "stakeinput.h"
 #include "utilmoneystr.h"
 
+// v1 modifier interval.
+static const int64_t OLD_MODIFIER_INTERVAL = 2087;
+
 // Hard checkpoints of stake modifiers to ensure they are deterministic
 static std::map<int, unsigned int> mapStakeModifierCheckpoints =
     boost::assign::map_list_of(0, 0xfd11f4e7u);
@@ -39,16 +42,6 @@ static int64_t GetStakeModifierSelectionIntervalSection(int nSection)
     assert(nSection >= 0 && nSection < 64);
     int64_t a = MODIFIER_INTERVAL * 63 / (63 + ((63 - nSection) * (MODIFIER_INTERVAL_RATIO - 1)));
     return a;
-}
-
-// Get stake modifier selection interval (in seconds)
-static int64_t GetStakeModifierSelectionInterval()
-{
-    int64_t nSelectionInterval = 0;
-    for (int nSection = 0; nSection < 64; nSection++) {
-        nSelectionInterval += GetStakeModifierSelectionIntervalSection(nSection);
-    }
-    return nSelectionInterval;
 }
 
 // select a block from the candidate blocks in vSortedByTimestamp, excluding
@@ -175,14 +168,13 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     if (GetBoolArg("-printstakemodifier", false))
         LogPrintf("%s : prev modifier= %s time=%s\n", __func__, std::to_string(nStakeModifier).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nModifierTime).c_str());
 
-    if (nModifierTime / MODIFIER_INTERVAL >= pindexPrev->GetBlockTime() / MODIFIER_INTERVAL)
+    if (nModifierTime >= pindexPrev->GetBlockTime())
         return true;
 
     // Sort candidate blocks by timestamp
     std::vector<std::pair<int64_t, uint256> > vSortedByTimestamp;
     vSortedByTimestamp.reserve(64 * MODIFIER_INTERVAL / Params().TargetSpacing());
-    int64_t nSelectionInterval = GetStakeModifierSelectionInterval();
-    int64_t nSelectionIntervalStart = (pindexPrev->GetBlockTime() / MODIFIER_INTERVAL) * MODIFIER_INTERVAL - nSelectionInterval;
+    int64_t nSelectionIntervalStart = (pindexPrev->GetBlockTime() / MODIFIER_INTERVAL ) * MODIFIER_INTERVAL  - OLD_MODIFIER_INTERVAL;
     const CBlockIndex* pindex = pindexPrev;
 
     while (pindex && pindex->GetBlockTime() >= nSelectionIntervalStart) {
@@ -259,11 +251,10 @@ bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int
         nStakeModifier = pindexFrom->nStakeModifier;
         return true;
     }
-    int64_t nStakeModifierSelectionInterval = GetStakeModifierSelectionInterval();
     const CBlockIndex* pindex = pindexFrom;
     CBlockIndex* pindexNext = chainActive[pindexFrom->nHeight + 1];
     // loop to find the stake modifier later by a selection interval
-    while (nStakeModifierTime < pindexFrom->GetBlockTime() + nStakeModifierSelectionInterval) {
+    while (nStakeModifierTime < pindexFrom->GetBlockTime() + OLD_MODIFIER_INTERVAL) {
         if (!pindexNext) {
             // Should never happen
             return error("Null pindexNext\n");
@@ -391,7 +382,7 @@ bool CheckProofOfStake(const CBlock block, uint256& hashProofOfStake, std::uniqu
     //Construct the stakeinput object
     // First try finding the previous transaction in database
     uint256 hashBlock;
-    CTransaction txPrev;s
+    CTransaction txPrev;
     if (!GetTransaction(txin.prevout.hash, txPrev, hashBlock, true))
         return error("%s : INFO: read txPrev failed, tx id prev: %s, block id %s",
                 __func__, txin.prevout.hash.GetHex(), block.GetHash().GetHex());
