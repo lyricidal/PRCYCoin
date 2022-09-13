@@ -27,6 +27,10 @@ public:
     virtual bool CreateTxOuts(CWallet* pwallet, std::vector<CTxOut>& vout, CAmount nTotal) = 0;
     virtual bool GetModifier(uint64_t& nStakeModifier) = 0;
     virtual CDataStream GetUniqueness() = 0;
+
+    virtual uint64_t getStakeModifierHeight() const {
+        return 0;
+    }
 };
 
 class CPrcyStake : public CStakeInput
@@ -51,6 +55,8 @@ public:
     CDataStream GetUniqueness() override;
     bool CreateTxIn(CWallet* pwallet, CTxIn& txIn, uint256 hashTxOut = 0) override;
     bool CreateTxOuts(CWallet* pwallet, std::vector<CTxOut>& vout, CAmount nTotal) override;
+
+    uint64_t getStakeModifierHeight() const override { return nStakeModifierHeight; }
 };
 
 
