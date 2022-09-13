@@ -221,6 +221,7 @@ public:
     uint256 hashProofOfStake;
     int64_t nMint;
     int64_t nMoneySupply;
+    uint256 nStakeModifierV2;
 
     //! block header
     int nVersion;
@@ -290,15 +291,6 @@ public:
         if(block.nVersion > 3)
             nAccumulatorCheckpoint = block.nAccumulatorCheckpoint;
 
-        //Proof of Stake
-        bnChainTrust = UINT256_ZERO;
-        nMint = 0;
-        nMoneySupply = 0;
-        nFlags = 0;
-        nStakeModifier = 0;
-        nStakeModifierChecksum = 0;
-        hashProofOfStake = UINT256_ZERO;
-
         if (block.IsProofOfAudit()) {
             SetProofOfAudit();
             hashPrevPoABlock = block.hashPrevPoABlock;
@@ -310,9 +302,6 @@ public:
             SetProofOfStake();
             prevoutStake = block.vtx[1].vin[0].prevout;
             nStakeTime = block.nTime;
-        } else {
-            prevoutStake.SetNull();
-            nStakeTime = 0;
         }
     }
     
