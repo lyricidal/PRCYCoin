@@ -399,7 +399,7 @@ bool CheckProofOfStake(const CBlock block, uint256& hashProofOfStake, std::uniqu
     prcyInput->SetInput(txPrev, txin.prevout.n);
     stake = std::unique_ptr<CStakeInput>(prcyInput);
 
-    CBlockIndex* pindexPrev = chainActive[nPreviousBlockHeight];
+    CBlockIndex* pindexPrev = mapBlockIndex[block.hashPrevBlock];
     CBlockIndex* pindexfrom = stake->GetIndexFrom();
     if (!pindexfrom)
         return error("%s : Failed to find the block index for stake origin", __func__);
