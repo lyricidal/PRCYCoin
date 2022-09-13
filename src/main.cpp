@@ -1535,7 +1535,7 @@ bool CheckHaveInputs(const CCoinsViewCache& view, const CTransaction& tx)
 
                 if (mapBlockIndex.count(bh) < 1) return false;
                 if (prev.IsCoinStake() || prev.IsCoinAudit() || prev.IsCoinBase()) {
-                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY()) return false;
+                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY(nSpendHeight)) return false;
                 }
 
                 CBlockIndex* tip = chainActive.Tip();
@@ -2728,7 +2728,7 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
 
                 // If prev is coinbase, check that it's matured
                 if (prev.IsCoinBase() || prev.IsCoinStake()) {
-                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY())
+                    if (nSpendHeight - mapBlockIndex[bh]->nHeight < Params().COINBASE_MATURITY(nSpendHeight))
                         return state.Invalid(
                             error("CheckInputs() : tried to spend coinbase at depth %d, coinstake=%d",
                                 nSpendHeight - mapBlockIndex[bh]->nHeight, prev.IsCoinStake()),
@@ -4933,6 +4933,7 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
         }
     }
 
+    int chainHeight = chainActive.Height();
     if (pwalletMain) {
         LOCK2(cs_main, pwalletMain->cs_wallet);
         /*// If turned on MultiSend will send a transaction (or more) on the after maturity of a stake
@@ -4940,10 +4941,10 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
             pwalletMain->MultiSend();*/
 
         // If turned on Auto Combine will scan wallet for dust to combine
-        if (pwalletMain->fCombineDust && chainActive.Height() % 15 == 0)
+        if (pwalletMain->fCombineDust && chainHeight % 15 == 0)
             pwalletMain->AutoCombineDust();
 
-        if (chainActive.Height() % 15 == 0) {
+        if (chainHeight % 15 == 0) {
             RemoveInvalidTransactionsFromMempool();
         }
         pwalletMain->resetPendingOutPoints();
@@ -4993,9 +4994,9 @@ bool ProcessNewBlock(CValidationState& state, CNode* pfrom, CBlock* pblock, CDis
                 }
             }
 
-            if (chainActive.Height() > Params().COINBASE_MATURITY()) {
-                //read block chainActive.Height() - Params().COINBASE_MATURITY()
-                CBlockIndex* p = chainActive[chainActive.Height() - Params().COINBASE_MATURITY()];
+            if (chainHeight > Params().COINBASE_MATURITY(chainHeight)) {
+                //read block chainHeight - Params().COINBASE_MATURITY()
+                CBlockIndex* p = chainActive[chainHeight - Params().COINBASE_MATURITY(chainHeight)];
                 CBlock b;
                 if (ReadBlockFromDisk(b, p)) {
                     coinbaseIdx = 0;

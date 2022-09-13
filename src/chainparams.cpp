@@ -116,6 +116,9 @@ public:
         nMNCollateralAmt = 5000 * COIN;
         nMinimumStakeAmount = 2500 * COIN;
 
+        nMaturityV2Modifier = 600;      // 10hs
+        nStakeMinAgeV2Modifier = 36000; // 10hs
+
         /** Height or Time Based Activations **/
         nLastPOWBlock = 500;
         nStartPOABlock = 560;
@@ -289,6 +292,9 @@ public:
         nHardForkBlock = 700; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump to 25-30
         nHardForkBlockRingSize2 = 126000; // Add hard fork block for Ring Size bump to 30-32
+
+        nMaturityV2Modifier = 300;      // 5hs
+        nStakeMinAgeV2Modifier = 18000; // 5hs
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;
