@@ -122,7 +122,7 @@ public:
         nMinerThreads = 0;
         nTargetSpacing = 1 * 60;        // 1 minute
         nMaturity = 100;
-        nStakeMinDepth = 600;
+        nStakeMinDepth = nMaturity;
         nFutureTimeDriftPoW = 7200;
         nFutureTimeDriftPoS = 180;
         nMasternodeCountDrift = 20;
@@ -290,7 +290,7 @@ public:
         nMinNumPoSBlocks = 29;
         nMaxNumPoSBlocks = 33;
         nMaturity = 15;
-        nStakeMinDepth = 100;
+        nStakeMinDepth = nMaturity;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 51197; //approx Mon, 17 Apr 2017 04:00:00 GMT
         nMNCollateralAmt = 5000 * COIN;
