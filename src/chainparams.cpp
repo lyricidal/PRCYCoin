@@ -146,6 +146,7 @@ public:
         nHardForkBlockRingSize = 750000; // Add hard fork block for Ring Size bump
         nHardForkBlockRingSize2 = nHardForkBlockRingSize; // For testnet & compile purposes
         nBlockStakeModifierlV2 = 1000000;
+        nBlockTimeProtocolV2 = 1000000;
 
         /**
          * Build the genesis block. Note that the output of the genesis coinbase cannot
@@ -304,6 +305,7 @@ public:
         nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump to 25-30
         nHardForkBlockRingSize2 = 126000; // Add hard fork block for Ring Size bump to 30-32
         nBlockStakeModifierlV2 = 145000;
+        nBlockTimeProtocolV2 = 145000;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;
@@ -410,7 +412,8 @@ public:
         nStakeMinDepth = 0;
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 0; //approx Mon, 17 Apr 2017 04:00:00 GMT
-        nBlockStakeModifierlV2 = std::numeric_limits<int>::max(); // max integer value (never switch on regtest)
+        nBlockStakeModifierlV2 = 351;
+        nBlockTimeProtocolV2 = 999999999;
 
         //! Modify the regtest genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422399;
