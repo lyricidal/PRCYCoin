@@ -93,6 +93,7 @@ public:
 
     /** Time Protocol V2 **/
     bool IsTimeProtocolV2(const int nHeight) const { return nHeight >= nBlockTimeProtocolV2; }
+    int StakeTimestampMask() const { return nStakeTimestampMask; }
 
     CAmount MNCollateralAmt() const { return nMNCollateralAmt; }
     CAmount MinimumStakeAmount() const { return nMinimumStakeAmount; }
@@ -170,6 +171,7 @@ protected:
     int nStakeMinDepth;
     int nFutureTimeDriftPoW;
     int nFutureTimeDriftPoS;
+    int nStakeTimestampMask;
 
     int nModifierUpdateBlock;
     CAmount nMNCollateralAmt;
