@@ -139,6 +139,8 @@ public:
         pchMessageStart[3] = 0x90;
         nDefaultPort = 59682;
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1; // PRCYcoin starting difficulty is 1 / 2^12
+        bnProofOfStakeLimit = ~uint256(0) >> 24;
+        bnProofOfStakeLimit_V2 = ~uint256(0) >> 48;
         nSubsidyHalvingInterval = 210000;
         nMaxReorganizationDepth = 100;
         nEnforceBlockUpgradeMajority = 8100; // 75%
@@ -147,6 +149,8 @@ public:
         nMinerThreads = 0;
         nTargetTimespan = 40 * 60;      // 40 minutes
         nTargetSpacing = 1 * 60;        // 1 minute
+        nTargetSpacing_V2 = 64;         // 64 seconds
+        nTargetTimespan_V2 = 16 * 60;   // 16 minutes
         nMaturity = 100;
         nStakeMinDepth = nMaturity;
         nFutureTimeDriftPoW = 7200;
@@ -313,7 +317,6 @@ public:
         nToCheckBlockUpgradeMajority = 5760; // 4 days
         nMinerThreads = 0;
         nTargetTimespan = 1 * 60; // PRCYcoin: 1 day
-        nTargetSpacing = 1 * 60;  // PRCYcoin: 1 minute
         nLastPOWBlock = 500;
         nStartPOABlock = 560;
         nPoABlockTime = 30 * 60;  //1 PoA block every 30 minutes
@@ -435,7 +438,6 @@ public:
         nToCheckBlockUpgradeMajority = 1000;
         nMinerThreads = 1;
         nTargetTimespan = 24 * 60 * 60; // Prcycoin: 1 day
-        nTargetSpacing = 1 * 60;        // Prcycoin: 1 minutes
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1;
         nLastPOWBlock = 250;
         nMaturity = 100;
