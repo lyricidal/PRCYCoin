@@ -4270,12 +4270,6 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
     // transaction validation, as otherwise we may mark the header as invalid
     // because we receive the wrong transactions for it.
 
-    // Check timestamp
-    if (!Params().IsRegTestNet() && !block.IsPoABlockByVersion() &&
-            block.GetBlockTime() > Params().MaxFutureBlockTime(GetAdjustedTime(), IsPoS)) // 3 minute future drift for PoS
-        return state.Invalid(error("%s : block timestamp too far in the future", __func__),
-            REJECT_INVALID, "time-too-new");
-
     //check duplicate key image in blocks
     std::set<CKeyImage> keyimages;
     for(size_t i = 0; i < block.vtx.size(); i++) {
@@ -4450,18 +4444,19 @@ bool ContextualCheckBlockHeader(const CBlockHeader& block, CValidationState& sta
     const int nHeight = pindexPrev->nHeight + 1;
     const int chainHeight = chainActive.Height();
 
-    if ((Params().IsRegTestNet() && block.nBits != GetNextWorkRequired(pindexPrev, &block)))
-        return state.DoS(100, error("%s : incorrect proof of work", __func__),
-                REJECT_INVALID, "bad-diffbits");
-
-
     //If this is a reorg, check that it is not too deep
     int nMaxReorgDepth = GetArg("-maxreorg", Params().MaxReorganizationDepth());
     if (chainHeight - nHeight >= nMaxReorgDepth)
         return state.DoS(1, error("%s: forked chain older than max reorganization depth (height %d)", __func__, chainHeight - nHeight));
 
+    // Check blocktime against future drift (WANT: blk_time <= Now + MaxDrift)
+    if (!Params().IsRegTestNet() && !block.IsPoABlockByVersion()  &&
+            block.GetBlockTime() > pindexPrev->MaxFutureBlockTime())
+        return state.Invalid(error("%s : block timestamp too far in the future", __func__), REJECT_INVALID, "time-too-new");
+
     // Check blocktime against prev (WANT: blk_time > MedianTimePast)
-    if (!block.IsPoABlockByVersion() && !Params().IsRegTestNet() && block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
+    if (!block.IsPoABlockByVersion() && !Params().IsRegTestNet() &&
+            block.GetBlockTime() <= pindexPrev->GetMedianTimePast())
         return state.DoS(50, error("%s : block timestamp too old", __func__), REJECT_INVALID, "time-too-old");
 
     // Check that the block chain matches the known block chain up to a checkpoint
