@@ -129,6 +129,7 @@ public:
         nMasternodeCountDrift = 20;
         nMNCollateralAmt = 5000 * COIN;
         nMinimumStakeAmount = 2500 * COIN;
+        nStakeTimestampMask = 0xf;
 
         /** Height or Time Based Activations **/
         nLastPOWBlock = 500;
