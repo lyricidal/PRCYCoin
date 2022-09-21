@@ -149,7 +149,6 @@ public:
         nMinerThreads = 0;
         nTargetTimespan = 40 * 60;      // 40 minutes
         nTargetSpacing = 1 * 60;        // 1 minute
-        nTargetSpacing_V2 = 64;         // 64 seconds
         nTargetTimespan_V2 = 16 * 60;   // 16 minutes
         nMaturity = 100;
         nStakeMinDepth = nMaturity;

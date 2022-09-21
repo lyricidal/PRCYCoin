@@ -80,7 +80,7 @@ public:
     /** Make standard checks */
     bool RequireStandard() const { return fRequireStandard; }
     int64_t TargetTimespan() const { return nTargetTimespan; }
-    int64_t TargetSpacing(const bool fV2 = true) const { return fV2 ? nTargetSpacing_V2 : nTargetSpacing; }
+    int64_t TargetSpacing() const { return nTargetSpacing; }
     int64_t TargetTimespan(const bool fV2 = true) const { return fV2 ? nTargetTimespan_V2 : nTargetTimespan; }
 
     /** returns the coinbase maturity **/
@@ -160,7 +160,6 @@ protected:
     int nRejectBlockOutdatedMajority;
     int nToCheckBlockUpgradeMajority;
     int64_t nTargetSpacing;
-    int64_t nTargetSpacing_V2;
     int64_t nTargetTimespan;
     int64_t nTargetTimespan_V2;
     int nStartPOABlock;
