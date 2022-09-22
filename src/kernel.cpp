@@ -238,7 +238,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
 
 // The stake modifier used to hash for a stake kernel is chosen as the stake
 // modifier about a selection interval later than the coin generating the kernel
-bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int& nStakeModifierHeight, int64_t& nStakeModifierTime, bool fPrintProofOfStake)
+bool GetKernelStakeModifier(const uint256& hashBlockFrom, uint64_t& nStakeModifier, int& nStakeModifierHeight, int64_t& nStakeModifierTime, bool fPrintProofOfStake)
 {
     nStakeModifier = 0;
     if (!mapBlockIndex.count(hashBlockFrom))
@@ -401,7 +401,7 @@ bool StakeV1(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned in
     return fSuccess;
 }
 
-bool initStakeInput(const CBlock block, std::unique_ptr<CStakeInput>& stake, int nPreviousBlockHeight) {
+bool initStakeInput(const CBlock& block, std::unique_ptr<CStakeInput>& stake, int nPreviousBlockHeight) {
     const CTransaction tx = block.vtx[1]; //coinstake
     CAmount nValueIn;
     CAmount nValueOut;
@@ -434,7 +434,7 @@ bool initStakeInput(const CBlock block, std::unique_ptr<CStakeInput>& stake, int
 }
 
 // Check kernel hash target and coinstake signature
-bool CheckProofOfStake(const CBlock block, uint256& hashProofOfStake, std::unique_ptr<CStakeInput>& stake, int nPreviousBlockHeight)
+bool CheckProofOfStake(const CBlock& block, uint256& hashProofOfStake, std::unique_ptr<CStakeInput>& stake, int nPreviousBlockHeight)
 {
     // Initialize the stake object
     if(!initStakeInput(block, stake, nPreviousBlockHeight))
