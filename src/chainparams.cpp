@@ -140,7 +140,7 @@ public:
         nDefaultPort = 59682;
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1; // PRCYcoin starting difficulty is 1 / 2^12
         bnProofOfStakeLimit = ~uint256(0) >> 24;
-        bnProofOfStakeLimit_V2 = ~uint256(0) >> 48;
+        bnProofOfStakeLimit_V2 = ~uint256(0) >> 20; // 60/4 = 15 ==> use 2**4 higher limit
         nSubsidyHalvingInterval = 210000;
         nMaxReorganizationDepth = 100;
         nEnforceBlockUpgradeMajority = 8100; // 75%
