@@ -3802,16 +3802,13 @@ void CWallet::AddComputedPrivateKey(const CTxOut& out)
 // ppcoin: create coin stake transaction
 bool CWallet::CreateCoinStake(
         const CKeyStore& keystore,
+        const CBlockIndex* pindexPrev,
         unsigned int nBits,
         int64_t nSearchInterval,
         CMutableTransaction& txNew,
         int64_t& nTxNewTime
         )
 {
-    // The following split & combine thresholds are important to security
-    // Should not be adjusted if you don't understand the consequences
-    //int64_t nCombineThreshold = 0;
-    const CBlockIndex* pindexPrev = chainActive.Tip();
     int static wlIdx = 0;
     txNew.vin.clear();
     txNew.vout.clear();
@@ -3844,7 +3841,7 @@ bool CWallet::CreateCoinStake(
         return false;
     }
 
-    if (GetAdjustedTime() - chainActive.Tip()->GetBlockTime() < 60) {
+    if (GetAdjustedTime() - pindexPrev->GetBlockTime() < 60) {
         if (Params().IsRegTestNet()) {
             MilliSleep(1000);
         }
