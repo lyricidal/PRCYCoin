@@ -54,22 +54,28 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
     }
 
     if (pindexLast->nHeight > Params().LAST_POW_BLOCK()) {
-        uint256 bnTargetLimit = (~UINT256_ZERO >> 24);
-        int64_t nTargetSpacing = 60;
-        int64_t nTargetTimespan = 60 * 40;
+        const bool fTimeV2 = Params().IsTimeProtocolV2(pindexLast->nHeight+1);
+        const uint256 bnTargetLimit = Params().ProofOfStakeLimit(fTimeV2);
+        const int64_t nTargetSpacing = Params().TargetSpacing(fTimeV2);
+        const int64_t nTargetTimespan = Params().TargetTimespan(fTimeV2);
+
+        // on first block with V2 time protocol, return the limit
+        if (fTimeV2 && !Params().IsTimeProtocolV2(pindexLast->nHeight))
+            return bnTargetLimit.GetCompact();
 
         //finding last PoS block
         CBlockIndex* pLastPoS = pindexLast->pprev;
         while (!pLastPoS->IsProofOfStake() && pLastPoS->nHeight > Params().LAST_POW_BLOCK()) {
             pLastPoS = pLastPoS->pprev;
         }
+
         int64_t nActualSpacing = 0;
-        //ig
         if (pindexLast->nHeight != 0)
             nActualSpacing = pindexLast->GetBlockTime() - pLastPoS->GetBlockTime();
-
         if (nActualSpacing < 0)
             nActualSpacing = 1;
+        if (fTimeV2 && nActualSpacing > nTargetSpacing*10)
+            nActualSpacing = nTargetSpacing*10;
 
         // ppcoin: target change every block
         // ppcoin: retarget with exponential moving toward target spacing
