@@ -41,5 +41,7 @@ unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex);
 bool CheckStakeModifierCheckpoints(int nHeight, unsigned int nStakeModifierChecksum);
 
 int64_t GetMaskedTime();
+int64_t GetTimeSlot(const int64_t nTime);
+int64_t GetCurrentTimeSlot();
 
 #endif // BITCOIN_KERNEL_H

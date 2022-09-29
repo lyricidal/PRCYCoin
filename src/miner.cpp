@@ -7,7 +7,7 @@
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
 // Copyright (c) 2020-2022 The PRivaCY Coin Developers
-// Distributed under the MIT/X11 software license, see the accompanying
+// Distributed under the MIT/X1 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 
@@ -95,7 +95,7 @@ public:
 void UpdateTime(CBlockHeader* pblock, const CBlockIndex* pindexPrev)
 {
     if (Params().IsTimeProtocolV2(pindexPrev->nHeight+1)) {
-        pblock->nTime = GetMaskedTime();
+        pblock->nTime = GetCurrentTimeSlot();
     } else {
         pblock->nTime = std::max(pindexPrev->GetMedianTimePast() + 1, GetAdjustedTime());
     }
@@ -752,7 +752,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
             {
                 int64_t tipHashTime = mapHashedBlocks[chainActive.Tip()->nHeight];
                 // 1 second check until we get to the next time slot
-                while (GetMaskedTime() <= tipHashTime)
+                while (GetCurrentTimeSlot() <= tipHashTime)
                 {
                     MilliSleep(1000);
                     continue;
