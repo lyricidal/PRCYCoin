@@ -59,10 +59,6 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
         const int64_t nTargetSpacing = Params().TargetSpacing();
         const int64_t nTargetTimespan = Params().TargetTimespan(fTimeV2);
 
-        // on first block with V2 time protocol, return the limit
-        if (fTimeV2 && !Params().IsTimeProtocolV2(pindexLast->nHeight))
-            return bnTargetLimit.GetCompact();
-
         //finding last PoS block
         CBlockIndex* pLastPoS = pindexLast->pprev;
         while (!pLastPoS->IsProofOfStake() && pLastPoS->nHeight > Params().LAST_POW_BLOCK()) {
@@ -84,7 +80,12 @@ unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHead
             bnNew.SetCompact(pindexLast->nBits);
         } else {
             if (pindexLast->IsProofOfStake()) {
-                bnNew.SetCompact(pindexLast->nBits);
+                // on first block with V2 time protocol, reduce the difficulty by a factor 16
+                if (fTimeV2 && !Params().IsTimeProtocolV2(pindexLast->nHeight)) {
+                    bnNew.SetCompact(pindexLast->nBits << 4);
+                } else {
+                    bnNew.SetCompact(pindexLast->nBits);
+                }
             } else {
                 bnNew.SetCompact(pLastPoS->nBits);
             }
