@@ -69,6 +69,10 @@ static const bool DEFAULT_UPNP = false;
 static const size_t MAPASKFOR_MAX_SZ = MAX_INV_SZ;
 /** The maximum number of peer connections to maintain. */
 static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
+/** Disconnected peers are added to setOffsetDisconnectedPeers only if node has less than ENOUGH_CONNECTIONS */
+#define ENOUGH_CONNECTIONS 2
+/** Maximum number of peers added to setOffsetDisconnectedPeers before triggering a warning */
+#define MAX_TIMEOFFSET_DISCONNECTIONS 16
 
 static const ServiceFlags REQUIRED_SERVICES = NODE_NETWORK;
 
@@ -88,6 +92,7 @@ bool BindListenPort(const CService& bindAddr, std::string& strError, bool fWhite
 void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler);
 bool StopNode();
 void SocketSendData(CNode* pnode);
+void CheckOffsetDisconnectedPeers(const CNetAddr& ip);
 
 typedef int64_t NodeId;
 
