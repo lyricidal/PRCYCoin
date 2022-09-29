@@ -116,8 +116,10 @@ static bool SelectBlockFromCandidates(
 // must hash with a future stake modifier to generate the proof.
 uint256 ComputeStakeModifier(const CBlockIndex* pindexPrev, const uint256& kernel)
 {
-    if (!pindexPrev)
-        return uint256(); // genesis block's modifier is 0
+    // genesis block's modifier is 0
+    // all block's modifiers are 0 on regtest
+    if (!pindexPrev || Params().IsRegTestNet())
+        return uint256();
 
     CHashWriter ss(SER_GETHASH, 0);
     ss << kernel;
@@ -148,6 +150,11 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
 {
     nStakeModifier = 0;
     fGeneratedStakeModifier = false;
+
+    // modifier 0 on RegTest
+    if (Params().IsRegTestNet()) {
+        return true;
+    }
     if (!pindexPrev) {
         fGeneratedStakeModifier = true;
         return true; // genesis block's modifier is 0
@@ -241,6 +248,10 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
 bool GetKernelStakeModifier(const uint256& hashBlockFrom, uint64_t& nStakeModifier, int& nStakeModifierHeight, int64_t& nStakeModifierTime, bool fPrintProofOfStake)
 {
     nStakeModifier = 0;
+    // modifier 0 on RegTest
+    if (Params().IsRegTestNet()) {
+        return true;
+    }
     if (!mapBlockIndex.count(hashBlockFrom))
         return error("%s : block not indexed", __func__);
     const CBlockIndex* pindexFrom = mapBlockIndex[hashBlockFrom];
@@ -315,7 +326,7 @@ bool GetHashProofOfStake(const CBlockIndex* pindexPrev, CStakeInput* stake, cons
     CDataStream modifier_ss(SER_GETHASH, 0);
 
     // Hash the modifier
-    if (!Params().IsStakeModifierV2(pindexPrev->nHeight + 1)) {
+    if (!Params().IsStakeModifierV2(pindexPrev->nHeight)) {
         // Modifier v1
         uint64_t nStakeModifier = 0;
         if (!stake->GetModifier(nStakeModifier))
@@ -362,7 +373,7 @@ bool Stake(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, unsigned int 
 
         nTimeTx = GetCurrentTimeSlot();
         // double check that we are not on the same slot as prev block
-        if (nTimeTx <= pindexPrev->nTime)
+        if (nTimeTx <= pindexPrev->nTime && !Params().IsRegTestNet())
             return false;
 
         // check stake kernel
@@ -380,7 +391,9 @@ bool StakeV1(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, const uint3
     // iterate from maxTime down to pindexPrev->nTime (or min time due to maturity, 60 min after blockFrom)
     const unsigned int prevBlockTime = pindexPrev->nTime;
     const unsigned int maxTime = pindexPrev->MaxFutureBlockTime();
-    const unsigned int minTime = std::max(prevBlockTime, nTimeBlockFrom + 3600);
+    unsigned int minTime = std::max(prevBlockTime, nTimeBlockFrom + 3600);
+    if (Params().IsRegTestNet())
+        minTime = prevBlockTime;
     unsigned int nTryTime = maxTime;
 
     // check required maturity for stake

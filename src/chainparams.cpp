@@ -88,13 +88,9 @@ static const Checkpoints::CCheckpointData dataRegtest = {
 bool CChainParams::HasStakeMinAgeOrDepth(const int contextHeight, const uint32_t contextTime,
         const int utxoFromBlockHeight, const uint32_t utxoFromBlockTime) const
 {
-    // Age not required on regtest
-    if (Params().IsRegTestNet())
-        return true;
-
-    // before stake modifier V2, the age required was 60 * 60 (1 hour)
+    // before stake modifier V2, the age required was 60 * 60 (1 hour). Not required for regtest
     if (!IsStakeModifierV2(contextHeight))
-        return (utxoFromBlockTime + 3600 <= contextTime);
+        return Params().IsRegTestNet() || (utxoFromBlockTime + nStakeMinAge <= contextTime);
 
     // after stake modifier V2, we require the utxo to be nStakeMinDepth deep in the chain
     return (contextHeight - utxoFromBlockHeight >= nStakeMinDepth);
@@ -152,6 +148,7 @@ public:
         nTimeSlotLength = 15;                           // 15 seconds
         nTargetTimespan_V2 = 2 * nTimeSlotLength * 60;  // 30 minutes
         nMaturity = 100;
+        nStakeMinAge = 60 * 60;                         // 1 hour
         nStakeMinDepth = nMaturity;
         nFutureTimeDriftPoW = 7200;
         nFutureTimeDriftPoS = 180;
@@ -438,11 +435,12 @@ public:
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1;
         nLastPOWBlock = 250;
         nMaturity = 100;
+        nStakeMinAge = 0;
         nStakeMinDepth = 0;
         nTimeSlotLength = 1;            // time not masked on RegNet
         nMasternodeCountDrift = 4;
         nModifierUpdateBlock = 0;       //approx Mon, 17 Apr 2017 04:00:00 GMT
-        nBlockStakeModifierlV2 = 351;
+        nBlockStakeModifierlV2 = 255;
         nBlockTimeProtocolV2 = 999999999;
 
         //! Modify the regtest genesis block so the timestamp is valid for a later start.
