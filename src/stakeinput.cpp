@@ -87,29 +87,17 @@ bool CPrcyStake::CreateTxOuts(CWallet* pwallet, std::vector<CTxOut>& vout, CAmou
     } else
         scriptPubKey = scriptPubKeyKernel;
 
-    //first UTXO for the staked amount
-    //create a new pubkey
-    CKey myTxPriv;
-    myTxPriv.MakeNewKey(true);
-    CPubKey txPub = myTxPriv.GetPubKey();
-    CPubKey newPub;
-    CWallet::ComputeStealthDestination(myTxPriv, viewPub, spendPub, newPub);
-    scriptPubKey = GetScriptForDestination(newPub);
-    CTxOut out(0, scriptPubKey);
-    std::copy(txPub.begin(), txPub.end(), std::back_inserter(out.txPub));
-    vout.emplace_back(out);
-
-    //second UTXO for staking reward
-    //create a new pubkey
-    CKey myTxPrivStaking;
-    myTxPrivStaking.MakeNewKey(true);
-    CPubKey txPubStaking = myTxPrivStaking.GetPubKey();
-    CPubKey newPubStaking;
-    CWallet::ComputeStealthDestination(myTxPrivStaking, viewPub, spendPub, newPubStaking);
-    CScript scriptPubKeyOutStaking = GetScriptForDestination(newPubStaking);
-    CTxOut outStaking(0, scriptPubKeyOutStaking);
-    std::copy(txPubStaking.begin(), txPubStaking.end(), std::back_inserter(outStaking.txPub));
-    vout.emplace_back(outStaking);
+    for (int i = 1; i <= 2; ++i) {
+        CKey myTxPriv;
+        myTxPriv.MakeNewKey(true);
+        CPubKey txPub = myTxPriv.GetPubKey();
+        CPubKey newPub;
+        CWallet::ComputeStealthDestination(myTxPriv, viewPub, spendPub, newPub);
+        CScript scriptPubKeyOut = GetScriptForDestination(newPub);
+        CTxOut out(0, scriptPubKeyOut);
+        std::copy(txPub.begin(), txPub.end(), std::back_inserter(out.txPub));
+        vout.emplace_back(out);
+    }
 
     // Calculate if we need to split the output
     /*if (nTotal / 2 > (CAmount)(pwallet->nStakeSplitThreshold * COIN))
