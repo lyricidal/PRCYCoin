@@ -331,8 +331,8 @@ public:
         nHardForkBlock = 700; // Add hard fork block for Consensus/PoA Padding
         nHardForkBlockRingSize = 16000; // Add hard fork block for Ring Size bump to 25-30
         nHardForkBlockRingSize2 = 126000; // Add hard fork block for Ring Size bump to 30-32
-        nBlockStakeModifierlV2 = 145000;
-        nBlockTimeProtocolV2 = 145000;
+        nBlockStakeModifierlV2 = 160000;
+        nBlockTimeProtocolV2 = 160000;
 
         //! Modify the testnet genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422400;
