@@ -428,11 +428,6 @@ bool StakeV1(const CBlockIndex* pindexPrev, CStakeInput* stakeInput, const uint3
 
 bool initStakeInput(const CBlock& block, std::unique_ptr<CStakeInput>& stake, int nPreviousBlockHeight) {
     const CTransaction tx = block.vtx[1]; //coinstake
-    CAmount nValueIn;
-    CAmount nValueOut;
-    CCoinsViewCache view(pcoinsTip);
-    nValueIn = GetValueIn(view, tx);
-    nValueOut = tx.GetValueOut();
 
     if (!tx.IsCoinStake())
         return error("%s : called on non-coinstake %s", __func__, tx.GetHash().ToString().c_str());
