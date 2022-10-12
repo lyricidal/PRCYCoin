@@ -1940,6 +1940,7 @@ void CWallet::AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed, 
 {
     if (IsLocked()) return;
     vCoins.clear();
+    const bool fCoinsSelected = (coinControl != nullptr) && coinControl->HasSelected();
 
     {
         LOCK2(cs_main, cs_wallet);
