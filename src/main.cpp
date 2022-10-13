@@ -89,7 +89,7 @@ unsigned int nStakeMinAge = 60 * 60;
 
 int MIN_RING_SIZE;
 int MAX_RING_SIZE;
-const int MAX_TX_INPUTS = 50;
+const int MAX_TX_INPUTS = 100;
 const int MIN_TX_INPUTS_FOR_SWEEPING = 25;
 
 /** Fees smaller than this (in duffs) are considered zero fee (for relaying and mining)
