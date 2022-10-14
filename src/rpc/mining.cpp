@@ -689,8 +689,6 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
                 "  \"sizelimit\" : n,                  (numeric) limit of block size\n"
                 "  \"curtime\" : ttt,                  (numeric) current timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
                 "  \"bits\" : \"xxx\",                 (string) compressed target of next block\n"
-                "  \"payee\" : \"xxx\",                (string) required payee for the next block\n"
-                "  \"payee_amount\" : n,               (numeric) required amount to pay\n"
                 "  \"posblocksaudited\" : [                (array) summaries of PoS blocks that should be included in the next PoA block\n"
                 "      {\n"
                 "         \"hash\" : \"xxxx\",          (string) block hash\n"
@@ -699,8 +697,6 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
                 "      }\n"
                 "      ,...\n"
                 "  ],\n"
-                "  \"masternode_payments\" : true|false,         (boolean) true, if masternode payments are enabled\n"
-                "  \"enforce_masternode_payments\" : true|false  (boolean) true, if masternode payments are enforced\n"
                 "}\n"
 
                 "\nExamples:\n" +
@@ -754,9 +750,6 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
         // Update nTime: I don't think time is necessary for PoA miners here
         UpdateTime(pblock, pindexPrev);
         pblock->nNonce = 0;
-
-        UniValue aCaps = NullUniValue;
-    //    static const Array aCaps = boost::assign::list_of("proposal");
 
         UniValue transactions(UniValue::VARR);
         std::map<uint256, int64_t> setTxIndex;
@@ -831,19 +824,6 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
         result.push_back(Pair("height", (int64_t)(pindexPrev->nHeight + 1)));
         result.push_back(Pair("posblocksaudited", posBlocksAudited));
 
-        if (pblock->payee != CScript()) {
-            CTxDestination address1;
-            ExtractDestination(pblock->payee, address1);
-            CBitcoinAddress address2(address1);
-            result.push_back(Pair("payee", address2.ToString().c_str()));
-            result.push_back(Pair("payee_amount", (int64_t)pblock->vtx[0].vout[1].nValue));
-        } else {
-            result.push_back(Pair("payee", ""));
-            result.push_back(Pair("payee_amount", ""));
-        }
-
-        result.push_back(Pair("masternode_payments", pblock->nTime > Params().StartMasternodePayments()));
-        result.push_back(Pair("enforce_masternode_payments", true));
         return result;
     }
 }
