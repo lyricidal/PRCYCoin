@@ -3,7 +3,7 @@
 <plist version="0.9">
 <dict>
   <key>LSMinimumSystemVersion</key>
-  <string>10.10.0</string>
+  <string>10.12.0</string>
 
   <key>LSArchitecturePriority</key>
   <array>
@@ -29,10 +29,16 @@
   <string>????</string>
 
   <key>CFBundleExecutable</key>
-  <string>DAPScoin-Qt</string>
+  <string>PRCYcoin-Qt</string>
+  
+  <key>CFBundleName</key>
+  <string>PRCYcoin-Qt</string>
+
+  <key>LSHasLocalizedDisplayName</key>
+  <true/>
 
   <key>CFBundleIdentifier</key>
-  <string>io.dapscoin.Dapscoin-Qt</string>
+  <string>io.prcycoin.Prcycoin-Qt</string>
 
   <key>CFBundleURLTypes</key>
   <array>
@@ -40,10 +46,10 @@
       <key>CFBundleTypeRole</key>
       <string>Editor</string>
       <key>CFBundleURLName</key>
-      <string>io.dapscoin.DapscoinPayment</string>
+      <string>io.prcycoin.PrcycoinPayment</string>
       <key>CFBundleURLSchemes</key>
       <array>
-        <string>dapscoin</string>
+        <string>prcycoin</string>
       </array>
     </dict>
   </array>
@@ -52,9 +58,9 @@
   <array>
     <dict>
       <key>UTTypeIdentifier</key>
-      <string>io.dapscoin.paymentrequest</string>
+      <string>io.prcycoin.paymentrequest</string>
       <key>UTTypeDescription</key>
-      <string>Dapscoin payment request</string>
+      <string>Prcycoin payment request</string>
       <key>UTTypeConformsTo</key>
       <array>
         <string>public.data</string>
@@ -62,10 +68,10 @@
       <key>UTTypeTagSpecification</key>
       <dict>
         <key>public.mime-type</key>
-        <string>application/x-dapscoin-payment-request</string>
+        <string>application/x-prcycoin-payment-request</string>
         <key>public.filename-extension</key>
         <array>
-          <string>dapscoinpaymentrequest</string>
+          <string>prcycoinpaymentrequest</string>
         </array>
       </dict>
     </dict>
@@ -78,7 +84,7 @@
       <string>Editor</string>
       <key>LSItemContentTypes</key>
       <array>
-        <string>io.dapscoin.paymentrequest</string>
+        <string>io.prcycoin.paymentrequest</string>
       </array>
       <key>LSHandlerRank</key>
       <string>Owner</string>
@@ -92,6 +98,9 @@
     <string>True</string>
 
   <key>LSAppNapIsDisabled</key>
+    <string>True</string>
+
+  <key>NSRequiresAquaSystemAppearance</key>
     <string>True</string>
 
   <key>LSApplicationCategoryType</key>

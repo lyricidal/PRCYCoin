@@ -6,7 +6,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dapscoin-config.h"
+#include "config/prcycoin-config.h"
 #endif
 
 #include "optionsmodel.h"
@@ -18,6 +18,7 @@
 #include "init.h"
 #include "main.h"
 #include "net.h"
+#include "netbase.h"
 #include "txdb.h" // for -dbcache defaults
 
 #ifdef ENABLE_WALLET
@@ -62,7 +63,7 @@ void OptionsModel::Init()
 
     // Display
     if (!settings.contains("nDisplayUnit"))
-        settings.setValue("nDisplayUnit", BitcoinUnits::DAPS);
+        settings.setValue("nDisplayUnit", BitcoinUnits::PRCY);
     nDisplayUnit = settings.value("nDisplayUnit").toInt();
 
     if (!settings.contains("strThirdPartyTxUrls"))
@@ -129,7 +130,7 @@ void OptionsModel::Init()
     if (!settings.contains("digits"))
         settings.setValue("digits", "2");
     if (!settings.contains("theme"))
-        settings.setValue("theme", "dark");
+        settings.setValue("theme", "webwallet");
     if (!settings.contains("fCSSexternal"))
         settings.setValue("fCSSexternal", false);
     if (!settings.contains("language"))
@@ -138,6 +139,10 @@ void OptionsModel::Init()
         addOverriddenOption("-lang");
 
     language = settings.value("language").toString();
+
+    // 2FA Digits Setting
+    if (!settings.contains("2fadigits"))
+        settings.setValue("2fadigits", "6");
 }
 
 void OptionsModel::Reset()
@@ -146,7 +151,7 @@ void OptionsModel::Reset()
 
     // Remove all entries from our QSettings object
     settings.clear();
-    resetSettings = true; // Needed in dapscoin.cpp during shotdown to also remove the window positions
+    resetSettings = true; // Needed in prcycoin.cpp during shotdown to also remove the window positions
 
     // default setting for OptionsModel::StartAtStartup - disabled
     if (GUIUtil::GetStartOnSystemStartup())

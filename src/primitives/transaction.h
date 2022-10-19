@@ -46,7 +46,8 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
-        READWRITE(FLATDATA(*this));
+        READWRITE(hash);
+        READWRITE(n);
     }
 
     void SetNull() { hash.SetNull(); n = (uint32_t) -1; }
@@ -110,7 +111,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(prevout);
-        READWRITE(scriptSig);
+        READWRITE(*(CScriptBase*)(&scriptSig));
         READWRITE(nSequence);
         READWRITE(encryptionKey);
         READWRITE(keyImage);
@@ -173,7 +174,7 @@ public:
     //ECDH encoded value for the amount: the idea is the use the shared secret and a key derivation function to
     //encode the value and the mask so that only the sender and the receiver of the tx output can decode the encoded amount
     MaskValue maskValue;
-    std::vector<unsigned char> masternodeStealthAddress;  //will be clone from the tx having 1000000 daps output
+    std::vector<unsigned char> masternodeStealthAddress;  //will be clone from the tx having 1000000 prcy output
     std::vector<unsigned char> commitment;  //Commitment C = mask * G + amount * H, H = Hp(G), Hp = toHashPoint
 
     CTxOut()
@@ -188,7 +189,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(nValue);
-        READWRITE(scriptPubKey);
+        READWRITE(*(CScriptBase*)(&scriptPubKey));
         READWRITE(txPriv);
         READWRITE(txPub);
         READWRITE(maskValue.amount);
@@ -515,7 +516,7 @@ public:
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
         READWRITE(prevout);
-        READWRITE(scriptSig);
+        READWRITE(*(CScriptBase*)(&scriptSig));
         READWRITE(nSequence);
         READWRITE(encryptionKey);
         READWRITE(keyImage);

@@ -11,7 +11,6 @@
 
 #include <boost/assign/list_of.hpp>
 
-using namespace boost::assign;
 
 /**
  * Main network
@@ -22,7 +21,7 @@ public:
     CBaseMainParams()
     {
         networkID = CBaseChainParams::MAIN;
-        nRPCPort = 53573;
+        nRPCPort = 59683;
     }
 };
 static CBaseMainParams mainParams;
@@ -36,7 +35,7 @@ public:
     CBaseTestNetParams()
     {
         networkID = CBaseChainParams::TESTNET;
-        nRPCPort = 53575;
+        nRPCPort = 59685;
         strDataDir = "testnet4";
     }
 };

@@ -9,7 +9,6 @@
 
 #include "hash.h"
 #include "script/standard.h"
-#include "script/sign.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "util.h"
@@ -75,22 +74,49 @@ uint256 CBlockHeader::ComputeMinedHash() const
             BEGIN(nBits), END(nBits),
             BEGIN(nNonce), END(nNonce));
     }
-    return uint256();
+    return UINT256_ZERO;
 }
 
 uint256 CBlockHeader::GetHash() const
 {
     if (IsPoABlockByVersion()) {
-        //Only hash necessary fields for PoA block header
-        //Dont add nAccumulatorCheckpoint to the hash
+#if defined(WORDS_BIGENDIAN)
+        // TODO: Big Endian PoA hashing
+#else // Can take shortcut for little endian
         return Hash(BEGIN(hashPrevBlock), END(hashPrevBlock),
             BEGIN(minedHash), END(minedHash));
+#endif
     }
-    if(nVersion < 4) {
+    if (nVersion >= 5)  {
+#if defined(WORDS_BIGENDIAN)
+        uint8_t data[80];
+        WriteLE32(&data[0], nVersion);
+        memcpy(&data[4], hashPrevBlock.begin(), hashPrevBlock.size());
+        memcpy(&data[36], hashMerkleRoot.begin(), hashMerkleRoot.size());
+        WriteLE32(&data[68], nTime);
+        WriteLE32(&data[72], nBits);
+        WriteLE32(&data[76], nAccumulatorCheckpoint);
+        return Hash(data, data + 80);
+#else // Can take shortcut for little endian
+        return Hash(BEGIN(nVersion), END(nAccumulatorCheckpoint));
+#endif
+    }
+    if (nVersion < 4)  {
+#if defined(WORDS_BIGENDIAN)
+        uint8_t data[80];
+        WriteLE32(&data[0], nVersion);
+        memcpy(&data[4], hashPrevBlock.begin(), hashPrevBlock.size());
+        memcpy(&data[36], hashMerkleRoot.begin(), hashMerkleRoot.size());
+        WriteLE32(&data[68], nTime);
+        WriteLE32(&data[72], nBits);
+        WriteLE32(&data[76], nNonce);
+        return HashQuark(data, data + 80);
+#else // Can take shortcut for little endian
         return HashQuark(BEGIN(nVersion), END(nNonce));
+#endif
     }
-
-    return Hash(BEGIN(nVersion), END(nAccumulatorCheckpoint));
+    // version >= 6
+    return SerializeHash(*this);
 }
 
 uint256 CBlock::BuildMerkleTree(bool* fMutated) const
@@ -154,7 +180,7 @@ uint256 CBlock::BuildMerkleTree(bool* fMutated) const
     if (fMutated) {
         *fMutated = mutated;
     }
-    return (vMerkleTree.empty() ? uint256() : vMerkleTree.back());
+    return (vMerkleTree.empty() ? UINT256_ZERO : vMerkleTree.back());
 }
 
 uint256 CBlock::BuildPoAMerkleTree(bool* fMutated) const
@@ -182,7 +208,7 @@ uint256 CBlock::BuildPoAMerkleTree(bool* fMutated) const
     if (fMutated) {
         *fMutated = mutated;
     }
-    return (poaMerkleTree.empty() ? uint256() : poaMerkleTree.back());
+    return (poaMerkleTree.empty() ? UINT256_ZERO : poaMerkleTree.back());
 }
 
 std::vector<uint256> CBlock::GetMerkleBranch(int nIndex) const
@@ -220,7 +246,7 @@ std::vector<uint256> CBlock::GetPoAMerkleBranch(int nIndex) const
 uint256 CBlock::CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMerkleBranch, int nIndex)
 {
     if (nIndex == -1)
-        return uint256();
+        return UINT256_ZERO;
     for (std::vector<uint256>::const_iterator it(vMerkleBranch.begin()); it != vMerkleBranch.end(); ++it)
     {
         if (nIndex & 1)
@@ -235,7 +261,7 @@ uint256 CBlock::CheckMerkleBranch(uint256 hash, const std::vector<uint256>& vMer
 uint256 CBlock::CheckPoAMerkleBranch(uint256 mhash, const std::vector<uint256>& poaMerkleBranch, int nIndex)
 {
     if (nIndex == -1)
-        return uint256();
+        return UINT256_ZERO;
     for (std::vector<uint256>::const_iterator it(poaMerkleBranch.begin()); it != poaMerkleBranch.end(); ++it)
     {
         if (nIndex & 1)
@@ -312,7 +338,7 @@ bool CBlock::SignBlock(const CKeyStore& keystore)
                 if (!keystore.GetKey(keyID, key))
                     return false;
 
-                //vector<unsigned char> vchSig;
+                //std::vector<unsigned char> vchSig;
                 if (!key.Sign(GetHash(), vchBlockSig))
                      return false;
 
@@ -337,7 +363,7 @@ bool CBlock::SignBlock(const CKeyStore& keystore)
             if (!keystore.GetKey(keyID, key))
                 return false;
 
-            //vector<unsigned char> vchSig;
+            //std::vector<unsigned char> vchSig;
             if (!key.Sign(GetHash(), vchBlockSig))
                  return false;
 
@@ -352,7 +378,7 @@ bool CBlock::SignBlock(const CKeyStore& keystore)
             if (!keystore.GetKey(keyID, key))
                 return false;
 
-            //vector<unsigned char> vchSig;
+            //std::vector<unsigned char> vchSig;
             if (!key.Sign(GetHash(), vchBlockSig))
                  return false;
 

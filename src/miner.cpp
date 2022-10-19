@@ -3,14 +3,15 @@
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
+// Copyright (c) 2020-2022 The PRivaCY Coin Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 
 
 #include "miner.h"
 
 #include "amount.h"
+#include "consensus/tx_verify.h"
 #include "hash.h"
 #include "main.h"
 #include "masternode-sync.h"
@@ -23,19 +24,18 @@
 #include "utilmoneystr.h"
 #ifdef ENABLE_WALLET
 #include "wallet/wallet.h"
-extern CWallet *pwalletMain;
+extern CWallet* pwalletMain;
 #endif
-#include "validationinterface.h"
 #include "masternode-payments.h"
+#include "validationinterface.h"
 
 #include <boost/thread.hpp>
 #include <boost/tuple/tuple.hpp>
 
-using namespace std;
 
 //////////////////////////////////////////////////////////////////////////////
 //
-// DAPScoinMiner
+// PRCYcoinMiner
 //
 
 //
@@ -50,7 +50,7 @@ class COrphan
 {
 public:
     const CTransaction* ptx;
-    set<uint256> setDependsOn;
+    std::set<uint256> setDependsOn;
     CFeeRate feeRate;
     double dPriority;
 
@@ -97,7 +97,8 @@ void UpdateTime(CBlockHeader* pblock, const CBlockIndex* pindexPrev)
         pblock->nBits = GetNextWorkRequired(pindexPrev, pblock);
 }
 
-uint32_t GetListOfPoSInfo(uint32_t currentHeight, std::vector<PoSBlockSummary>& audits) {
+uint32_t GetListOfPoSInfo(uint32_t currentHeight, std::vector<PoSBlockSummary>& audits)
+{
     //A PoA block should be mined only after at least 59 PoS blocks have not been audited
     //Look for the previous PoA block
     uint32_t nloopIdx = currentHeight;
@@ -109,7 +110,7 @@ uint32_t GetListOfPoSInfo(uint32_t currentHeight, std::vector<PoSBlockSummary>& 
     }
     if (nloopIdx <= Params().START_POA_BLOCK()) {
         //this is the first PoA block ==> take all PoS blocks from LAST_POW_BLOCK up to currentHeight - 60 inclusive
-        for (int i = Params().LAST_POW_BLOCK() + 1; i <= Params().LAST_POW_BLOCK() + 60; i++) {
+        for (int i = Params().LAST_POW_BLOCK() + 1; i <= Params().LAST_POW_BLOCK() + (size_t)Params().MAX_NUM_POS_BLOCKS_AUDITED(); i++) {
             PoSBlockSummary pos;
             pos.hash = chainActive[i]->GetBlockHash();
             CBlockIndex* pindex = mapBlockIndex[pos.hash];
@@ -124,16 +125,16 @@ uint32_t GetListOfPoSInfo(uint32_t currentHeight, std::vector<PoSBlockSummary>& 
             CBlockIndex* pblockindex = chainActive[start];
             CBlock block;
             if (!ReadBlockFromDisk(block, pblockindex))
-                throw runtime_error("Can't read block from disk");
+                throw std::runtime_error("Can't read block from disk");
             PoSBlockSummary back = block.posBlocksAudited.back();
             uint32_t lastAuditedHeight = back.height;
             uint32_t nextAuditHeight = lastAuditedHeight + 1;
-            
+
             while (nextAuditHeight <= currentHeight) {
                 CBlockIndex* posIndex = chainActive[nextAuditHeight];
                 CBlock posBlock;
                 if (!ReadBlockFromDisk(posBlock, posIndex))
-                    throw runtime_error("Can't read block from disk");
+                    throw std::runtime_error("Can't read block from disk");
                 if (posBlock.IsProofOfStake()) {
                     PoSBlockSummary pos;
                     pos.hash = chainActive[nextAuditHeight]->GetBlockHash();
@@ -142,8 +143,8 @@ uint32_t GetListOfPoSInfo(uint32_t currentHeight, std::vector<PoSBlockSummary>& 
                     pos.height = nextAuditHeight;
                     audits.push_back(pos);
                 }
-                //The current number of PoS blocks audited in a PoA block is changed from 59 to 61
-                if (audits.size() == 61) {
+                //The current number of PoS blocks audited in a PoA block is changed from 59 to MAX
+                if (audits.size() == (size_t)Params().MAX_NUM_POS_BLOCKS_AUDITED()) {
                     break;
                 }
                 nextAuditHeight++;
@@ -158,7 +159,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
     CReserveKey reservekey(pwallet);
 
     // Create new block
-    unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
+    std::unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
     if (!pblocktemplate.get())
         return NULL;
 
@@ -168,8 +169,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
     // -blockversion=N to test forking scenarios
     if (Params().MineBlocksOnDemand())
         pblock->nVersion = GetArg("-blockversion", pblock->nVersion);
-
-    pblock->nVersion = 3;
+    pblock->nVersion = 5;   // Supports CLTV activation
 
     // Create coinbase tx
     CMutableTransaction txNew;
@@ -181,7 +181,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
     std::copy(txPriv.begin(), txPriv.end(), std::back_inserter(txNew.vout[0].txPriv));
 
     CBlockIndex* prev = chainActive.Tip();
-    CAmount nValue = GetBlockValue(prev);
+    CAmount nValue = GetBlockValue(prev->nHeight);
     txNew.vout[0].nValue = nValue;
 
     pblock->vtx.push_back(txNew);
@@ -245,25 +245,25 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
         CCoinsViewCache view(pcoinsTip);
 
         // Priority order to process transactions
-        list<COrphan> vOrphan; // list memory doesn't move
-        map<uint256, vector<COrphan*> > mapDependers;
+        std::list<COrphan> vOrphan; // list memory doesn't move
+        std::map<uint256, std::vector<COrphan*> > mapDependers;
         bool fPrintPriority = GetBoolArg("-printpriority", false);
 
         // This vector will be sorted into a priority queue:
-        vector<TxPriority> vecPriority;
+        std::vector<TxPriority> vecPriority;
         vecPriority.reserve(mempool.mapTx.size());
         std::set<CKeyImage> keyImages;
-        for (map<uint256, CTxMemPoolEntry>::iterator mi = mempool.mapTx.begin();
+        for (std::map<uint256, CTxMemPoolEntry>::iterator mi = mempool.mapTx.begin();
              mi != mempool.mapTx.end(); ++mi) {
             const CTransaction& tx = mi->second.GetTx();
-            if (tx.IsCoinBase() || tx.IsCoinStake() || !IsFinalTx(tx, nHeight)){
+            if (tx.IsCoinBase() || tx.IsCoinStake() || !IsFinalTx(tx, nHeight)) {
                 continue;
             }
             bool fKeyImageCheck = true;
             // Check key images not duplicated with what in db
-            for (const CTxIn& txin: tx.vin) {
+            for (const CTxIn& txin : tx.vin) {
                 const CKeyImage& keyImage = txin.keyImage;
-                if (IsKeyImageSpend1(keyImage.GetHex(), uint256())) {
+                if (IsSpentKeyImage(keyImage.GetHex(), UINT256_ZERO)) {
                     fKeyImageCheck = false;
                     break;
                 }
@@ -289,7 +289,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
             CFeeRate feeRate(tx.nTxFee, nTxSize);
 
             bool isDuplicate = false;
-            for (const CTxIn& txin: tx.vin) {
+            for (const CTxIn& txin : tx.vin) {
                 const CKeyImage& keyImage = txin.keyImage;
                 if (keyImages.count(keyImage)) {
                     isDuplicate = true;
@@ -301,7 +301,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
             vecPriority.push_back(TxPriority(dPriority, feeRate, &mi->second.GetTx()));
         }
 
-        LogPrintf("Selecting %d transactions from mempool\n", vecPriority.size());
+        LogPrint(BCLog::STAKING, "Selecting %d transactions from mempool\n", vecPriority.size());
         // Collect transactions into block
         uint64_t nBlockSize = 1000;
         uint64_t nBlockTx = 0;
@@ -311,8 +311,8 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
         TxPriorityCompare comparer(fSortedByFee);
         std::make_heap(vecPriority.begin(), vecPriority.end(), comparer);
 
-        vector<CBigNum> vBlockSerials;
-        vector<CBigNum> vTxSerials;
+        std::vector<CBigNum> vBlockSerials;
+        std::vector<CBigNum> vTxSerials;
         while (!vecPriority.empty()) {
             // Take highest priority transaction off the priority queue:
             double dPriority = vecPriority.front().get<0>();
@@ -353,6 +353,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
             // Note that flags: we don't want to set mempool/IsStandard()
             // policy here, but we still have to ensure that the block we
             // create only contains transactions that are valid in new blocks.
+
             CValidationState state;
             if (!CheckInputs(tx, state, view, true, MANDATORY_SCRIPT_VERIFY_FLAGS, true))
                 continue;
@@ -415,7 +416,7 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
             pblock->vtx[1].vout[2].nValue += nFees;
             pblocktemplate->vTxFees[0] = nFees;
         }
-        
+
         CPubKey sharedSec;
         sharedSec.Set(txPub.begin(), txPub.end());
         //compute commitment
@@ -428,11 +429,13 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
                 return NULL;
             }
         } else {
-            sharedSec.Set(pblock->vtx[1].vout[2].txPub.begin(), pblock->vtx[1].vout[2].txPub.end());
-            pwallet->EncodeTxOutAmount(pblock->vtx[1].vout[2], pblock->vtx[1].vout[2].nValue, sharedSec.begin());
-            nValue = pblock->vtx[1].vout[2].nValue;
-            pblock->vtx[1].vout[2].commitment.clear();
-            if (!pwallet->CreateCommitment(zeroBlind, nValue, pblock->vtx[1].vout[2].commitment)) {
+            pblock->vtx[1].vout[1].nValue += pblock->vtx[1].vout[2].nValue;
+            pblock->vtx[1].vout[2].SetEmpty();
+            sharedSec.Set(pblock->vtx[1].vout[1].txPub.begin(), pblock->vtx[1].vout[1].txPub.end());
+            pwallet->EncodeTxOutAmount(pblock->vtx[1].vout[1], pblock->vtx[1].vout[1].nValue, sharedSec.begin());
+            nValue = pblock->vtx[1].vout[1].nValue;
+            pblock->vtx[1].vout[1].commitment.clear();
+            if (!pwallet->CreateCommitment(zeroBlind, nValue, pblock->vtx[1].vout[1].commitment)) {
                 return NULL;
             }
 
@@ -464,7 +467,8 @@ CBlockTemplate* CreateNewBlock(const CScript& scriptPubKeyIn, const CPubKey& txP
     return pblocktemplate.release();
 }
 
-CBlockTemplate* CreateNewPoABlock(const CScript& scriptPubKeyIn, const CPubKey& txPub, const CKey& txPriv, CWallet* pwallet) {
+CBlockTemplate* CreateNewPoABlock(const CScript& scriptPubKeyIn, const CPubKey& txPub, const CKey& txPriv, CWallet* pwallet)
+{
     CReserveKey reservekey(pwallet);
 
     if (chainActive.Tip()->nHeight < Params().START_POA_BLOCK()) {
@@ -472,7 +476,7 @@ CBlockTemplate* CreateNewPoABlock(const CScript& scriptPubKeyIn, const CPubKey& 
     }
 
     // Create new block
-    unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
+    std::unique_ptr<CBlockTemplate> pblocktemplate(new CBlockTemplate());
     if (!pblocktemplate.get())
         return NULL;
     CBlock* pblock = &pblocktemplate->block; // pointer for convenience
@@ -500,19 +504,24 @@ CBlockTemplate* CreateNewPoABlock(const CScript& scriptPubKeyIn, const CPubKey& 
 
     int nprevPoAHeight;
 
-
     nprevPoAHeight = GetListOfPoSInfo(pindexPrev->nHeight, pblock->posBlocksAudited);
+
     if (pblock->posBlocksAudited.size() == 0) {
         return NULL;
     }
+
     // Set block version to differentiate PoA blocks from PoS blocks
     pblock->SetVersionPoABlock();
     pblock->nTime = GetAdjustedTime();
 
     //compute PoA block reward
-    CAmount nReward = pblock->posBlocksAudited.size() * 100 * COIN;
+    CAmount nReward;
+    if (pindexPrev->nHeight >= Params().HardFork()) {
+        nReward = pblock->posBlocksAudited.size() * 0.25 * COIN;
+    } else {
+        nReward = pblock->posBlocksAudited.size() * 0.5 * COIN;
+    }
     pblock->vtx[0].vout[0].nValue = nReward;
-
     pblock->vtx[0].txType = TX_TYPE_REVEAL_AMOUNT;
 
     CPubKey sharedSec;
@@ -614,7 +623,7 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     {
         WAIT_LOCK(g_best_block_mutex, lock);
         if (pblock->hashPrevBlock != g_best_block)
-            return error("DAPScoinMiner : generated block is stale");
+            return error("PRCYcoinMiner : generated block is stale");
     }
 
     // Remove key from key pool
@@ -632,7 +641,7 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     // Process this block the same as if we had received it from another node
     CValidationState state;
     if (!ProcessNewBlock(state, NULL, pblock))
-        return error("DAPScoinMiner : ProcessNewBlock, block not accepted");
+        return error("PRCYcoinMiner : ProcessNewBlock, block not accepted");
 
     for (CNode* node : vNodes) {
         node->PushInventory(CInv(MSG_BLOCK, pblock->GetHash()));
@@ -641,17 +650,17 @@ bool ProcessBlockFound(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
     return true;
 }
 
-bool fGenerateDapscoins = false;
+bool fGeneratePrcycoins = false;
 
 // ***TODO*** that part changed in bitcoin, we are using a mix with old one here for now
 
-void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
+void BitcoinMiner(CWallet* pwallet, bool fProofOfStake)
 {
-    nDefaultMinerSleep = GetArg("-minersleep", 30000);
-    LogPrintf("DAPScoinMiner started with %sms sleep time\n", nDefaultMinerSleep);
+    nDefaultMinerSleep = GetArg("-minersleep", 45000);
+    LogPrintf("PRCYcoinMiner started with %sms sleep time\n", nDefaultMinerSleep);
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
-    util::ThreadRename("dapscoin-miner");
-    fGenerateDapscoins = true;
+    util::ThreadRename("prcycoin-miner");
+    fGeneratePrcycoins = true;
     // Each thread has its own key and counter
     CReserveKey reservekey(pwallet);
     unsigned int nExtraNonce = 0;
@@ -666,7 +675,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
         fMintableCoins = pwallet->MintableCoins();
     }
 
-    while (fGenerateDapscoins || fProofOfStake) {
+    while (fGeneratePrcycoins || fProofOfStake) {
         if (chainActive.Tip()->nHeight >= Params().LAST_POW_BLOCK()) fProofOfStake = true;
         if (fProofOfStake) {
             if (chainActive.Tip()->nHeight < Params().LAST_POW_BLOCK()) {
@@ -684,14 +693,14 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
                     }
                 }
                 MilliSleep(5000);
-                if (!fGenerateDapscoins) {
+                if (!fGeneratePrcycoins) {
                     break;
                 }
-                if (!fGenerateDapscoins && !fProofOfStake)
+                if (!fGeneratePrcycoins && !fProofOfStake)
                     continue;
             }
 
-            if (!fGenerateDapscoins) {
+            if (!fGeneratePrcycoins) {
                 LogPrintf("Stopping staking or mining\n");
                 nLastCoinStakeSearchInterval = 0;
                 break;
@@ -699,28 +708,27 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
 
             if (mapHashedBlocks.count(chainActive.Tip()->nHeight)) //search our map of hashed blocks, see if bestblock has been hashed yet
             {
-                if (GetTime() - mapHashedBlocks[chainActive.Tip()->nHeight] < max(pwallet->nHashInterval, (unsigned int)1)) // wait half of the nHashDrift with max wait of 3 minutes
+                if (GetTime() - mapHashedBlocks[chainActive.Tip()->nHeight] < std::max(pwallet->nHashInterval, (unsigned int)1)) // wait half of the nHashDrift with max wait of 3 minutes
                 {
                     MilliSleep(5000);
                     continue;
                 }
             }
-            
         }
         MilliSleep(nDefaultMinerSleep);
         //
         // Create new block
         //
         unsigned int nTransactionsUpdatedLast = mempool.GetTransactionsUpdated();
-        CBlockIndex* pindexPrev; 
+        CBlockIndex* pindexPrev;
         {
             LOCK(cs_main);
             pindexPrev = chainActive.Tip();
         }
         if (!pindexPrev)
             continue;
- 
-        unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey, pwallet, fProofOfStake));
+
+        std::unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey, pwallet, fProofOfStake));
         if (!pblocktemplate.get())
             continue;
 
@@ -749,7 +757,7 @@ void BitcoinMiner(CWallet* pwallet, bool fProofOfStake, MineType mineType)
             continue;
         }
         GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION);
-        LogPrintf("Running DAPScoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
+        LogPrint(BCLog::STAKING, "Running PRCYcoinMiner with %u transactions in block (%u bytes)\n", pblock->vtx.size(),
             ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 
         //
@@ -849,7 +857,7 @@ void static ThreadBitcoinMiner(void* parg)
     LogPrintf("ThreadBitcoinMiner exiting\n");
 }
 
-void static ThreadDapscoinMiner(void* parg)
+void static ThreadPrcycoinMiner(void* parg)
 {
     boost::this_thread::interruption_point();
     try {
@@ -868,7 +876,7 @@ void static ThreadDapscoinMiner(void* parg)
     LogPrintf("ThreadBitcoinMiner exiting\n");
 }
 
-void GeneratePoADapscoin(CWallet* pwallet, int period)
+void GeneratePoAPrcycoin(CWallet* pwallet, int period)
 {
     static boost::thread_group* minerThreads = NULL;
 
@@ -879,13 +887,13 @@ void GeneratePoADapscoin(CWallet* pwallet, int period)
     }
 
     minerThreads = new boost::thread_group();
-    minerThreads->create_thread(boost::bind(&ThreadDapscoinMiner, pwallet));
+    minerThreads->create_thread(boost::bind(&ThreadPrcycoinMiner, pwallet));
 }
 
-void GenerateDapscoins(bool fGenerate, CWallet* pwallet, int nThreads)
+void GeneratePrcycoins(bool fGenerate, CWallet* pwallet, int nThreads)
 {
     static boost::thread_group* minerThreads = NULL;
-    fGenerateDapscoins = fGenerate;
+    fGeneratePrcycoins = fGenerate;
 
     if (nThreads < 0) {
         // In regtest threads defaults to 1
@@ -910,10 +918,11 @@ void GenerateDapscoins(bool fGenerate, CWallet* pwallet, int nThreads)
 }
 
 // ppcoin: stake minter thread
-void ThreadStakeMinter() {
+void ThreadStakeMinter()
+{
     boost::this_thread::interruption_point();
     LogPrintf("ThreadStakeMinter started\n");
-    CWallet *pwallet = pwalletMain;
+    CWallet* pwallet = pwalletMain;
     try {
         BitcoinMiner(pwallet, true);
         boost::this_thread::interruption_point();

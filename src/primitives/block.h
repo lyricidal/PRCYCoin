@@ -13,9 +13,6 @@
 #include "serialize.h"
 #include "uint256.h"
 
-/** The maximum allowed size for a serialized block, in bytes (network rule) */
-static const unsigned int MAX_BLOCK_SIZE_CURRENT = 2000000;
-static const unsigned int MAX_BLOCK_SIZE_LEGACY = 1000000;
 
 class PoSBlockSummary {
 public:
@@ -56,7 +53,7 @@ class CBlockHeader
 {
 public:
     // header
-    static const int32_t CURRENT_VERSION=4;
+    static const int32_t CURRENT_VERSION=5;     // Version 5 supports CLTV activation
     //Efficient and compatible, but not beautiful design: A PoA block version will be always equal or higher this const
     static const int32_t POA_BLOCK_VERSION_LOW_LIMIT = 100;
     int32_t nVersion;
@@ -124,7 +121,7 @@ public:
         nTime = 0;
         nBits = 0;
         nNonce = 0;
-        nAccumulatorCheckpoint = 0;
+        nAccumulatorCheckpoint.SetNull();
     }
 
     bool IsNull() const

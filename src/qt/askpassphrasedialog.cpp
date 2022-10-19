@@ -48,9 +48,9 @@ AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget* parent, WalletModel
         ui->passEdit1->hide();
         setWindowTitle(tr("Encrypt Wallet"));
         break;
-        ui->anonymizationCheckBox->setChecked(false);
-        ui->anonymizationCheckBox->hide();
-    case Mode::UnlockAnonymize:
+        ui->stakingCheckBox->setChecked(false);
+        ui->stakingCheckBox->hide();
+    case Mode::UnlockStaking:
     case Mode::Unlock: // Ask passphrase
         ui->warningLabel->setText(tr("This operation needs your wallet passphrase to unlock the wallet.<br/><br/>(Wallet may appear not responding as it rescans for all transactions)<br/><br/>"));
         ui->warningLabel->setAlignment(Qt::AlignHCenter);
@@ -74,23 +74,24 @@ AskPassphraseDialog::AskPassphraseDialog(Mode mode, QWidget* parent, WalletModel
         break;
     }
 
-    // Set checkbox "For anonymization, automint, and staking only" depending on from where we were called
+    // Set checkbox "For staking only" depending on from where we were called
     if (context == Context::Unlock_Menu || context == Context::BIP_38) {
-        ui->anonymizationCheckBox->setChecked(true);
+        ui->stakingCheckBox->setChecked(true);
     }
     else {
-        ui->anonymizationCheckBox->setChecked(false);
+        ui->stakingCheckBox->setChecked(false);
     }
 
-    // It doesn't make sense to show the checkbox for sending DAPS because you wouldn't check it anyway.
+    // It doesn't make sense to show the checkbox for sending PRCY because you wouldn't check it anyway.
     if (context == Context::Send) {
-        ui->anonymizationCheckBox->hide();
+        ui->stakingCheckBox->hide();
     }
 
     textChanged();
     connect(ui->passEdit1, SIGNAL(textChanged(QString)), this, SLOT(textChanged()));
     connect(ui->passEdit2, SIGNAL(textChanged(QString)), this, SLOT(textChanged()));
     connect(ui->passEdit3, SIGNAL(textChanged(QString)), this, SLOT(textChanged()));
+    connect(ui->showPassphraseCheckBox, SIGNAL(clicked()), this, SLOT(on_showPassphraseCheckBox_clicked()));
 }
 
 AskPassphraseDialog::~AskPassphraseDialog()
@@ -123,7 +124,7 @@ void AskPassphraseDialog::accept()
             break;
         }
         QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Wallet Encryption"),
-            tr("Warning: If you encrypt your wallet and lose your passphrase, you will <b>LOSE ALL OF YOUR DAPS</b>!") + "<br><br>" + tr("Are you sure you wish to encrypt your wallet?"),
+            tr("Warning: If you encrypt your wallet and lose your passphrase, you will <b>LOSE ALL OF YOUR COINS</b>!") + "<br><br>" + tr("Are you sure you wish to encrypt your wallet?"),
             QMessageBox::Yes | QMessageBox::Cancel,
             QMessageBox::Cancel);
         if (retval == QMessageBox::Yes) {
@@ -131,9 +132,9 @@ void AskPassphraseDialog::accept()
                 if (model->setWalletEncrypted(true, newpass1)) {
                     QMessageBox::warning(this, tr("Wallet Encrypted"),
                         "<qt>" +
-                            tr("DAPS will close now to finish the encryption process. "
+                            tr("PRCY will close now to finish the encryption process. "
                                "Remember that encrypting your wallet cannot fully protect "
-                               "your DAPSs from being stolen by malware infecting your computer.") +
+                               "your PRCYs from being stolen by malware infecting your computer.") +
                             "<br><br><b>" +
                             tr("IMPORTANT: Any previous backups you have made of your wallet file "
                                "should be replaced with the newly generated, encrypted wallet file. "
@@ -162,9 +163,9 @@ void AskPassphraseDialog::accept()
             QDialog::reject(); // Cancelled
         }
     } break;
-    case Mode::UnlockAnonymize:
+    case Mode::UnlockStaking:
     case Mode::Unlock:
-        if (!model->setWalletLocked(false, oldpass, ui->anonymizationCheckBox->isChecked())) {
+        if (!model->setWalletLocked(false, oldpass, ui->stakingCheckBox->isChecked())) {
             QMessageBox msgBox;
             msgBox.setWindowTitle("Wallet Unlock Failed");
             msgBox.setText("The passphrase entered for the wallet unlock was incorrect. Please try again.");
@@ -225,7 +226,7 @@ void AskPassphraseDialog::textChanged()
     case Mode::Encrypt: // New passphrase x2
         acceptable = !ui->passEdit2->text().isEmpty() && !ui->passEdit3->text().isEmpty();
         break;
-    case Mode::UnlockAnonymize: // Old passphrase x1
+    case Mode::UnlockStaking: // Old passphrase x1
     case Mode::Unlock:          // Old passphrase x1
     case Mode::Decrypt:
         acceptable = !ui->passEdit1->text().isEmpty();
@@ -279,3 +280,11 @@ bool AskPassphraseDialog::eventFilter(QObject* object, QEvent* event)
     }
     return QDialog::eventFilter(object, event);
 }
+
+void AskPassphraseDialog::on_showPassphraseCheckBox_clicked()
+{
+    ui->passEdit1->setEchoMode(ui->showPassphraseCheckBox->checkState() == Qt::Checked ? QLineEdit::Normal : QLineEdit::Password );
+    ui->passEdit2->setEchoMode(ui->showPassphraseCheckBox->checkState() == Qt::Checked ? QLineEdit::Normal : QLineEdit::Password );
+    ui->passEdit3->setEchoMode(ui->showPassphraseCheckBox->checkState() == Qt::Checked ? QLineEdit::Normal : QLineEdit::Password );
+}
+
