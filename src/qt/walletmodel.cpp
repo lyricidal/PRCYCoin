@@ -11,10 +11,9 @@
 #include "bitcoinunits.h"
 #include "guiconstants.h"
 #include "guiutil.h"
-#include "recentrequeststablemodel.h"
 #include "transactionrecord.h"
 #include "transactiontablemodel.h"
-
+#include "init.h" // for ShutdownRequested(). Future: move to an interface wrapper
 
 #include "base58.h"
 #include "wallet/db.h"
@@ -36,11 +35,9 @@
 #include <stdint.h>
 #include <QTextStream>
 
-using namespace std;
 
 WalletModel::WalletModel(CWallet* wallet, OptionsModel* optionsModel, QObject* parent) : QObject(parent), wallet(wallet), optionsModel(optionsModel), addressTableModel(0),
                                                                                          transactionTableModel(0),
-                                                                                         recentRequestsTableModel(0),
                                                                                          cachedBalance(0), cachedUnconfirmedBalance(0), spendableBalance(0), cachedImmatureBalance(0), cachedWatchOnlyBalance(0),
                                                                                          cachedWatchUnconfBalance(0), cachedWatchImmatureBalance(0),
                                                                                          cachedEncryptionStatus(Unencrypted),
@@ -53,7 +50,6 @@ WalletModel::WalletModel(CWallet* wallet, OptionsModel* optionsModel, QObject* p
 
     addressTableModel = new AddressTableModel(wallet, this);
     transactionTableModel = new TransactionTableModel(wallet, this);
-    recentRequestsTableModel = new RecentRequestsTableModel(wallet, this);
 
     // This timer will be fired repeatedly to update the balance
     pollTimer = new QTimer(this);
@@ -61,6 +57,11 @@ WalletModel::WalletModel(CWallet* wallet, OptionsModel* optionsModel, QObject* p
     pollTimer->start(MODEL_UPDATE_DELAY);
 
     subscribeToCoreSignals();
+}
+
+bool WalletModel::isShutdownRequested()
+{
+    return ShutdownRequested();
 }
 
 WalletModel::~WalletModel()
@@ -260,7 +261,7 @@ void WalletModel::updateWatchOnlyFlag(bool fHaveWatchonly)
 bool WalletModel::validateAddress(const QString& address)
 {
     CBitcoinAddress addressParsed(address.toStdString());
-    bool valid = (regex_match(address.toStdString(), regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
+    bool valid = (regex_match(address.toStdString(), std::regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
     return valid||addressParsed.IsValid();
 }
 
@@ -298,7 +299,7 @@ WalletModel::SendCoinsReturn WalletModel::prepareTransaction(WalletModelTransact
                 return InvalidAmount;
             }
             total += subtotal;
-        } else { // User-entered dapscoin address / amount:
+        } else { // User-entered prcycoin address / amount:
             if (!validateAddress(rcp.address)) {
                 return InvalidAddress;
             }
@@ -383,17 +384,12 @@ TransactionTableModel* WalletModel::getTransactionTableModel()
     return transactionTableModel;
 }
 
-RecentRequestsTableModel* WalletModel::getRecentRequestsTableModel()
-{
-    return recentRequestsTableModel;
-}
-
 WalletModel::EncryptionStatus WalletModel::getEncryptionStatus() const
 {
     if (!wallet->IsLocked()) {
         return Unencrypted;
-    } else if (wallet->fWalletUnlockAnonymizeOnly) {
-        return UnlockedForAnonymizationOnly;
+    } else if (wallet->fWalletUnlockStakingOnly) {
+        return UnlockedForStakingOnly;
     } else if (wallet->IsLocked()) {
         return Locked;
     } else {
@@ -416,7 +412,7 @@ bool WalletModel::setWalletLocked(bool locked, const SecureString& passPhrase, b
 {
     if (locked) {
         // Lock
-        wallet->fWalletUnlockAnonymizeOnly = false;
+        wallet->fWalletUnlockStakingOnly = false;
         return wallet->Lock();
     } else {
         // Unlock
@@ -427,7 +423,7 @@ bool WalletModel::setWalletLocked(bool locked, const SecureString& passPhrase, b
 bool WalletModel::lockForStakingOnly(const SecureString& passPhrase)
 {
     if (!wallet->IsLocked()) {
-        wallet->fWalletUnlockAnonymizeOnly = true;
+        wallet->fWalletUnlockStakingOnly = true;
         return true;
     } else {
         setWalletLocked(false, passPhrase, true);
@@ -437,7 +433,7 @@ bool WalletModel::lockForStakingOnly(const SecureString& passPhrase)
 
 bool WalletModel::isAnonymizeOnlyUnlocked()
 {
-    return wallet->fWalletUnlockAnonymizeOnly;
+    return wallet->fWalletUnlockStakingOnly;
 }
 
 bool WalletModel::changePassphrase(const SecureString& oldPass, const SecureString& newPass)
@@ -453,7 +449,12 @@ bool WalletModel::changePassphrase(const SecureString& oldPass, const SecureStri
 
 bool WalletModel::backupWallet(const QString& filename)
 {
-    return BackupWallet(*wallet, filename.toLocal8Bit().data());
+    //attempt regular backup
+    if(!BackupWallet(*wallet, filename.toLocal8Bit().data())) {
+        return error("ERROR: Failed to backup wallet!");
+    }
+
+    return true;
 }
 
 // Handlers for core signals
@@ -484,7 +485,7 @@ static std::vector<std::pair<uint256, ChangeType> > vQueueNotifications;
 static void NotifyTransactionChanged(WalletModel* walletmodel, CWallet* wallet, const uint256& hash, ChangeType status)
 {
     if (fQueueNotifications) {
-        vQueueNotifications.push_back(make_pair(hash, status));
+        vQueueNotifications.push_back(std::make_pair(hash, status));
         return;
     }
 
@@ -509,6 +510,30 @@ static void NotifyWatchonlyChanged(WalletModel* walletmodel, bool fHaveWatchonly
         Q_ARG(bool, fHaveWatchonly));
 }
 
+static void NotifyWalletBacked(WalletModel* model, const bool& fSuccess, const std::string& filename)
+{
+    std::string message;
+    std::string title = "Backup ";
+    CClientUIInterface::MessageBoxFlags method;
+
+    if (fSuccess) {
+        title += "Successful: ";
+        method = CClientUIInterface::MessageBoxFlags::MSG_INFORMATION;
+    } else {
+        message = "There was an error trying to save the wallet data to ";
+        title += "Failed: ";
+        method = CClientUIInterface::MessageBoxFlags::MSG_ERROR;
+    }
+
+    message += _(filename.data());
+
+
+    QMetaObject::invokeMethod(model, "message", Qt::QueuedConnection,
+                              Q_ARG(QString, QString::fromStdString(title)),
+                              Q_ARG(QString, QString::fromStdString(message)),
+                              Q_ARG(unsigned int, (unsigned int)method));
+}
+
 void WalletModel::subscribeToCoreSignals()
 {
     // Connect signals to wallet
@@ -517,6 +542,7 @@ void WalletModel::subscribeToCoreSignals()
     wallet->NotifyTransactionChanged.connect(boost::bind(NotifyTransactionChanged, this, _1, _2, _3));
     wallet->ShowProgress.connect(boost::bind(ShowProgress, this, _1, _2));
     wallet->NotifyWatchonlyChanged.connect(boost::bind(NotifyWatchonlyChanged, this, _1));
+    wallet->NotifyWalletBacked.connect(boost::bind(NotifyWalletBacked, this, _1, _2));
 }
 
 void WalletModel::unsubscribeFromCoreSignals()
@@ -527,6 +553,7 @@ void WalletModel::unsubscribeFromCoreSignals()
     wallet->NotifyTransactionChanged.disconnect(boost::bind(NotifyTransactionChanged, this, _1, _2, _3));
     wallet->ShowProgress.disconnect(boost::bind(ShowProgress, this, _1, _2));
     wallet->NotifyWatchonlyChanged.disconnect(boost::bind(NotifyWatchonlyChanged, this, _1));
+    wallet->NotifyWalletBacked.disconnect(boost::bind(NotifyWalletBacked, this, _1, _2));
 }
 
 // WalletModel::UnlockContext implementation
@@ -536,7 +563,7 @@ WalletModel::UnlockContext WalletModel::requestUnlock(AskPassphraseDialog::Conte
 
     if (!was_locked && isAnonymizeOnlyUnlocked()) {
         setWalletLocked(true);
-        wallet->fWalletUnlockAnonymizeOnly = false;
+        wallet->fWalletUnlockStakingOnly = false;
         was_locked = getEncryptionStatus() == Locked;
     }
 
@@ -688,18 +715,18 @@ StakingStatusError WalletModel::getStakingStatusError(QString& error)
         bool fMintable = pwalletMain->MintableCoins();
         CAmount balance = pwalletMain->GetSpendableBalance();
         if (!fMintable || nReserveBalance > balance) {
-            if (balance < CWallet::MINIMUM_STAKE_AMOUNT) {
-                error = "\nBalance is under the minimum 400,000 staking threshold.\nPlease send more DAPS to this wallet.\n";
+            if (balance < Params().MinimumStakeAmount()) {
+                error = "\nBalance is under the minimum 400,000 staking threshold.\nPlease send more PRCY to this wallet.\n";
                 return StakingStatusError::STAKING_OK;
             }
-            if (nReserveBalance > balance || (balance > nReserveBalance && balance - nReserveBalance < CWallet::MINIMUM_STAKE_AMOUNT)) {
+            if (nReserveBalance > balance || (balance > nReserveBalance && balance - nReserveBalance < Params().MinimumStakeAmount())) {
                 error = "Reserve balance is too high.\nPlease lower it in order to turn staking on.";
                 return StakingStatusError::RESERVE_TOO_HIGH;
             }
             if (!fMintable) {
-                if (balance > CWallet::MINIMUM_STAKE_AMOUNT) {
+                if (balance > Params().MinimumStakeAmount()) {
                     //10 is to cover transaction fees
-                    if (balance >= CWallet::MINIMUM_STAKE_AMOUNT + 10*COIN) {
+                    if (balance >= Params().MinimumStakeAmount() + 10*COIN) {
                         error = "Not enough mintable coins.\nDo you want to merge & make a sent-to-yourself transaction to make the wallet stakable?";
                         return StakingStatusError::UTXO_UNDER_THRESHOLD;
                     }
@@ -712,11 +739,11 @@ StakingStatusError WalletModel::getStakingStatusError(QString& error)
 
 void WalletModel::generateCoins(bool fGenerate, int nGenProcLimit)
 {
-    GenerateDapscoins(fGenerate, pwalletMain, nGenProcLimit);
+    GeneratePrcycoins(fGenerate, pwalletMain, nGenProcLimit);
     if (false /*if regtest*/ && fGenerate) {
         //regtest generate
     } else {
-        GenerateDapscoins(fGenerate, pwalletMain, nGenProcLimit);
+        GeneratePrcycoins(fGenerate, pwalletMain, nGenProcLimit);
     }
 }
 
@@ -735,9 +762,9 @@ std::map<QString, QString> getTx(CWallet* wallet, uint256 hash)
     return getTx(wallet, *wallet->GetWalletTx(hash));
 }
 
-vector<std::map<QString, QString> > getTXs(CWallet* wallet)
+std::vector<std::map<QString, QString> > getTXs(CWallet* wallet)
 {
-    vector<std::map<QString, QString> > txs;
+    std::vector<std::map<QString, QString> > txs;
     if (!wallet || wallet->IsLocked()) return txs;
     std::map<uint256, CWalletTx> txMap = wallet->mapWallet;
     {
@@ -761,7 +788,7 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
     if (wallet && !wallet->IsLocked()) {
         for (CTxIn in: tx.vin) {
             COutPoint prevout = wallet->findMyOutPoint(in);
-            map<uint256, CWalletTx>::const_iterator mi = wallet->mapWallet.find(prevout.hash);
+            std::map<uint256, CWalletTx>::const_iterator mi = wallet->mapWallet.find(prevout.hash);
             if (mi != wallet->mapWallet.end()) {
                 const CWalletTx& prev = (*mi).second;
                 if (prevout.n < prev.vout.size()) {
@@ -841,7 +868,6 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
         case 0:
         case TransactionRecord::RecvWithAddress:
         case TransactionRecord::RecvFromOther:
-        case TransactionRecord::RecvWithObfuscation:
             txData["type"] = QString("Received");
             break;
         case 2:
@@ -853,7 +879,8 @@ std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx)
             txData["amount"] = BitcoinUnits::format(0,  TxRecord.credit); //absolute value of total amount
             break;     
         default:
-            txData["type"] = QString("Unknown");
+            txData["type"] = QString("Payment");
+            //txData["type"] = QString("Unknown");
         }
     }
     return txData;

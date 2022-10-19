@@ -6,7 +6,7 @@
 #define BITCOIN_QT_BITCOINGUI_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dapscoin-config.h"
+#include "config/prcycoin-config.h"
 #endif
 
 #include "amount.h"
@@ -71,6 +71,7 @@ public:
 #endif // ENABLE_WALLET
     bool enableWallet;
     bool fMultiSend = false;
+    bool isStartup = true;
     
 protected:
     void changeEvent(QEvent* e);
@@ -118,6 +119,7 @@ private:
     QAction* openConfEditorAction;
     QAction* openMNConfEditorAction;
     QAction* showDataDirAction;
+    QAction* showQtDirAction;
     QAction* showBackupsAction;
     QAction* openAction;
     QAction* openBlockExplorerAction;
@@ -130,13 +132,18 @@ private:
     QAction* steemitAction;
     QAction* instagramAction;
     QAction* redditAction;
+    QAction* bridgeAction;
     QAction* showHelpMessageAction;
-    QAction* openFAQAction;
+    QAction* openKBAction;
+    QAction* openGitWikiAction;
     QAction* openBlockExplorerAPIAction;
     QAction* openBootStrapAction;
     QAction* openTGTechSupportAction;
     QAction* openTGMNSupportAction;
     QAction* openDiscordSupportAction;
+    QAction* openBridgeAction;
+    QAction* openDexAction;
+    QAction* openCheckerAction;
     QAction* checkForUpdatesAction;
     QAction* multiSendAction;
     QFrame* frameBlocks;
@@ -261,17 +268,24 @@ private Q_SLOTS:
     void aboutClicked();
     /** Show help message dialog */
     void showHelpMessageClicked();
-    void openFAQClicked();
+    void openKBClicked();
+    void openGitWikiClicked();
     void openBlockExplorerAPIClicked();
     void openBootStrapClicked();
     void openTGTechSupportClicked();
     void openTGMNSupportClicked();
     void openDiscordSupportClicked();
+    void openBridgeClicked();
+    void openDexClicked();
+    void openCheckerClicked();
     void checkForUpdatesClicked();
     void serviceRequestFinished(QNetworkReply* reply);
 #ifndef Q_OS_MAC
     /** Handle tray icon clicked */
     void trayIconActivated(QSystemTrayIcon::ActivationReason reason);
+#else
+    /** Handle macOS Dock icon clicked */
+     void macosDockIconActivated();
 #endif
 
     /** Show window if hidden, unminimize when minimized, rise when obscured or show if hidden and fToggleHidden is true */

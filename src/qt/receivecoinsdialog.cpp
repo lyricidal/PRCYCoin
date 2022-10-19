@@ -11,7 +11,6 @@
 #include "guiutil.h"
 #include "optionsmodel.h"
 #include "receiverequestdialog.h"
-#include "recentrequeststablemodel.h"
 #include "walletmodel.h"
 
 #include <QAction>
@@ -23,6 +22,7 @@
 #include <QTextDocument>
 #include <QStylePainter>
 #include <QDesktopWidget>
+#include <QInputDialog>
 
 ReceiveCoinsDialog::ReceiveCoinsDialog(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
                                                           ui(new Ui::ReceiveCoinsDialog),
@@ -50,7 +50,14 @@ ReceiveCoinsDialog::ReceiveCoinsDialog(QWidget* parent) : QDialog(parent, Qt::Wi
     ui->lineEditAddress->setStyleSheet("border:none; background: transparent; text-align:center;");
     ui->pushButtonCP->setStyleSheet("background:transparent;");
     ui->pushButtonCP->setIcon(QIcon(":/icons/editcopy"));
+    ui->pushButtonGenerate->setIcon(QIcon(":/icons/add"));
+    ui->pushButtonGenerate->setStyleSheet("background:transparent;");
+    ui->pushButtonRemove->setIcon(QIcon(":/icons/remove"));
+    ui->pushButtonRemove->setStyleSheet("background:transparent;");
     connect(ui->pushButtonCP, SIGNAL(clicked()), this, SLOT(copyAddress()));
+    connect(ui->pushButtonGenerate, SIGNAL(clicked()), this, SLOT(generateAddress()));
+    connect(ui->pushButtonRemove, SIGNAL(clicked()), this, SLOT(removeAddress()));
+    connect(ui->reqAddress, SIGNAL(currentIndexChanged(int)), this, SLOT(changeAddress(int)));
 
     //Create privacy account (wallet is unlocked first launch so !pwalletMain->IsLocked() works here)
     if (pwalletMain && !pwalletMain->IsLocked()) {
@@ -61,7 +68,7 @@ ReceiveCoinsDialog::ReceiveCoinsDialog(QWidget* parent) : QDialog(parent, Qt::Wi
 
     QLocale lo(QLocale::C);
     lo.setNumberOptions(QLocale::RejectGroupSeparator);
-    QDoubleValidator *dblVal = new QDoubleValidator(0, Params().MAX_MONEY, 8, ui->reqAmount);
+    QDoubleValidator *dblVal = new QDoubleValidator(0, MAX_MONEY_OUT, 8, ui->reqAmount);
     dblVal->setNotation(QDoubleValidator::StandardNotation);
     dblVal->setLocale(lo);
     ui->reqAmount->setValidator(dblVal);
@@ -83,14 +90,39 @@ void ReceiveCoinsDialog::setModel(WalletModel* model)
     this->model = model;
 
     if (model && model->getOptionsModel()) {
-        model->getRecentRequestsTableModel()->sort(RecentRequestsTableModel::Date, Qt::DescendingOrder);
         connect(model->getOptionsModel(), SIGNAL(displayUnitChanged(int)), this, SLOT(updateDisplayUnit()));
         updateDisplayUnit();
         loadAccount();
     }
 }
 
-void ReceiveCoinsDialog::loadAccount() {
+void ReceiveCoinsDialog::loadAccount()
+{
+    QRect rec = QApplication::desktop()->availableGeometry();
+    int screenWidth = rec.width();
+    QString addr;
+    std::string address;
+    pwalletMain->ComputeStealthPublicAddress("masteraccount", address);
+
+    if (screenWidth <= 1280) {
+        //(truncated for screen with less availableGeometry than 1280px)
+        addr = "Master Account - " + QString(address.substr(0, 30).c_str()) + "..." + QString(address.substr(address.length() - 30, 30).c_str());
+    } else {
+        addr = "Master Account - " + QString(address.c_str());
+    }
+    ui->reqAddress->addItem(addr);
+
+    //Set lineEditAddress to Master Account address for copy to clipboard
+    if (screenWidth <= 1024) {
+        //(truncated for screen with less availableGeometry than 1024px)
+        ui->lineEditAddress->setText(QString(address.substr(0, 30).c_str()) + "..." + QString(address.substr(address.length() - 30, 30).c_str()));
+    } else {
+        ui->lineEditAddress->setText(QString(address.c_str()));
+    }
+
+}
+
+/*void ReceiveCoinsDialog::loadAccount() {
     QRect rec = QApplication::desktop()->availableGeometry();
     int screenWidth = rec.width();
     QString addr;
@@ -128,6 +160,7 @@ void ReceiveCoinsDialog::loadAccount() {
         ui->lineEditAddress->setText(QString(addrList[0].c_str()));
     }
 }
+*/
 
 ReceiveCoinsDialog::~ReceiveCoinsDialog()
 {
@@ -156,49 +189,32 @@ void ReceiveCoinsDialog::updateDisplayUnit()
 void ReceiveCoinsDialog::on_receiveButton_clicked()
 {
     double dAmount = ui->reqAmount->text().toDouble();
-    if (dAmount < 0.0 || dAmount > Params().MAX_MONEY) {
+    if (dAmount < 0.0 || dAmount > MAX_MONEY_OUT) {
         QMessageBox msgBox;
         msgBox.setWindowTitle("Invalid Amount");
-        msgBox.setText("Invalid amount entered. Please enter an amount less than 2.1B DAPS.");
+        msgBox.setText("Invalid amount entered. Please enter an amount less than 2.1B PRCY.");
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
         return;
     }
-    if (!model || !model->getOptionsModel() || !model->getAddressTableModel() || !model->getRecentRequestsTableModel())
+    if (!model || !model->getOptionsModel() || !model->getAddressTableModel())
         return;
 
-    std::vector<std::string> addrList, accountList;
-    CWallet* wl = model->getCWallet();
-    wl->AllMyPublicAddresses(addrList, accountList);
-    int selectedIdx = ui->reqAddress->currentIndex();
-    if ((int)addrList.size() > selectedIdx){
-        QString address(addrList[selectedIdx].c_str());
-        QString label(accountList[selectedIdx].c_str());
-        QString reqMes = ui->reqID->text();
-        QString strPaymentID = ui->reqID->text();
-        if (!strPaymentID.trimmed().isEmpty()) {
-            quint64 paymentID = strPaymentID.toULongLong();
-            uint64_t id = paymentID;
-            std::string integratedAddr;
-            if (selectedIdx == 0) {
-                wl->ComputeIntegratedPublicAddress(id, "masteraccount", integratedAddr);
-            } else {
-                wl->ComputeIntegratedPublicAddress(id, accountList[selectedIdx], integratedAddr);
-            }
-            address = QString(integratedAddr.c_str());
-        }
+    QString str = ui->reqAddress->currentText();
+    QStringList list = str.split("-");
 
-        SendCoinsRecipient info(address, label, getValidatedAmount(), reqMes);
-        ReceiveRequestDialog* dialog = new ReceiveRequestDialog(this);
-        dialog->setAttribute(Qt::WA_DeleteOnClose);
-        dialog->setModel(model->getOptionsModel());
-        dialog->setInfo(info);
-        dialog->show();
-        clear();
-        model->getRecentRequestsTableModel()->addNewRequest(info);
-    }
+    QString address = list[1].trimmed();
+    QString label = list[0].trimmed();
+    QString reqMes = ui->reqID->text();
 
+    SendCoinsRecipient info(address, label, getValidatedAmount(), reqMes);
+    ReceiveRequestDialog* dialog = new ReceiveRequestDialog(this);
+    dialog->setAttribute(Qt::WA_DeleteOnClose);
+    dialog->setModel(model->getOptionsModel());
+    dialog->setInfo(info);
+    dialog->show();
+    clear();
 }
 
 // We override the virtual resizeEvent of the QWidget to adjust tables column
@@ -223,9 +239,57 @@ void ReceiveCoinsDialog::keyPressEvent(QKeyEvent* event)
 }
 
 void ReceiveCoinsDialog::copyAddress(){
-    std::vector<std::string> addrList, accountList;
     QClipboard *clipboard = QApplication::clipboard();
-    CWallet* wl = model->getCWallet();
-    wl->AllMyPublicAddresses(addrList, accountList);
-    clipboard->setText(QString(addrList[0].c_str()));
+    if (ui->lineEditAddress->text().contains(".")) {
+        // It's a smaller screen, don't copy the line text as it is truncated
+        QString addr;
+        std::string address;
+        pwalletMain->ComputeStealthPublicAddress("masteraccount", address);
+        clipboard->setText(QString(address.c_str()));
+    } else {
+        clipboard->setText(ui->lineEditAddress->text());
+    }
+}
+
+void ReceiveCoinsDialog::generateAddress()
+{
+    uint64_t paymentID = 0;
+    QClipboard *clipboard = QApplication::clipboard();
+    QString addAccountString;
+    std::string address;
+    address = pwalletMain->GenerateIntegratedAddressWithRandomPaymentID("masteraccount", paymentID);
+
+    bool ok;
+    QString label = QInputDialog::getText(this, tr("Enter Label"),
+                                          tr("Label (Payment ID is added by default)"), QLineEdit::Normal,
+                                          QString::number(paymentID), &ok);
+
+    if (ok && !label.isEmpty()) {
+        if (label.contains(QString::number(paymentID))) {
+            addAccountString = label.append(" - ").append(QString(address.c_str()));
+        } else {
+            addAccountString = label.append(" (").append(QString::number(paymentID)).append(") - ").append(QString(address.c_str()));
+        }
+    } else if (!ok) {
+        return;
+    }
+
+    ui->reqAddress->addItem(addAccountString);
+    ui->reqAddress->setCurrentIndex(ui->reqAddress->count() - 1);
+    clipboard->setText(QString(address.c_str()));
+}
+
+void ReceiveCoinsDialog::removeAddress()
+{
+    if (ui->reqAddress->currentText().contains("Master Account")) return;
+    ui->reqAddress->removeItem(ui->reqAddress->currentIndex());
+}
+
+void ReceiveCoinsDialog::changeAddress(int)
+{
+    QString str = ui->reqAddress->currentText();
+    QStringList list = str.split("-");
+    QString address = list[1].trimmed();
+    //Set lineEditAddress to Currently Selected Account address for copy to clipboard
+    ui->lineEditAddress->setText(address);
 }

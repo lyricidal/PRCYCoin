@@ -12,6 +12,8 @@
 #include <QElapsedTimer>
 #include <QDialog>
 #include <QSizeGrip>
+#include <QSettings>
+#include <QNetworkReply>
 
 class ClientModel;
 class TransactionFilterProxy;
@@ -62,6 +64,7 @@ Q_SIGNALS:
 private:
     QTimer* timer;
     QTimer* pingNetworkInterval;
+    QTimer* checkCurrencyValueInterval;
     Ui::OverviewPage* ui;
     ClientModel* clientModel;
     WalletModel* walletModel;
@@ -73,7 +76,7 @@ private:
     CAmount currentWatchUnconfBalance;
     CAmount currentWatchImmatureBalance;
     int nDisplayUnit;
-    void getPercentage(CAmount nTotalBalance, QString& sDAPSPercentage);
+    void getPercentage(CAmount nTotalBalance, QString& sPRCYPercentage);
 
     TxViewDelegate* txdelegate;
     TransactionFilterProxy* filter;
@@ -84,6 +87,8 @@ private:
     QWidget* balanceSyncCircle;
     QWidget* balanceAnimSyncCircle;
     bool isSyncingBalance=true;
+    QSettings settings;
+    bool isRuninngQuery=false;
 
     void initSyncCircle(float percentOfParent);
     void moveSyncCircle(QWidget* anchor, QWidget* animated, int deltaRadius, float degreesPerSecond, float angleOffset=0);
@@ -96,6 +101,8 @@ private Q_SLOTS:
     void updateWatchOnlyLabels(bool showWatchOnly);
     void on_lockUnlock();
     void updateLockStatus(int status);
+    void checkCurrencyValue();
+    void checkCurrencyValueserviceRequestFinished(QNetworkReply* reply);
 };
 
 #endif // BITCOIN_QT_OVERVIEWPAGE_H

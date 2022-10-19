@@ -10,6 +10,7 @@
 #include "addresstablemodel.h"
 #include "askpassphrasedialog.h"
 #include "bitcoinunits.h"
+#include "chainparams.h"
 #include "clientmodel.h"
 #include "coincontroldialog.h"
 #include "guiutil.h"
@@ -33,6 +34,8 @@
 #include <QTextDocument>
 #include <QDateTime>
 #include <QDebug>
+#include <QDesktopServices>
+#include <QUrl>
 
 
 SendCoinsDialog::SendCoinsDialog(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHint | Qt::WindowTitleHint | Qt::WindowCloseButtonHint),
@@ -122,8 +125,10 @@ void SendCoinsDialog::setBalance(const CAmount& balance, const CAmount& unconfir
                               const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance)
 {
     int status = model->getEncryptionStatus();
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly) {
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
         ui->labelBalance->setText("Locked; Hidden");
+    } else if (settings.value("fHideBalance", false).toBool()) {
+        ui->labelBalance->setText("Hidden");
     } else {
         ui->labelBalance->setText(BitcoinUnits::formatHtmlWithUnit(0, balance, false, BitcoinUnits::separatorAlways));
     }
@@ -137,7 +142,7 @@ void SendCoinsDialog::on_sendButton_clicked(){
     if (!masternodeSync.IsBlockchainSynced()) {
         QMessageBox msgBox;
         msgBox.setWindowTitle("Send Disabled - Syncing");
-        msgBox.setText("Sending DAPS is disabled when you are still syncing the wallet. Please allow the wallet to fully sync before attempting to send a transaction.");
+        msgBox.setText("Sending PRCY is disabled when you are still syncing the wallet. Please allow the wallet to fully sync before attempting to send a transaction.");
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
@@ -149,10 +154,12 @@ void SendCoinsDialog::on_sendButton_clicked(){
     SendCoinsEntry* form = qobject_cast<SendCoinsEntry*>(ui->entries->itemAt(0)->widget());
     SendCoinsRecipient recipient = form->getValue();
     QString address = recipient.address;
+    CAmount balance = model->getBalance();
     send_address = recipient.address;
     send_amount = recipient.amount;
-    bool isValidAddresss = (regex_match(address.toStdString(), regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
-    bool isValidAmount = ((recipient.amount>0) && (recipient.amount<=model->getBalance()));
+    bool isValidAddresss = (regex_match(address.toStdString(), std::regex("[a-zA-z0-9]+")))&&(address.length()==99||address.length()==110);
+    bool isValidAmount = ((recipient.amount>0) && (recipient.amount<=balance));
+    bool fAlwaysRequest2FA = settings.value("fAlwaysRequest2FA").toBool();
 
     form->errorAddress(isValidAddresss);
     form->errorAmount(isValidAmount);
@@ -182,7 +189,7 @@ void SendCoinsDialog::on_sendButton_clicked(){
     // and make many transactions while unlocking through this dialog
     // will call relock
     WalletModel::EncryptionStatus encStatus = model->getEncryptionStatus();
-    if (encStatus == model->Locked || encStatus == model->UnlockedForAnonymizationOnly) {
+    if (encStatus == model->Locked || encStatus == model->UnlockedForStakingOnly) {
         WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::Send, true));
         if (!ctx.isValid()) {
             // Unlock wallet was cancelled
@@ -203,6 +210,7 @@ void SendCoinsDialog::on_sendButton_clicked(){
     recipientElement.append("<br/><span class='h3'>"+tr("Destination")+": <br/><b>"+recipient.address+"</b></span><br/>");
 
     formatted.append(recipientElement);
+    SetRingSize(0);
     QString strFee = BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), (pwalletMain->ComputeFee(1, 1, MAX_RING_SIZE)));
     QString questionString = "<br/><span class='h2'><center><b>"+tr("Are you sure you want to send?")+"</b></center></span>";
     questionString.append("%1");
@@ -211,11 +219,20 @@ void SendCoinsDialog::on_sendButton_clicked(){
     questionString.append("<br/><br/>");
 
     CAmount txFee = pwalletMain->ComputeFee(1, 1, MAX_RING_SIZE);
-    CAmount totalAmount = send_amount + txFee;
+    CAmount totalAmount;
+    if (recipient.amount == balance) {
+        totalAmount = send_amount;
+    } else {
+        totalAmount = send_amount + txFee;
+    }
 
     // Show total amount + all alternative units
-    questionString.append(tr("<span class='h3'>Total Amount = <b>%1</b><br/><hr /></center>")
+    questionString.append(tr("<span class='h3'>Total Amount = <b>%1</b><br/></center>")
                               .arg(BitcoinUnits::formatHtmlWithUnit(model->getOptionsModel()->getDisplayUnit(), totalAmount)));
+
+    if (fAlwaysRequest2FA) {
+        questionString.append("<center><br/>Note: Request 2FA authentication code before sending any transactions is enabled.<br/>You will be asked for your 2FA code on the next screen.<br/><br/></center>");
+    }
 
     // Display message box
     QMessageBox::StandardButton retval = QMessageBox::question(this, tr("Confirm Send Coins"),
@@ -260,7 +277,7 @@ void SendCoinsDialog::on_sendButton_clicked(){
     uint period = pwalletMain->Read2FAPeriod();
     QDateTime current = QDateTime::currentDateTime();
     uint diffTime = current.toTime_t() - lastTime;
-    if (diffTime <= period * 24 * 60 * 60)
+    if (diffTime <= period * 24 * 60 * 60 || !fAlwaysRequest2FA)
         sendTx();
     else {
         TwoFAConfirmDialog codedlg;
@@ -274,13 +291,26 @@ void SendCoinsDialog::on_sendButton_clicked(){
 void SendCoinsDialog::sendTx() {
     CWalletTx resultTx;
     bool success = false;
+    CAmount spendable = model->getSpendableBalance();
+    CAmount balance = model->getBalance();
     try {
-        success = pwalletMain->SendToStealthAddress(
-            send_address.toStdString(),
-            send_amount,
-            resultTx,
-            false
-        );
+        if (send_amount == spendable && spendable == balance) {
+            // Send All
+            success = pwalletMain->SendAll(
+                send_address.toStdString(),
+                resultTx,
+                false
+            );
+        } else {
+            // Send
+            success = pwalletMain->SendToStealthAddress(
+                send_address.toStdString(),
+                send_amount,
+                resultTx,
+                false
+            );
+        }
+
     } catch (const std::exception& err) {
         std::string errMes(err.what());
         if (errMes.find("You have attempted to send more than 50 UTXOs in a single transaction") != std::string::npos) {
@@ -344,15 +374,26 @@ void SendCoinsDialog::sendTx() {
         WalletUtil::getTx(pwalletMain, resultTx.GetHash());
         QString txhash = resultTx.GetHash().GetHex().c_str();
         QMessageBox msgBox;
+        QPushButton *viewButton = msgBox.addButton(tr("View on Explorer"), QMessageBox::ActionRole);
         QPushButton *copyButton = msgBox.addButton(tr("Copy"), QMessageBox::ActionRole);
         QPushButton *okButton = msgBox.addButton(tr("OK"), QMessageBox::ActionRole);
-        copyButton->setStyleSheet("background:transparent;");
-        copyButton->setIcon(QIcon(":/icons/editcopy"));
         msgBox.setWindowTitle("Transaction Initialized");
         msgBox.setText("Transaction initialized.\n\n" + txhash);
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.setIcon(QMessageBox::Information);
         msgBox.exec();
+
+        if (msgBox.clickedButton() == viewButton) {
+            QString URL;
+            // Adjust link depending on Network
+            if (Params().NetworkID() == CBaseChainParams::MAIN) {
+                URL = "https://explorer.prcycoin.com/tx/";
+            } else if (Params().NetworkID() == CBaseChainParams::TESTNET){
+                URL = "https://testnet.prcycoin.com/tx/";
+            }
+            // Open the link
+            QDesktopServices::openUrl(QUrl(URL.append(txhash)));
+        }
 
         if (msgBox.clickedButton() == copyButton) {
         //Copy txhash to clipboard

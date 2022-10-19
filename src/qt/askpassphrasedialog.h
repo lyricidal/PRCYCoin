@@ -23,7 +23,7 @@ class AskPassphraseDialog : public QDialog
 public:
     enum class Mode {
         Encrypt,         /**< Ask passphrase twice and encrypt */
-        UnlockAnonymize, /**< Ask passphrase and unlock only for anonymization */
+        UnlockStaking,   /**< Ask passphrase and unlock only for staking */
         Unlock,          /**< Ask passphrase and unlock */
         ChangePass,      /**< Ask old passphrase + new passphrase twice */
         Decrypt          /**< Ask passphrase and decrypt wallet */
@@ -37,7 +37,7 @@ public:
          Encrypt,        /** Encrypt unencrypted wallet */
          ToggleLock,     /** Toggle wallet lock state */
          ChangePass,     /** Change passphrase */
-         Send,           /** Send DAPS */
+         Send,           /** Send PRCY */
          BIP_38,         /** BIP38 menu */
          Multi_Sig,      /** Multi-Signature dialog */
          Sign_Message    /** Sign/verify message dialog */
@@ -57,6 +57,7 @@ private:
 
 private Q_SLOTS:
     void textChanged();
+    void on_showPassphraseCheckBox_clicked();
 
 protected:
     bool event(QEvent* event);

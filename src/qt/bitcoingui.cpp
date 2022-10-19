@@ -123,7 +123,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
             this
     );
 
-    QString windowTitle = tr("DAPS Coin") + " ";
+    QString windowTitle = tr("PRivaCY Coin") + " ";
     fLiteMode = GetBoolArg("-litemode", false);
 #ifdef ENABLE_WALLET
     /* if compiled with wallet support, -disablewallet can still disable the wallet */
@@ -132,7 +132,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
     enableWallet = false;
 #endif // ENABLE_WALLET
     if (enableWallet) {
-        windowTitle += tr("Keychain Wallet");
+        windowTitle += tr("Wallet");
     } else {
         windowTitle += tr("Node");
     }
@@ -142,12 +142,8 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
     QString userWindowTitle = QString::fromStdString(GetArg("-windowtitle", ""));
     if (!userWindowTitle.isEmpty()) windowTitle += " - " + userWindowTitle;
     windowTitle += " " + networkStyle->getTitleAddText();
-#ifndef Q_OS_MAC
     QApplication::setWindowIcon(networkStyle->getAppIcon());
     setWindowIcon(networkStyle->getAppIcon());
-#else
-    MacDockIconHandler::instance()->setIcon(networkStyle->getAppIcon());
-#endif
     setWindowTitle(windowTitle);
 
     rpcConsole = new RPCConsole(enableWallet ? this : 0);
@@ -225,6 +221,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
     connect(openConfEditorAction, SIGNAL(triggered()), rpcConsole, SLOT(showConfEditor()));
     connect(openMNConfEditorAction, SIGNAL(triggered()), rpcConsole, SLOT(showMNConfEditor()));
     connect(showDataDirAction, SIGNAL(triggered()), rpcConsole, SLOT(showDataDir()));
+    connect(showQtDirAction, SIGNAL(triggered()), rpcConsole, SLOT(showQtDir()));
     connect(showBackupsAction, SIGNAL(triggered()), rpcConsole, SLOT(showBackups()));
     connect(labelConnectionsIcon, SIGNAL(clicked()), rpcConsole, SLOT(showPeers()));
     connect(labelEncryptionIcon, SIGNAL(clicked()), walletFrame, SLOT(toggleLockWallet()));
@@ -257,6 +254,7 @@ BitcoinGUI::BitcoinGUI(const NetworkStyle* networkStyle, QWidget* parent) : QMai
         timerStakingIcon->start(10000);
         setStakingStatus();
     }
+    checkForUpdatesClicked();
 }
 
 BitcoinGUI::~BitcoinGUI()
@@ -358,8 +356,8 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     quitAction->setStatusTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
-    aboutAction = new QAction(networkStyle->getAppIcon(), tr("&About DAPS"), this);
-    aboutAction->setStatusTip(tr("Show information about DAPS"));
+    aboutAction = new QAction(networkStyle->getAppIcon(), tr("&About PRCY"), this);
+    aboutAction->setStatusTip(tr("Show information about PRCY"));
     aboutAction->setMenuRole(QAction::AboutRole);
     aboutQtAction = new QAction(QIcon(":/qt-project.org/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
     aboutQtAction->setStatusTip(tr("Show information about Qt"));
@@ -370,6 +368,11 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     optionsAction->setMenuRole(QAction::PreferencesRole);
     optionsAction->setToolTip(optionsAction->statusTip());
     optionsAction->setCheckable(true);
+#ifdef Q_OS_MAC
+        optionsAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_6));
+#else
+        optionsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+#endif
     tabGroup->addAction(optionsAction);
 
     stakingAction = new QAction(QIcon(":/icons/options"), tr("&Staking"), this);
@@ -421,9 +424,12 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     openMNConfEditorAction = new QAction(QIcon(":/icons/edit"), tr("Open &Masternode Configuration File"), this);
     openMNConfEditorAction->setStatusTip(tr("Open Masternode configuration file"));
     openMNConfEditorAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_M));
-    showDataDirAction = new QAction(QIcon(":/icons/browse"), tr("Show &DAPScoin Folder"), this);
-    showDataDirAction->setStatusTip(tr("Show the DAPScoin folder"));
+    showDataDirAction = new QAction(QIcon(":/icons/browse"), tr("Show &PRCYcoin Folder"), this);
+    showDataDirAction->setStatusTip(tr("Show the PRCYcoin folder"));
     showDataDirAction->setShortcut(Qt::Key_F2);
+    showQtDirAction = new QAction(QIcon(":/icons/browse"), tr("Show &Qt Folder"), this);
+    showQtDirAction->setStatusTip(tr("Show the Qt folder"));
+    showQtDirAction->setShortcut(Qt::Key_F3);
     showBackupsAction = new QAction(QIcon(":/icons/browse"), tr("Show Automatic &Backups"), this);
     showBackupsAction->setStatusTip(tr("Show automatically created wallet backups"));
 
@@ -433,40 +439,48 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     usedReceivingAddressesAction->setStatusTip(tr("Show the list of used receiving addresses and labels"));
 
     openAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_FileIcon), tr("Open &URI..."), this);
-    openAction->setStatusTip(tr("Open a DAPS: URI or payment request"));
+    openAction->setStatusTip(tr("Open a PRCY: URI or payment request"));
     openBlockExplorerAction = new QAction(QIcon(":/icons/explorer"), tr("&Blockchain Explorer"), this);
     openBlockExplorerAction->setStatusTip(tr("Block explorer window"));
 
     facebookAction = new QAction(QIcon(":/icons/facebook"), tr("Facebook"), this);
-    facebookAction->setStatusTip(tr("DAPS Facebook"));
+    facebookAction->setStatusTip(tr("PRCY Facebook"));
     twitterAction = new QAction(QIcon(":/icons/twitter"), tr("Twitter"), this);
-    twitterAction->setStatusTip(tr("DAPS Twitter"));
+    twitterAction->setStatusTip(tr("PRCY Twitter"));
     discordAction = new QAction(QIcon(":/icons/discord"), tr("Discord"), this);
-    discordAction->setStatusTip(tr("DAPS Discord"));
+    discordAction->setStatusTip(tr("PRCY Discord"));
     telegramOfficialAction = new QAction(QIcon(":/icons/telegram"), tr("Telegram - Main"), this);
-    telegramOfficialAction->setStatusTip(tr("DAPS Telegram - Main"));
+    telegramOfficialAction->setStatusTip(tr("PRCY Telegram - Main"));
     telegramLoungeAction = new QAction(QIcon(":/icons/telegram"), tr("Telegram - Lounge"), this);
-    telegramLoungeAction->setStatusTip(tr("DAPS Telegram - Lounge"));
+    telegramLoungeAction->setStatusTip(tr("PRCY Telegram - Lounge"));
     mediumAction = new QAction(QIcon(":/icons/medium"), tr("Medium"), this);
-    mediumAction->setStatusTip(tr("DAPS Medium"));
+    mediumAction->setStatusTip(tr("PRCY Medium"));
     steemitAction = new QAction(QIcon(":/icons/steemit"), tr("Steemit"), this);
-    steemitAction->setStatusTip(tr("DAPS Steemit"));
+    steemitAction->setStatusTip(tr("PRCY Steemit"));
     instagramAction = new QAction(QIcon(":/icons/instagram"), tr("Instagram"), this);
-    instagramAction->setStatusTip(tr("DAPS Instagram"));
+    instagramAction->setStatusTip(tr("PRCY Instagram"));
     redditAction = new QAction(QIcon(":/icons/reddit"), tr("Reddit"), this);
-    redditAction->setStatusTip(tr("DAPS Reddit"));
+    redditAction->setStatusTip(tr("PRCY Reddit"));
 
     showHelpMessageAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Command-line Options"), this);
     showHelpMessageAction->setMenuRole(QAction::NoRole);
-    showHelpMessageAction->setStatusTip(tr("Show the DAPS help message to get a list with possible DAPS command-line options"));
+    showHelpMessageAction->setStatusTip(tr("Show the PRCY help message to get a list with possible PRCY command-line options"));
 
     // Help Links
-    openFAQAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Frequently Asked Questions"), this);
-    openFAQAction->setStatusTip(tr("Frequently Asked Questions"));
-    openBlockExplorerAPIAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Blockhain Explorer API"), this);
-    openBlockExplorerAPIAction->setStatusTip(tr("Blockhain Explorer API"));
+    openKBAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Knowledge Base"), this);
+    openKBAction->setStatusTip(tr("Knowledge Base"));
+    openGitWikiAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&GitHub Wiki"), this);
+    openGitWikiAction->setStatusTip(tr("GitHub Wiki"));
+    openBlockExplorerAPIAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Blockchain Explorer API"), this);
+    openBlockExplorerAPIAction->setStatusTip(tr("Blockchain Explorer API"));
     openBootStrapAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&BootStrap"), this);
     openBootStrapAction->setStatusTip(tr("BootStrap Link"));
+    openBridgeAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&Bridge"), this);
+    openBridgeAction->setStatusTip(tr("Bridge Link"));
+    openDexAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PRivaCY DEX"), this);
+    openDexAction->setStatusTip(tr("PRivaCY Dex Link"));
+    openCheckerAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PRCY Checker"), this);
+    openCheckerAction->setStatusTip(tr("PRCY Checker Link"));
     openTGTechSupportAction = new QAction(QIcon(":/icons/telegram"), tr("&Telegram Tech Support"), this);
     openTGTechSupportAction->setStatusTip(tr("Telegram Tech Support"));
     openTGMNSupportAction = new QAction(QIcon(":/icons/telegram"), tr("&Telegram Masternode Support"), this);
@@ -482,9 +496,13 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     connect(optionsAction, SIGNAL(triggered()), this, SLOT(gotoOptionsPage()));
     connect(toggleHideAction, SIGNAL(triggered()), this, SLOT(toggleHidden()));
     connect(showHelpMessageAction, SIGNAL(triggered()), this, SLOT(showHelpMessageClicked()));
-    connect(openFAQAction, SIGNAL(triggered()), this, SLOT(openFAQClicked()));
+    connect(openKBAction, SIGNAL(triggered()), this, SLOT(openKBClicked()));
+    connect(openGitWikiAction, SIGNAL(triggered()), this, SLOT(openGitWikiClicked()));
     connect(openBlockExplorerAPIAction, SIGNAL(triggered()), this, SLOT(openBlockExplorerAPIClicked()));
     connect(openBootStrapAction, SIGNAL(triggered()), this, SLOT(openBootStrapClicked()));
+    connect(openBridgeAction, SIGNAL(triggered()), this, SLOT(openBridgeClicked()));
+    connect(openDexAction, SIGNAL(triggered()), this, SLOT(openDexClicked()));
+    connect(openCheckerAction, SIGNAL(triggered()), this, SLOT(openCheckerClicked()));
     connect(openTGTechSupportAction, SIGNAL(triggered()), this, SLOT(openTGTechSupportClicked()));
     connect(openTGMNSupportAction, SIGNAL(triggered()), this, SLOT(openTGMNSupportClicked()));
     connect(openDiscordSupportAction, SIGNAL(triggered()), this, SLOT(openDiscordSupportClicked()));
@@ -561,6 +579,7 @@ void BitcoinGUI::createMenuBar()
         tools->addAction(openConfEditorAction);
         tools->addAction(openMNConfEditorAction);
         tools->addAction(showDataDirAction);
+        tools->addAction(showQtDirAction);
         tools->addAction(showBackupsAction);
         tools->addAction(openBlockExplorerAction);
     }
@@ -572,22 +591,26 @@ void BitcoinGUI::createMenuBar()
     socials->addAction(telegramOfficialAction);
     socials->addAction(telegramLoungeAction);
     socials->addAction(mediumAction);
-    socials->addAction(steemitAction);
+    //socials->addAction(steemitAction);
     socials->addAction(instagramAction);
     socials->addAction(redditAction);
 
     QMenu* help = appMenuBar->addMenu(tr("&Help"));
     help->addAction(showHelpMessageAction);
     help->addSeparator();
-    help->addAction(openFAQAction);
+    help->addAction(openKBAction);
+    help->addAction(openGitWikiAction);
     help->addSeparator();
     help->addAction(openBlockExplorerAPIAction);
     help->addAction(openBootStrapAction);
+    help->addAction(openBridgeAction);
+    help->addAction(openDexAction);
+    help->addAction(openCheckerAction);
     help->addSeparator();
     help->addAction(openTGTechSupportAction);
-    help->addAction(openTGMNSupportAction);
-    help->addSeparator();
-    help->addAction(openDiscordSupportAction);
+    //help->addAction(openTGMNSupportAction);
+    //help->addSeparator();
+    //help->addAction(openDiscordSupportAction);
     help->addSeparator();
     help->addAction(checkForUpdatesAction);
     help->addSeparator();
@@ -613,7 +636,7 @@ void BitcoinGUI::createToolBars()
         }
         toolbar->setMovable(false); // remove unused icon in upper left corner
         overviewAction->setChecked(true);
-        toolbar->setStyleSheet("QToolBar{spacing:20px;}");
+        toolbar->setStyleSheet("QToolBar{spacing:18px;}");
 
         // Create NavBar
         QToolBar* bottomToolbar = new QToolBar(this);
@@ -641,11 +664,11 @@ void BitcoinGUI::createToolBars()
 
         bottomToolbar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
         toolbar->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-        QLabel* dapsico = new QLabel;
-        dapsico->setPixmap(QIcon(":icons/bitcoin").pixmap(130, 107));
-        dapsico->setObjectName("dapsico");
+        QLabel* prcyico = new QLabel;
+        prcyico->setPixmap(QIcon(":icons/prcyico").pixmap(117, 117));
+        prcyico->setObjectName("prcyico");
 
-        navLayout->addWidget(dapsico);
+        navLayout->addWidget(prcyico);
         navLayout->addWidget(toolbar);
         navLayout->addWidget(bottomToolbar);
         navWidget->setLayout(navLayout);
@@ -760,7 +783,7 @@ void BitcoinGUI::createTrayIcon(const NetworkStyle* networkStyle)
 {
 #ifndef Q_OS_MAC
     trayIcon = new QSystemTrayIcon(this);
-    QString toolTip = tr("DAPS client") + " " + networkStyle->getTitleAddText();
+    QString toolTip = tr("PRCY client") + " " + networkStyle->getTitleAddText();
     trayIcon->setToolTip(toolTip);
     trayIcon->setIcon(networkStyle->getAppIcon());
     trayIcon->show();
@@ -772,7 +795,7 @@ void BitcoinGUI::createTrayIcon(const NetworkStyle* networkStyle)
 void BitcoinGUI::createTrayIconMenu()
 {
 #ifndef Q_OS_MAC
-    // return if trayIcon is unset (only on non-Mac OSes)
+    // return if trayIcon is unset (only on non-macOSes)
     if (!trayIcon)
         return;
 
@@ -782,13 +805,15 @@ void BitcoinGUI::createTrayIconMenu()
     connect(trayIcon, SIGNAL(activated(QSystemTrayIcon::ActivationReason)),
         this, SLOT(trayIconActivated(QSystemTrayIcon::ActivationReason)));
 #else
-    // Note: On Mac, the dock icon is used to provide the tray's functionality.
+    // Note: On macOS, the Dock icon is used to provide the tray's functionality.
     MacDockIconHandler* dockIconHandler = MacDockIconHandler::instance();
-    dockIconHandler->setMainWindow((QMainWindow*)this);
-    trayIconMenu = dockIconHandler->dockMenu();
+    connect(dockIconHandler, &MacDockIconHandler::dockIconClicked, this, &BitcoinGUI::macosDockIconActivated);
+
+    trayIconMenu = new QMenu(this);
+    trayIconMenu->setAsDockMenu();
 #endif
 
-    // Configuration of the tray icon (or dock icon) icon menu
+    // Configuration of the tray icon (or Dock icon) icon menu
     trayIconMenu->addAction(toggleHideAction);
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(sendCoinsAction);
@@ -809,9 +834,10 @@ void BitcoinGUI::createTrayIconMenu()
     trayIconMenu->addAction(openConfEditorAction);
     trayIconMenu->addAction(openMNConfEditorAction);
     trayIconMenu->addAction(showDataDirAction);
+    trayIconMenu->addAction(showQtDirAction);
     trayIconMenu->addAction(showBackupsAction);
     trayIconMenu->addAction(openBlockExplorerAction);
-#ifndef Q_OS_MAC // This is built-in on Mac
+#ifndef Q_OS_MAC // This is built-in on macOS
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(quitAction);
 #endif
@@ -825,6 +851,12 @@ void BitcoinGUI::trayIconActivated(QSystemTrayIcon::ActivationReason reason)
         toggleHidden();
     }
 }
+#else
+void BitcoinGUI::macosDockIconActivated()
+ {
+     show();
+     activateWindow();
+ }
 #endif
 
 void BitcoinGUI::optionsClicked()
@@ -839,39 +871,39 @@ void BitcoinGUI::optionsClicked()
 
 void BitcoinGUI::facebookActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://www.facebook.com/officialdapscoin/"));
+    QDesktopServices::openUrl(QUrl("https://www.facebook.com/Prcycoin-101534778505838"));
 }
 void BitcoinGUI::twitterActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://twitter.com/DAPScoin"));
+    QDesktopServices::openUrl(QUrl("https://twitter.com/PRCYcoin"));
 }
 void BitcoinGUI::discordActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://officialdapscoin.com/discord"));
+    QDesktopServices::openUrl(QUrl("https://discord.prcycoin.com"));
 }
 void BitcoinGUI::telegramOfficialActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://t.me/dapscoin"));
+    QDesktopServices::openUrl(QUrl("https://t.me/prcycoinofficial"));
 }
 void BitcoinGUI::telegramLoungeActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://t.me/DAPS_LOUNGE"));
+    QDesktopServices::openUrl(QUrl("https://t.me/prcylounge"));
 }
 void BitcoinGUI::mediumActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://medium.com/DAPScoin"));
+    QDesktopServices::openUrl(QUrl("https://prcycoin.medium.com/"));
 }
 void BitcoinGUI::instagramActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://www.instagram.com/DAPSCoin/"));
+    QDesktopServices::openUrl(QUrl("https://www.instagram.com/PRCYCoin/"));
 }
 void BitcoinGUI::redditActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://www.reddit.com/r/DAPSCoin/"));
+    QDesktopServices::openUrl(QUrl("https://www.reddit.com/r/PRCYCoin/"));
 }
 void BitcoinGUI::steemitActionClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://steemit.com/@DAPSCoin/"));
+    QDesktopServices::openUrl(QUrl("https://steemit.com/@PRCYCoin/"));
 }
 
 void BitcoinGUI::aboutClicked()
@@ -890,29 +922,34 @@ void BitcoinGUI::showHelpMessageClicked()
     help->show();
 }
 
-void BitcoinGUI::openFAQClicked()
+void BitcoinGUI::openKBClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://officialdapscoin.com/faq"));
+    QDesktopServices::openUrl(QUrl("https://prcycoin.com/knowledge-base"));
+}
+
+void BitcoinGUI::openGitWikiClicked()
+{
+    QDesktopServices::openUrl(QUrl("https://github.com/PRCYCoin/PRCYCoin/wiki"));
 }
 
 void BitcoinGUI::openBlockExplorerAPIClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://explorer.dapscoin.com/api/getblockcount"));
+    QDesktopServices::openUrl(QUrl("https://explorer.prcycoin.com/api/getblockcount"));
 }
 
 void BitcoinGUI::openBootStrapClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://github.com/DAPSCoin/BootStrap/releases/tag/latest"));
+    QDesktopServices::openUrl(QUrl("https://bootstrap.prcycoin.com"));
 }
 
 void BitcoinGUI::openTGTechSupportClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://t.me/DAPSTechSupport"));
+    QDesktopServices::openUrl(QUrl("https://t.me/prcySupport"));
 }
 
 void BitcoinGUI::openTGMNSupportClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://t.me/DAPS_MN_Support"));
+    QDesktopServices::openUrl(QUrl("https://t.me/PRCY_MN_Support"));
 }
 
 void BitcoinGUI::openDiscordSupportClicked()
@@ -920,9 +957,25 @@ void BitcoinGUI::openDiscordSupportClicked()
     QDesktopServices::openUrl(QUrl("https://discord.gg/8vbXJMf"));
 }
 
+void BitcoinGUI::openBridgeClicked()
+{
+    QDesktopServices::openUrl(QUrl("https://bridge.prcycoin.com"));
+}
+
+void BitcoinGUI::openDexClicked()
+{
+    QDesktopServices::openUrl(QUrl("https://privacydex.io"));
+}
+
+void BitcoinGUI::openCheckerClicked()
+{
+    QDesktopServices::openUrl(QUrl("https://prcycoin.com/prcy-checker"));
+}
+
 void BitcoinGUI::checkForUpdatesClicked()
 {
-    QUrl serviceUrl = QUrl("https://raw.githubusercontent.com/DAPSCoin/DAPSCoin/master/version.txt");
+    LogPrintf("Check For Updates: Checking...\n");
+    QUrl serviceUrl = QUrl("https://raw.githubusercontent.com/PRCYCoin/PRCYCoin/master/version.txt");
     QNetworkAccessManager *manager = new QNetworkAccessManager(this);
     connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(serviceRequestFinished(QNetworkReply*)));
     QNetworkRequest request;
@@ -933,26 +986,35 @@ void BitcoinGUI::checkForUpdatesClicked()
 void BitcoinGUI::serviceRequestFinished(QNetworkReply* reply)
 {
     QString currentVersion = QString::number(CLIENT_VERSION_MAJOR) + "." + QString::number(CLIENT_VERSION_MINOR)+ "." + QString::number(CLIENT_VERSION_REVISION)+ "." + QString::number(CLIENT_VERSION_BUILD);
+    QString currentVersionStripped = currentVersion.remove(QChar('.'), Qt::CaseInsensitive);
     reply->deleteLater();
     if(reply->error() == QNetworkReply::NoError) {
         QByteArray data = reply->readAll();
-        if (data.trimmed() != currentVersion) {
+        QString dataStream = data.trimmed();
+        QString availableVersionStripped = dataStream.remove(QChar('.'), Qt::CaseInsensitive);
+        if (availableVersionStripped > currentVersionStripped) {
+            LogPrintf("Check For Updates: Update Available!\n");
             QMessageBox::StandardButton msgReply;
             msgReply = QMessageBox::question(this, "Wallet Update Available!", "Wallet update available.\n\nWould you like to go to the GitHub Releases page to download v" + data.trimmed() + "?", QMessageBox::Yes|QMessageBox::No);
             if (msgReply == QMessageBox::Yes) {
-                QDesktopServices::openUrl(QUrl("https://github.com/DAPSCoin/DAPSCoin/releases/latest"));
+                QDesktopServices::openUrl(QUrl("https://github.com/PRCYCoin/PRCYCoin/releases/latest"));
             } else {
+                LogPrintf("Check For Updates: Update Available, but declined by user.\n");
                 return;
             }
         } else {
-            QMessageBox msgBox;
-            msgBox.setWindowTitle("No Update Available");
-            msgBox.setText("No update available.\n\nYour wallet is up to date.");
-            msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
-            msgBox.setIcon(QMessageBox::Information);
-            msgBox.exec();
+            LogPrintf("Check For Updates: No update available.\n");
+            if (!isStartup) {
+                QMessageBox msgBox;
+                msgBox.setWindowTitle("No Update Available");
+                msgBox.setText("No update available.\n\nYour wallet is up to date.");
+                msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
+                msgBox.setIcon(QMessageBox::Information);
+                msgBox.exec();
+            }
         }
     } else {
+        LogPrintf("Check For Updates: Error!\n");
         QByteArray error = reply->readAll();
         QMessageBox msgBox;
         msgBox.setWindowTitle("Error");
@@ -961,6 +1023,7 @@ void BitcoinGUI::serviceRequestFinished(QNetworkReply* reply)
         msgBox.setIcon(QMessageBox::Critical);
         msgBox.exec();
     }
+    isStartup = false;
 }
 
 #ifdef ENABLE_WALLET
@@ -1005,6 +1068,12 @@ void BitcoinGUI::gotoOptionsPage()
 
 void BitcoinGUI::gotoSendCoinsPage(QString addr)
 {
+    QSettings settings;
+    if (settings.value("fLockSendStaking", false).toBool()) {
+       sendCoinsAction->setChecked(false);
+       LogPrintf("Attempt to go to Send tab blocked.\n");
+       return;
+    }
     sendCoinsAction->setChecked(true);
     if (walletFrame) walletFrame->gotoSendCoinsPage(addr);
 }
@@ -1146,7 +1215,7 @@ void BitcoinGUI::setNumBlocks(int count)
 
 void BitcoinGUI::message(const QString& title, const QString& message, unsigned int style, bool* ret)
 {
-    QString strTitle = tr("DAPS"); // default title
+    QString strTitle = tr("PRCY"); // default title
     // Default to information icon
     int nMBoxIcon = QMessageBox::Information;
     int nNotifyIcon = Notificator::Information;
@@ -1171,7 +1240,7 @@ void BitcoinGUI::message(const QString& title, const QString& message, unsigned 
             break;
         }
     }
-    // Append title to "DAPS - "
+    // Append title to "PRCY - "
     if (!msgType.isEmpty())
         strTitle += " - " + msgType;
 
@@ -1233,6 +1302,8 @@ void BitcoinGUI::incomingTransaction(const QString& date, int unit, const CAmoun
 {
     // Only send notifications when not disabled
     if (!bdisableSystemnotifications) {
+        // Only show notifications when synced to prevent spam
+        if (!masternodeSync.IsSynced()) return;
         // On new transaction, make an info balloon
         message((amount) < 0 ? (pwalletMain->fMultiSendNotify == true ? tr("Sent MultiSend transaction") : tr("Sent transaction")) : tr("Incoming transaction"),
             tr("Date: %1\n"
@@ -1281,29 +1352,29 @@ void BitcoinGUI::setStakingStatus()
         fMultiSend = pwalletMain->isMultiSendEnabled();
         stkStatus = pwalletMain->ReadStakingStatus();
     }
-    if (!stkStatus || pwalletMain->stakingMode == StakingMode::STOPPED || pwalletMain->IsLocked()) {
-        LogPrint("staking","Checking Staking Status: Disabled.\n");
+    if (!stkStatus || pwalletMain->IsLocked()) {
+        LogPrint(BCLog::STAKING,"Checking Staking Status: Disabled.\n");
         stakingState->setText(tr("Staking Disabled"));
         stakingState->setToolTip("Staking Disabled");
         stakingAction->setIcon(QIcon(":/icons/staking_inactive"));
         return;
     }
     if (vNodes.empty()) {
-        LogPrint("staking","Checking Staking Status: No Active Peers...\n");
+        LogPrint(BCLog::STAKING,"Checking Staking Status: No Active Peers...\n");
         stakingState->setText(tr("No Active Peers"));
         stakingState->setToolTip("No Active Peers");
         stakingAction->setIcon(QIcon(":/icons/staking_inactive"));
         return;
     }
     if (clientModel->inInitialBlockDownload()) {
-        LogPrint("staking","Checking Staking Status: Syncing...\n");
+        LogPrint(BCLog::STAKING,"Checking Staking Status: Syncing...\n");
         stakingState->setText(tr("Syncing Blocks..."));
         stakingState->setToolTip("Syncing Blocks");
         stakingAction->setIcon(QIcon(":/icons/staking_waiting"));
         return;
     }
     if (!masternodeSync.IsSynced()) {
-        LogPrint("staking","Checking Staking Status: Syncing MN List...\n");
+        LogPrint(BCLog::STAKING,"Checking Staking Status: Syncing MN List...\n");
         stakingState->setText(tr("Syncing MN List..."));
         stakingState->setToolTip("Syncing Masternode List");
         stakingAction->setIcon(QIcon(":/icons/staking_waiting"));
@@ -1313,7 +1384,7 @@ void BitcoinGUI::setStakingStatus()
         if (!nLastCoinStakeSearchInterval) return;
     }
     if (nLastCoinStakeSearchInterval) {
-        LogPrint("staking","Checking Staking Status: Enabled.\n");
+        LogPrint(BCLog::STAKING,"Checking Staking Status: Enabled.\n");
         stakingState->setText(tr("Staking Enabled"));
         stakingState->setToolTip("Staking Enabled");
         stakingAction->setIcon(QIcon(":/icons/staking_active"));
@@ -1323,7 +1394,7 @@ void BitcoinGUI::setStakingStatus()
         stakingState->setToolTip("Consolidating Transactions… Please wait few minutes for it to be consolidated.");
         stakingAction->setIcon(QIcon(":/icons/staking_active"));*/
     } else {
-        LogPrint("staking","Checking Staking Status: Enabling...\n");
+        LogPrint(BCLog::STAKING,"Checking Staking Status: Enabling...\n");
         stakingState->setText(tr("Enabling Staking..."));
         stakingState->setToolTip("Enabling Staking... Please wait up to 1.5 hours for it to be properly enabled after consolidation.");
         stakingAction->setIcon(QIcon(":/icons/staking_active"));
@@ -1365,10 +1436,10 @@ void BitcoinGUI::setEncryptionStatus(int status)
         lockWalletAction->setVisible(true);
         encryptWalletAction->setEnabled(false); // TODO: decrypt currently not supported
         break;
-    case WalletModel::UnlockedForAnonymizationOnly:
+    case WalletModel::UnlockedForStakingOnly:
         labelEncryptionIcon->show();
         labelEncryptionIcon->setIcon(QIcon(":/icons/lock_open").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
-        labelEncryptionIcon->setToolTip(tr("Wallet is <b>encrypted</b> and currently <b>unlocked</b> for anonimization and staking only"));
+        labelEncryptionIcon->setToolTip(tr("Wallet is <b>encrypted</b> and currently <b>unlocked</b> for staking only"));
         encryptWalletAction->setChecked(true);
         changePassphraseAction->setEnabled(true);
         unlockWalletAction->setVisible(true);
@@ -1412,18 +1483,11 @@ void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)
     if (!clientModel)
         return;
 
-    // activateWindow() (sometimes) helps with keyboard focus on Windows
-    if (isHidden()) {
-        show();
-        activateWindow();
-    } else if (isMinimized()) {
-        showNormal();
-        activateWindow();
-    } else if (GUIUtil::isObscured(this)) {
-        raise();
-        activateWindow();
-    } else if (fToggleHidden)
+    if (!isHidden() && !isMinimized() && !GUIUtil::isObscured(this) && fToggleHidden) {
         hide();
+    } else {
+        GUIUtil::bringToFront(this);
+    }
 }
 
 void BitcoinGUI::toggleHidden()

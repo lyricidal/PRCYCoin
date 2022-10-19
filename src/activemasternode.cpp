@@ -5,14 +5,18 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "activemasternode.h"
+
 #include "addrman.h"
+#include "masternode-sync.h"
 #include "masternode.h"
 #include "masternodeconfig.h"
 #include "masternodeman.h"
+#include "messagesigner.h"
+#include "netbase.h"
 #include "protocol.h"
 
 //
-// Bootup the Masternode, look for a 1000000 DAPS input and register on the network
+// Bootup the Masternode, look for a 5000 PRCY input and register on the network
 //
 void CActiveMasternode::ManageStatus()
 {
@@ -20,12 +24,12 @@ void CActiveMasternode::ManageStatus()
 
     if (!fMasterNode) return;
 
-    if (fDebug) LogPrint("masternode", "CActiveMasternode::ManageStatus() - Begin\n");
+    LogPrint(BCLog::MASTERNODE, "CActiveMasternode::ManageStatus() - Begin\n");
 
     //need correct blocks to send ping
-    if (Params().NetworkID() != CBaseChainParams::REGTEST && !masternodeSync.IsBlockchainSynced()) {
+    if (!Params().IsRegTestNet() && !masternodeSync.IsBlockchainSynced()) {
         status = ACTIVE_MASTERNODE_SYNC_IN_PROCESS;
-        LogPrint("masternode", "CActiveMasternode::ManageStatus() - %s\n", GetStatus());
+        LogPrint(BCLog::MASTERNODE, "CActiveMasternode::ManageStatus() - %s\n", GetStatus());
         return;
     }
 
@@ -64,22 +68,24 @@ void CActiveMasternode::ManageStatus()
                 return;
             }
         } else {
-            service = CService(strMasterNodeAddr);
+            int nPort;
+            std::string strHost;
+            SplitHostPort(strMasterNodeAddr, nPort, strHost);
+            service = LookupNumeric(strHost.c_str(), nPort);
         }
 
         // The service needs the correct default port to work properly
-        if(!CMasternodeBroadcast::CheckDefaultPort(strMasterNodeAddr, errorMessage, "CActiveMasternode::ManageStatus()"))
+        if(!CMasternodeBroadcast::CheckDefaultPort(service, errorMessage, "CActiveMasternode::ManageStatus()"))
             return;
 
         LogPrintf("CActiveMasternode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString());
 
-        CNode* pnode = ConnectNode((CAddress)service, NULL, false, true);
-        if (!pnode) {
+        CAddress addr(service, NODE_NETWORK);
+        if (!OpenNetworkConnection(addr, true, nullptr)) {
             notCapableReason = "Could not connect to " + service.ToString();
             LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason);
             return;
         }
-        pnode->Release();
 
         // Choose coins to use
         CPubKey pubKeyCollateralAddress;
@@ -99,9 +105,8 @@ void CActiveMasternode::ManageStatus()
             CPubKey pubKeyMasternode;
             CKey keyMasternode;
 
-            if (!obfuScationSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode)) {
-                notCapableReason = "Error upon calling SetKey: " + errorMessage;
-                LogPrintf("Register::ManageStatus() - %s\n", notCapableReason);
+            if (!CMessageSigner::GetKeysFromSecret(strMasterNodePrivKey, keyMasternode, pubKeyMasternode)) {
+                LogPrintf("%s : Invalid masternode key", __func__);
                 return;
             }
 
@@ -161,8 +166,8 @@ bool CActiveMasternode::SendMasternodePing(std::string& errorMessage)
     CPubKey pubKeyMasternode;
     CKey keyMasternode;
 
-    if (!obfuScationSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode)) {
-        errorMessage = strprintf("Error upon calling SetKey: %s\n", errorMessage);
+    if (!CMessageSigner::GetKeysFromSecret(strMasterNodePrivKey, keyMasternode, pubKeyMasternode)) {
+        errorMessage = "Error upon calling SetKey.\n";
         return false;
     }
 
@@ -182,7 +187,7 @@ bool CActiveMasternode::SendMasternodePing(std::string& errorMessage)
         }
 
         pmn->lastPing = mnp;
-        mnodeman.mapSeenMasternodePing.insert(make_pair(mnp.GetHash(), mnp));
+        mnodeman.mapSeenMasternodePing.insert(std::make_pair(mnp.GetHash(), mnp));
 
         //mnodeman.mapSeenMasternodeBroadcast.lastPing is probably outdated, so we'll update it
         CMasternodeBroadcast mnb(*pmn);
@@ -191,38 +196,10 @@ bool CActiveMasternode::SendMasternodePing(std::string& errorMessage)
 
         mnp.Relay();
 
-        // for migration purposes ping our node on old masternodes network too
-        std::string retErrorMessage;
-        std::vector<unsigned char> vchMasterNodeSignature;
-        int64_t masterNodeSignatureTime = GetAdjustedTime();
-        std::string ss = service.ToString();
-        bool val = false;
-        CDataStream ser(SER_NETWORK, PROTOCOL_VERSION);
-        ser << ss << masterNodeSignatureTime << val;
-        std::string strMessage = HexStr(ser.begin(), ser.end());
-        if (!obfuScationSigner.SignMessage(strMessage, retErrorMessage, vchMasterNodeSignature, keyMasternode)) {
-            errorMessage = "dseep sign message failed: " + retErrorMessage;
-            return false;
-        }
-
-        if (!obfuScationSigner.VerifyMessage(pubKeyMasternode, vchMasterNodeSignature, strMessage, retErrorMessage)) {
-            errorMessage = "dseep verify message failed: " + retErrorMessage;
-            return false;
-        }
-
-        LogPrint("masternode", "dseep - relaying from active mn, %s \n", vin.ToString().c_str());
-        LOCK(cs_vNodes);
-        for (CNode* pnode : vNodes)
-            pnode->PushMessage("dseep", vin, vchMasterNodeSignature, masterNodeSignatureTime, false);
-
-        /*
-         * END OF "REMOVE"
-         */
-
         return true;
     } else {
         // Seems like we are trying to send a ping while the Masternode is not registered in the network
-        errorMessage = "Obfuscation Masternode List doesn't include our Masternode, shutting down Masternode pinging service! " + vin.ToString();
+        errorMessage = "Masternode List doesn't include our Masternode, shutting down Masternode pinging service! " + vin.ToString();
         status = ACTIVE_MASTERNODE_NOT_CAPABLE;
         notCapableReason = errorMessage;
         return false;
@@ -244,8 +221,8 @@ bool CActiveMasternode::CreateBroadcast(std::string strService, std::string strK
         return false;
     }
 
-    if (!obfuScationSigner.SetKey(strKeyMasternode, errorMessage, keyMasternode, pubKeyMasternode)) {
-        errorMessage = strprintf("Can't find keys for masternode %s - %s", strService, errorMessage);
+    if (!CMessageSigner::GetKeysFromSecret(strKeyMasternode, keyMasternode, pubKeyMasternode)) {
+        errorMessage = strprintf("Can't find keys for masternode %s", strService);
         LogPrintf("CActiveMasternode::CreateBroadcast() - %s\n", errorMessage);
         return false;
     }
@@ -256,15 +233,16 @@ bool CActiveMasternode::CreateBroadcast(std::string strService, std::string strK
         return false;
     }
 
-    CService service = CService(strService);
+    int nPort;
+    std::string strHost;
+    SplitHostPort(strService, nPort, strHost);
+    CService _service(LookupNumeric(strHost.c_str(), nPort));
 
     // The service needs the correct default port to work properly
-    if(!CMasternodeBroadcast::CheckDefaultPort(strService, errorMessage, "CActiveMasternode::CreateBroadcast()"))
+    if(!CMasternodeBroadcast::CheckDefaultPort(_service, errorMessage, "CActiveMasternode::CreateBroadcast()"))
         return false;
 
-    addrman.Add(CAddress(service), CNetAddr("127.0.0.1"), 2 * 60 * 60);
-
-    return CreateBroadcast(vin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage, mnb);
+    return CreateBroadcast(vin, _service, keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage, mnb);
 }
 
 bool CActiveMasternode::CreateBroadcast(CTxIn vin, CService service, CKey keyCollateralAddress, CPubKey pubKeyCollateralAddress, CKey keyMasternode, CPubKey pubKeyMasternode, std::string& errorMessage, CMasternodeBroadcast &mnb)
@@ -287,41 +265,6 @@ bool CActiveMasternode::CreateBroadcast(CTxIn vin, CService service, CKey keyCol
         mnb = CMasternodeBroadcast();
         return false;
     }
-
-    // for migration purposes inject our node in old masternodes' list too
-    std::string retErrorMessage;
-    std::vector<unsigned char> vchMasterNodeSignature;
-    int64_t masterNodeSignatureTime = GetAdjustedTime();
-    std::string donationAddress = "";
-    int donationPercantage = 0;
-
-    std::string vchPubKey(pubKeyCollateralAddress.begin(), pubKeyCollateralAddress.end());
-    std::string vchPubKey2(pubKeyMasternode.begin(), pubKeyMasternode.end());
-    std::string ss = service.ToString();
-
-    CDataStream ser(SER_NETWORK, PROTOCOL_VERSION);
-    ser << ss << masterNodeSignatureTime << pubKeyCollateralAddress << pubKeyMasternode << PROTOCOL_VERSION;
-
-    /*uint256 h = Hash(BEGIN(ss), END(ss),
-                    BEGIN(masterNodeSignatureTime), END(masterNodeSignatureTime),
-                    pubKeyCollateralAddress.begin(), pubKeyCollateralAddress.end(),
-                    pubKeyMasternode.begin(), pubKeyMasternode.end(),
-                    BEGIN(PROTOCOL_VERSION), END(PROTOCOL_VERSION));*/
-    std::string strMessage = HexStr(ser.begin(), ser.end());
-    if (!obfuScationSigner.SignMessage(strMessage, retErrorMessage, vchMasterNodeSignature, keyCollateralAddress)) {
-        errorMessage = "dsee sign message failed: " + retErrorMessage;
-        LogPrintf("CActiveMasternode::Register() - Error: %s\n", errorMessage.c_str());
-        return false;
-    }
-
-    if (!obfuScationSigner.VerifyMessage(pubKeyCollateralAddress, vchMasterNodeSignature, strMessage, retErrorMessage)) {
-        errorMessage = "dsee verify message failed: " + retErrorMessage;
-        LogPrintf("CActiveMasternode::Register() - Error: %s\n", errorMessage.c_str());
-        return false;
-    }
-    LOCK(cs_vNodes);
-    for (CNode* pnode : vNodes)
-    pnode->PushMessage("dsee", vin, service, vchMasterNodeSignature, masterNodeSignatureTime, pubKeyCollateralAddress, pubKeyMasternode, -1, -1, masterNodeSignatureTime, PROTOCOL_VERSION, donationAddress, donationPercantage);
 
     return true;
 }
@@ -346,7 +289,7 @@ bool CActiveMasternode::GetMasterNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secr
     // Find the vin
     if (!strTxHash.empty()) {
         // Let's find it
-        uint256 txHash(strTxHash);
+        uint256 txHash(uint256S(strTxHash));
         int outputIndex;
         try {
             outputIndex = std::stoi(strOutputIndex.c_str());
@@ -437,7 +380,7 @@ bool CActiveMasternode::GetVinFromOutput(COutput out, CTxIn& vin, CPubKey& pubke
     CTransaction prev;
     uint256 bh;
     if (!GetTransaction(prevout.hash, prev, bh, true)) {
-        LogPrint("masternode","dsee - failed to read transaction hash %s\n", vin.prevout.hash.ToString());
+        LogPrint(BCLog::MASTERNODE,"dsee - failed to read transaction hash %s\n", vin.prevout.hash.ToString());
         return false;
     }
 
@@ -454,8 +397,8 @@ bool CActiveMasternode::GetVinFromOutput(COutput out, CTxIn& vin, CPubKey& pubke
         return false;
     }
 
-    if (amount != 1000000 * COIN) {
-        LogPrintf("dsee - masternode collateralization not equal to 1M %s\n", vin.prevout.hash.ToString());
+    if (amount != Params().MNCollateralAmt()) {
+        LogPrintf("dsee - masternode collateralization not equal to 5K %s\n", vin.prevout.hash.ToString());
         return false;
     }
 
@@ -463,7 +406,7 @@ bool CActiveMasternode::GetVinFromOutput(COutput out, CTxIn& vin, CPubKey& pubke
 }
 
 // get all possible outputs for running Masternode
-vector<COutput> CActiveMasternode::SelectCoinsMasternode()
+std::vector<COutput> CActiveMasternode::SelectCoinsMasternode()
 {
     std::vector<COutput> vCoins;
     std::vector<COutput> filteredCoins;
@@ -491,7 +434,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
     // Retrieve all possible outputs
     {
         LOCK2(cs_main, pwalletMain->cs_wallet);
-        pwalletMain->AvailableCoins(vCoins, true, NULL, false, AvailableCoinsType::ONLY_1000000);
+        pwalletMain->AvailableCoins(vCoins, true, NULL, false, AvailableCoinsType::ONLY_5000);
         // Lock MN coins from masternode.conf back if they where temporary unlocked
         if (!confLockedCoins.empty()) {
             for (COutPoint outpoint : confLockedCoins)
@@ -500,7 +443,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
 
         // Filter
         for (const COutput& out : vCoins) {
-            if (pwalletMain->getCTxOutValue(*out.tx, out.tx->vout[out.i]) == 1000000 * COIN) { //exactly
+            if (pwalletMain->getCTxOutValue(*out.tx, out.tx->vout[out.i]) == Params().MNCollateralAmt()) { //exactly
                 filteredCoins.push_back(out);
             }
         }

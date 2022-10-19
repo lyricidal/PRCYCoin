@@ -11,6 +11,7 @@
 
 #include "crypto/ripemd160.h"
 #include "crypto/sha256.h"
+#include "prevector.h"
 #include "serialize.h"
 #include "uint256.h"
 #include "version.h"
@@ -27,7 +28,6 @@
 #include <sstream>
 #include <vector>
 
-using namespace std;
 
 /** A hasher class for Bitcoin's 256-bit hash (double SHA-256). */
 class CHash256
@@ -40,9 +40,9 @@ public:
 
     void Finalize(unsigned char hash[OUTPUT_SIZE])
     {
-        unsigned char buf[sha.OUTPUT_SIZE];
+        unsigned char buf[CSHA256::OUTPUT_SIZE];
         sha.Finalize(buf);
-        sha.Reset().Write(buf, sha.OUTPUT_SIZE).Finalize(hash);
+        sha.Reset().Write(buf, CSHA256::OUTPUT_SIZE).Finalize(hash);
     }
 
     CHash256& Write(const unsigned char* data, size_t len)
@@ -100,9 +100,9 @@ public:
 
     void Finalize(unsigned char hash[OUTPUT_SIZE])
     {
-        unsigned char buf[sha.OUTPUT_SIZE];
+        unsigned char buf[CSHA256::OUTPUT_SIZE];
         sha.Finalize(buf);
-        CRIPEMD160().Write(buf, sha.OUTPUT_SIZE).Finalize(hash);
+        CRIPEMD160().Write(buf, CSHA256::OUTPUT_SIZE).Finalize(hash);
     }
 
     CHash160& Write(const unsigned char* data, size_t len)
@@ -126,9 +126,9 @@ inline std::string Hash(std::string input)
     SHA256_Init(&sha256);
     SHA256_Update(&sha256, input.c_str(), input.size());
     SHA256_Final(hash, &sha256);
-    stringstream ss;
+    std::stringstream ss;
     for (int i = 0; i < SHA256_DIGEST_LENGTH; i++) {
-        ss << hex << setw(2) << setfill('0') << (int)hash[i];
+        ss << std::hex << std::setw(2) << std::setfill('0') << (int)hash[i];
     }
     return ss.str();
 }
@@ -244,6 +244,13 @@ inline uint160 Hash160(const T1 pbegin, const T1 pend)
 
 /** Compute the 160-bit hash of a vector. */
 inline uint160 Hash160(const std::vector<unsigned char>& vch)
+{
+    return Hash160(vch.begin(), vch.end());
+}
+
+/** Compute the 160-bit hash of a vector. */
+template<unsigned int N>
+inline uint160 Hash160(const prevector<N, unsigned char>& vch)
 {
     return Hash160(vch.begin(), vch.end());
 }
