@@ -528,4 +528,22 @@ public:
     }
 };
 
+class CRangeProofInput {
+public:
+    std::vector<unsigned char> blinds;  //size must be multiple of 32
+    std::vector<CAmount> amounts;
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion) {
+        READWRITE(blinds);
+        READWRITE(amounts);
+    }
+
+    uint256 GetHash() {
+        return SerializeHash(*this);
+    }
+};
+
 #endif // BITCOIN_PRIMITIVES_TRANSACTION_H

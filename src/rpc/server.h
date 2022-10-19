@@ -272,6 +272,7 @@ extern UniValue revealmnemonicphrase(const UniValue& params, bool fHelp);
 
 extern UniValue getrawtransaction(const UniValue& params, bool fHelp); // in rcprawtransaction.cpp
 extern UniValue getrawtransactionbyblockheight(const UniValue& params, bool fHelp); // in rcprawtransaction.cpp
+extern UniValue crawlrawtransactions(const UniValue& params, bool fHelp); // in rcprawtransaction.cpp
 extern UniValue listunspent(const UniValue& params, bool fHelp);
 extern UniValue lockunspent(const UniValue& params, bool fHelp);
 extern UniValue listlockunspent(const UniValue& params, bool fHelp);
@@ -281,6 +282,7 @@ extern UniValue decoderawtransaction(const UniValue& params, bool fHelp);
 extern UniValue decodescript(const UniValue& params, bool fHelp);
 extern UniValue signrawtransaction(const UniValue& params, bool fHelp);
 extern UniValue sendrawtransaction(const UniValue& params, bool fHelp);
+extern UniValue broadcastrawtransaction(const UniValue& params, bool fHelp);
 
 extern UniValue getsupply(const UniValue& params, bool fHelp); // in rpc/blockchain.cpp
 extern UniValue getmaxsupply(const UniValue& params, bool fHelp); // in rpc/blockchain.cpp
