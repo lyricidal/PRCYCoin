@@ -8,19 +8,22 @@
 #include "intro.h"
 #include "ui_intro.h"
 
+#include "fs.h"
 #include "guiutil.h"
 
 #include "util.h"
-
-#include <boost/filesystem.hpp>
 
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QSettings>
 
-/* Minimum free space (in bytes) needed for data directory */
 static const uint64_t GB_BYTES = 1000000000LL;
-static const uint64_t BLOCK_CHAIN_SIZE = 1LL * GB_BYTES;
+/* Minimum free space (in GB) needed for mainnet data directory */
+static const uint64_t BLOCK_CHAIN_SIZE = 2;
+/* Minimum free space (in GB) needed for testnet data directory */
+static const uint64_t TESTNET_BLOCK_CHAIN_SIZE = 1;
+/* Total required space (in GB) depending on network */
+static uint64_t requiredSpace;
 
 /* Check free space asynchronously to prevent hanging the UI thread.
 
@@ -63,7 +66,6 @@ FreespaceChecker::FreespaceChecker(Intro* intro)
 
 void FreespaceChecker::check()
 {
-    namespace fs = boost::filesystem;
     QString dataDirStr = intro->getPathToCheck();
     fs::path dataDir = GUIUtil::qstringToBoostPath(dataDirStr);
     uint64_t freeBytesAvailable = 0;
@@ -110,7 +112,7 @@ Intro::Intro(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenuHint | Qt::W
                                 signalled(false)
 {
     ui->setupUi(this);
-    ui->sizeWarningLabel->setText(ui->sizeWarningLabel->text().arg(BLOCK_CHAIN_SIZE / GB_BYTES));
+    ui->sizeWarningLabel->setText(ui->sizeWarningLabel->text().arg(requiredSpace));
     startThread();
 }
 
@@ -148,7 +150,6 @@ QString Intro::getDefaultDataDirectory()
 
 bool Intro::pickDataDirectory()
 {
-    namespace fs = boost::filesystem;
     QSettings settings;
     /* If data directory provided on command line, no need to look at settings
        or show a picking dialog */
@@ -161,6 +162,13 @@ bool Intro::pickDataDirectory()
 
     if (!fs::exists(GUIUtil::qstringToBoostPath(dataDir)) || GetBoolArg("-choosedatadir", false)) {
         /* If current default data directory does not exist, let the user choose one */
+        if (GetBoolArg("-testnet", false)) {
+            requiredSpace = TESTNET_BLOCK_CHAIN_SIZE;
+        } else if (GetBoolArg("-regtest", false)) {
+            requiredSpace = 0;
+        } else {
+            requiredSpace = BLOCK_CHAIN_SIZE;
+        }
         Intro intro;
         intro.setDataDirectory(dataDir);
         intro.setWindowIcon(QIcon(":icons/bitcoin"));
@@ -175,7 +183,7 @@ bool Intro::pickDataDirectory()
                 TryCreateDirectory(GUIUtil::qstringToBoostPath(dataDir));
                 break;
             } catch (const fs::filesystem_error& e) {
-                QMessageBox::critical(0, tr("DAPS"),
+                QMessageBox::critical(0, tr("PRCY"),
                     tr("Error: Specified data directory \"%1\" cannot be created.").arg(dataDir));
                 /* fall through, back to choosing screen */
             }
@@ -184,8 +192,8 @@ bool Intro::pickDataDirectory()
         settings.setValue("strDataDir", dataDir);
     }
     /* Only override -datadir if different from the default, to make it possible to
-     * override -datadir in the dapscoin.conf file in the default data directory
-     * (to be consistent with dapscoind behavior)
+     * override -datadir in the prcycoin.conf file in the default data directory
+     * (to be consistent with prcycoind behavior)
      */
     if (dataDir != getDefaultDataDirectory())
         SoftSetArg("-datadir", GUIUtil::qstringToBoostPath(dataDir).string()); // use OS locale for path setting
@@ -209,8 +217,8 @@ void Intro::setStatus(int status, const QString& message, quint64 bytesAvailable
         ui->freeSpace->setText("");
     } else {
         QString freeString = tr("%1 GB of free space available").arg(bytesAvailable / GB_BYTES);
-        if (bytesAvailable < BLOCK_CHAIN_SIZE) {
-            freeString += " " + tr("(of %1 GB needed)").arg(BLOCK_CHAIN_SIZE / GB_BYTES);
+        if (bytesAvailable < requiredSpace * GB_BYTES) {
+            freeString += " " + tr("(of %1 GB needed)").arg(requiredSpace);
             ui->freeSpace->setStyleSheet("QLabel { color: #800000 }");
         } else {
             ui->freeSpace->setStyleSheet("");

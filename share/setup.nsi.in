@@ -1,4 +1,4 @@
-Name "@PACKAGE_NAME@ (@WINDOWS_BITS@-bit)"
+Name "@PACKAGE_NAME@ (64-bit)"
 
 RequestExecutionLevel highest
 SetCompressor /SOLID lzma
@@ -6,10 +6,10 @@ SetCompressor /SOLID lzma
 # General Symbol Definitions
 !define REGKEY "SOFTWARE\$(^Name)"
 !define COMPANY "@PACKAGE_NAME@ project"
-!define URL https://officialdapscoin.com
+!define URL @PACKAGE_URL@
 
 # MUI Symbol Definitions
-!define MUI_ICON "@abs_top_srcdir@/share/pixmaps/bitcoin.ico"
+!define MUI_ICON "@abs_top_srcdir@/share/pixmaps/prcycoin.ico"
 !define MUI_WELCOMEFINISHPAGE_BITMAP "@abs_top_srcdir@/share/pixmaps/nsis-wizard.bmp"
 !define MUI_HEADERIMAGE
 !define MUI_HEADERIMAGE_RIGHT
@@ -27,9 +27,7 @@ SetCompressor /SOLID lzma
 # Included files
 !include Sections.nsh
 !include MUI2.nsh
-!if "@WINDOWS_BITS@" == "64"
 !include x64.nsh
-!endif
 
 # Variables
 Var StartMenuGroup
@@ -47,12 +45,8 @@ Var StartMenuGroup
 !insertmacro MUI_LANGUAGE English
 
 # Installer attributes
-OutFile @abs_top_srcdir@/@PACKAGE_TARNAME@-@PACKAGE_VERSION@-win@WINDOWS_BITS@-setup.exe
-!if "@WINDOWS_BITS@" == "64"
-InstallDir $PROGRAMFILES64\DAPScoin
-!else
-InstallDir $PROGRAMFILES\DAPScoin
-!endif
+OutFile @abs_top_srcdir@/@PACKAGE_TARNAME@-@PACKAGE_VERSION@-win64-setup-unsigned.exe
+InstallDir $PROGRAMFILES64\PRCYcoin
 CRCCheck on
 XPStyle on
 BrandingText " "
@@ -63,8 +57,8 @@ VIAddVersionKey ProductVersion "@PACKAGE_VERSION@"
 VIAddVersionKey CompanyName "${COMPANY}"
 VIAddVersionKey CompanyWebsite "${URL}"
 VIAddVersionKey FileVersion "@PACKAGE_VERSION@"
-VIAddVersionKey FileDescription ""
-VIAddVersionKey LegalCopyright ""
+VIAddVersionKey FileDescription "Installer for @PACKAGE_NAME@"
+VIAddVersionKey LegalCopyright "Copyright (C) 2015-@COPYRIGHT_YEAR@ The @PACKAGE_NAME@ developers"
 InstallDirRegKey HKCU "${REGKEY}" Path
 ShowUninstDetails show
 
@@ -103,7 +97,7 @@ Section -post SEC0001
     WriteRegDWORD HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" NoModify 1
     WriteRegDWORD HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)" NoRepair 1
     WriteRegStr HKCR "@PACKAGE_TARNAME@" "URL Protocol" ""
-    WriteRegStr HKCR "@PACKAGE_TARNAME@" "" "URL:DAPScoin"
+    WriteRegStr HKCR "@PACKAGE_TARNAME@" "" "URL:PRCYcoin"
     WriteRegStr HKCR "@PACKAGE_TARNAME@\DefaultIcon" "" $INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@
     WriteRegStr HKCR "@PACKAGE_TARNAME@\shell\open\command" "" '"$INSTDIR\@BITCOIN_GUI_NAME@@EXEEXT@" "%1"'
 SectionEnd
@@ -135,7 +129,7 @@ Section -un.post UNSEC0001
     DeleteRegKey HKCU "SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\$(^Name)"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\Uninstall $(^Name).lnk"
     Delete /REBOOTOK "$SMPROGRAMS\$StartMenuGroup\$(^Name).lnk"
-    Delete /REBOOTOK "$SMSTARTUP\DAPScoin.lnk"
+    Delete /REBOOTOK "$SMSTARTUP\PRCYcoin.lnk"
     Delete /REBOOTOK $INSTDIR\uninstall.exe
     Delete /REBOOTOK $INSTDIR\debug.log
     Delete /REBOOTOK $INSTDIR\db.log
@@ -156,7 +150,6 @@ SectionEnd
 # Installer functions
 Function .onInit
     InitPluginsDir
-!if "@WINDOWS_BITS@" == "64"
     ${If} ${RunningX64}
       ; disable registry redirection (enable access to 64-bit portion of registry)
       SetRegView 64
@@ -164,7 +157,6 @@ Function .onInit
       MessageBox MB_OK|MB_ICONSTOP "Cannot install 64-bit version on a 32-bit system."
       Abort
     ${EndIf}
-!endif
 FunctionEnd
 
 # Uninstaller functions

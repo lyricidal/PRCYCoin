@@ -11,6 +11,7 @@
 
 #include "amount.h"
 #include "base58.h"
+#include "consensus/tx_verify.h"
 #include "crypter.h"
 #include "kernel.h"
 #include "key.h"
@@ -25,7 +26,9 @@
 #include "wallet/walletdb.h"
 
 #include <algorithm>
+#include <atomic>
 #include <map>
+#include <memory>
 #include <set>
 #include <stdexcept>
 #include <stdint.h>
@@ -33,17 +36,13 @@
 #include <utility>
 #include <vector>
 
-
-#include <memory>
-
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/serialization/list.hpp>
 #include <boost/serialization/vector.hpp>
 #include <boost/serialization/deque.hpp>
-#include <atomic>
 
-
+extern CWallet* pwalletMain;
 
 /**
  * Settings
@@ -90,10 +89,7 @@ enum WalletFeature {
 
 enum AvailableCoinsType {
     ALL_COINS = 1,
-    ONLY_DENOMINATED = 2,
-    ONLY_NOT1000000IFMN = 3,
-    ONLY_NONDENOMINATED_NOT1000000IFMN = 4, // ONLY_NONDENOMINATED and not 1000000 DAPS at the same time
-    ONLY_1000000 = 5,                        // find masternode outputs including locked ones (use with caution)
+    ONLY_5000 = 5,                        // find masternode outputs including locked ones (use with caution)
     STAKABLE_COINS = 6                          // UTXO's that are valid for staking
 };
 
@@ -208,19 +204,17 @@ public:
 enum StakingStatusError
 {
     STAKING_OK, //use case B, C, D, no consolidation needed, 
-    UNSTAKABLE_BALANCE_TOO_LOW, //coin is not mature yet (balance > 400k)
-    UNSTAKABLE_BALANCE_TOO_LOW_CONSOLIDATION_FAILED, //coin is not mature yet (balance > 400k)
+    UNSTAKABLE_BALANCE_TOO_LOW, //coin is not mature yet (balance > 2.5k)
+    UNSTAKABLE_BALANCE_TOO_LOW_CONSOLIDATION_FAILED, //coin is not mature yet (balance > 2.5k)
     UNSTAKABLE_BALANCE_RESERVE_TOO_HIGH,
     UNSTAKABLE_BALANCE_RESERVE_TOO_HIGH_CONSOLIDATION_FAILED, //even consolidation does not help
     STAKABLE_NEED_CONSOLIDATION,   //stable and consolidation, needs to estimate fees
     STAKABLE_NEED_CONSOLIDATION_WITH_RESERVE_BALANCE  //stable and consolidation, needs to estimate fees
 };
 
-enum StakingMode {
-    STOPPED, //staking disabled or balance < 400k
-    STAKING_WITHOUT_CONSOLIDATION,
-    STAKING_WITH_CONSOLIDATION,
-    STAKING_WITH_CONSOLIDATION_WITH_STAKING_NEWW_FUNDS
+enum CombineMode {
+    OFF,
+    ON,
 };
 
 /**
@@ -257,14 +251,12 @@ private:
     void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
 
 public:
-    static const CAmount MINIMUM_STAKE_AMOUNT = 400000 * COIN;
     static const int32_t MAX_DECOY_POOL = 500;
     static const int32_t PROBABILITY_NEW_COIN_SELECTED = 70;
     bool RescanAfterUnlock(int fromHeight);
     bool MintableCoins();
     StakingStatusError StakingCoinStatus(CAmount& minFee, CAmount& maxFee);
     bool SelectStakeCoins(std::set<std::pair<const CWalletTx*, unsigned int> >& setCoins, CAmount nTargetAmount) ;
-    bool IsCollateralAmount(CAmount nInputAmount) const;
     bool IsMasternodeController();
     bool checkPassPhraseRule(const char *pass);
     COutPoint findMyOutPoint(const CTxIn& txin) const;
@@ -276,6 +268,7 @@ public:
     bool WriteAutoConsolidateSettingTime(uint32_t settingTime);
     uint32_t ReadAutoConsolidateSettingTime();
     bool IsAutoConsolidateOn();
+    std::string GetUniqueWalletBackupName() const;
     /*
      * Main wallet lock.
      * This lock protects all the fields added by CWallet
@@ -286,9 +279,8 @@ public:
     mutable RecursiveMutex cs_wallet;
 
     bool fFileBacked;
-    bool fWalletUnlockAnonymizeOnly;
+    bool fWalletUnlockStakingOnly;
     std::string strWalletFile;
-    bool fBackupMints;
 
     std::set<int64_t> setKeyPool;
     std::map<CKeyID, CKeyMetadata> mapKeyMetadata;
@@ -316,8 +308,9 @@ public:
     //Auto Combine Inputs
     bool fCombineDust;
     CAmount nAutoCombineThreshold;
+    CAmount nAutoCombineTarget;
     bool CreateSweepingTransaction(CAmount target, CAmount threshold, uint32_t nTimeBefore);
-    bool SendAll(std::string des);
+    bool SendAll(std::string des, CWalletTx& wtxNew, bool inclLocked);
 
     CWallet();
     CWallet(std::string strWalletFileIn);
@@ -348,7 +341,7 @@ public:
 
     int64_t nTimeFirstKey;
 
-    StakingMode stakingMode = STOPPED;
+    CombineMode combineMode = OFF;
     int64_t DecoyConfirmationMinimum = 15;
 
     mutable std::map<std::string, CKeyImage> outpointToKeyImages;
@@ -378,7 +371,7 @@ public:
     std::map<CBitcoinAddress, std::vector<COutput> > AvailableCoinsByAddress(bool fConfirmed = true, CAmount maxCoinValue = 0);
     bool SelectCoinsMinConf(bool needFee, CAmount& estimatedFee, int ringSize, int numOut, const CAmount& nTargetValue, int nConfMine, int nConfTheirs, std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet);
 
-    /// Get 1000000 DAPS output and keys which can be used for the Masternode
+    /// Get 5000 PRCY output and keys which can be used for the Masternode
     bool GetMasternodeVinAndKeys(CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet, std::string strTxHash = "", std::string strOutputIndex = "");
     /// Extract txin information and keys from output
     bool GetVinAndKeysFromOutput(COutput out, CTxIn& txinRet, CPubKey& pubKeyRet, CKey& keyRet);
@@ -503,9 +496,8 @@ public:
     bool CreateTransaction(CScript scriptPubKey, const CAmount &nValue, CWalletTx &wtxNew, CReserveKey &reservekey,
                            CAmount &nFeeRet, std::string &strFailReason, const CCoinControl *coinControl = NULL,
                            AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0);
-    bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, std::string strCommand = "tx");
+    bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey, std::string strCommand = NetMsgType::TX);
     bool AddAccountingEntry(const CAccountingEntry&, CWalletDB & pwalletdb);
-    int GenerateObfuscationOutputs(int nTotalValue, std::vector<CTxOut>& vout);
     bool CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, CMutableTransaction& txNew, unsigned int& nTxNewTime);
     bool MultiSend();
     void AutoCombineDust();
@@ -529,10 +521,6 @@ public:
 
     bool GetBudgetSystemCollateralTX(CTransaction& tx, uint256 hash, bool useIX);
     bool GetBudgetSystemCollateralTX(CWalletTx& tx, uint256 hash, bool useIX);
-
-    bool IsDenominated(const CTxIn& txin) const;
-
-    bool IsDenominatedAmount(CAmount nInputAmount) const;
 
     isminetype IsMine(const CTxIn& txin) const;
     CAmount GetDebit(const CTxIn& txin, const isminefilter& filter) const;
@@ -593,6 +581,9 @@ public:
     /** Watch-only address added */
     boost::signals2::signal<void(bool fHaveWatchOnly)> NotifyWatchonlyChanged;
 
+    /** notify wallet file backed up */
+    boost::signals2::signal<void (const bool& fSuccess, const std::string& filename)> NotifyWalletBacked;
+
     bool ComputeStealthPublicAddress(const std::string& accountName, std::string& pubAddress);
     bool ComputeIntegratedPublicAddress(const uint64_t paymentID, const std::string& accountName, std::string& pubAddress);
     bool EncodeStealthPublicAddress(const std::vector<unsigned char>& pubViewKey, const std::vector<unsigned char>& pubSpendKey, std::string& pubAddr);
@@ -616,7 +607,7 @@ public:
     CAmount getCOutPutValue(const COutput& output) const;
     CAmount getCTxOutValue(const CTransaction &tx, const CTxOut &out) const;
     bool findCorrespondingPrivateKey(const CTxOut &txout, CKey &key) const;
-    bool AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, vector<COutput>& vCoins, int cannotSpend, bool fOnlyConfirmed = true, const CCoinControl* coinControl = NULL, bool fIncludeZeroValue = false, AvailableCoinsType nCoinType = ALL_COINS, bool fUseIX = false);
+    bool AvailableCoins(const uint256 wtxid, const CWalletTx* pcoin, std::vector<COutput>& vCoins, int cannotSpend, bool fOnlyConfirmed = true, const CCoinControl* coinControl = NULL, bool fIncludeZeroValue = false, AvailableCoinsType nCoinType = ALL_COINS, bool fUseIX = false);
     void CreatePrivacyAccount(bool force = false);
     bool mySpendPrivateKey(CKey& spend) const;
     bool myViewPrivateKey(CKey& view) const;
@@ -638,6 +629,9 @@ public:
     bool computeSharedSec(const CTransaction& tx, const CTxOut& out, CPubKey& sharedSec) const;
     void AddComputedPrivateKey(const CTxOut& out);
     bool IsCollateralized(const COutPoint& outpoint);
+
+    /* Wallets parameter interaction */
+    static bool ParameterInteraction();
 private:
     bool encodeStealthBase58(const std::vector<unsigned char>& raw, std::string& stealth);
     bool allMyPrivateKeys(std::vector<CKey>& spends, std::vector<CKey>& views);
@@ -730,7 +724,7 @@ public:
 
     void Init()
     {
-        hashBlock = 0;
+        hashBlock = UINT256_ZERO;
         nIndex = -1;
         fMerkleVerified = false;
     }
@@ -791,10 +785,6 @@ public:
     mutable bool fCreditCached;
     mutable bool fImmatureCreditCached;
     mutable bool fAvailableCreditCached;
-    mutable bool fAnonymizableCreditCached;
-    mutable bool fAnonymizedCreditCached;
-    mutable bool fDenomUnconfCreditCached;
-    mutable bool fDenomConfCreditCached;
     mutable bool fWatchDebitCached;
     mutable bool fWatchCreditCached;
     mutable bool fImmatureWatchCreditCached;
@@ -805,10 +795,6 @@ public:
     mutable CAmount nCreditCached;
     mutable CAmount nImmatureCreditCached;
     mutable CAmount nAvailableCreditCached;
-    mutable CAmount nAnonymizableCreditCached;
-    mutable CAmount nAnonymizedCreditCached;
-    mutable CAmount nDenomUnconfCreditCached;
-    mutable CAmount nDenomConfCreditCached;
     mutable CAmount nWatchDebitCached;
     mutable CAmount nWatchCreditCached;
     mutable CAmount nImmatureWatchCreditCached;
@@ -902,7 +888,7 @@ public:
     int64_t GetTxTime() const;
     int64_t GetComputedTxTime() const;
     int GetRequestCount() const;
-    void RelayWalletTransaction(std::string strCommand = "tx");
+    void RelayWalletTransaction(std::string strCommand = NetMsgType::TX);
 
     std::set<uint256> GetConflicts() const;
 };
@@ -922,17 +908,6 @@ public:
         i = iIn;
         nDepth = nDepthIn;
         fSpendable = fSpendableIn;
-    }
-
-    //Used with Obfuscation. Will return largest nondenom, then denominations, then very small inputs
-    int Priority() const
-    {
-        for (CAmount d : obfuScationDenominations)
-        if (tx->vout[i].nValue == d) return 10000;
-        if (tx->vout[i].nValue < 1 * COIN) return 20000;
-
-        //nondenom return largest first
-        return -(tx->vout[i].nValue / COIN);
     }
 
     CAmount Value() const

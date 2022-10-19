@@ -18,7 +18,6 @@
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 #include <univalue.h>
 
-using namespace std;
 
 class CRPCConvertParam
 {
@@ -37,11 +36,10 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"generatepoa", 1},
         {"getnetworkhashps", 0},
         {"getnetworkhashps", 1},
-        {"sendtoaddress", 1},
         {"rescan", 0},
         {"rescanwallettransactions", 0},
         {"sendtostealthaddress", 1},
-        {"sendtoaddressix", 1},
+        {"sendalltostealthaddress", 1},
         {"settxfee", 0},
         {"getreceivedbyaddress", 1},
         {"getreceivedbyaccount", 1},
@@ -73,6 +71,10 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"listtransactions", 1},
         {"listtransactions", 2},
         {"listtransactions", 3},
+        {"listtransactionsbypaymentid", 0},
+        {"listtransactionsbypaymentid", 1},
+        {"listtransactionsbypaymentid", 2},
+        {"listtransactionsbypaymentid", 3},
         {"listaccounts", 0},
         {"listaccounts", 1},
         {"unlockwallet", 1},
@@ -94,6 +96,8 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"listunspent", 0},
         {"listunspent", 1},
         {"listunspent", 2},
+        {"logging", 0},
+        {"logging", 1},
         {"getblock", 1},
         {"getblockheader", 1},
         {"gettransaction", 1},
@@ -106,6 +110,9 @@ static const CRPCConvertParam vRPCConvertParams[] =
         {"broadcastrawtransaction", 1},
         {"gettxout", 1},
         {"gettxout", 2},
+        {"getunspentcount", 0},
+        {"getunspentcount", 1},
+        {"getunspentcount", 2},
         {"lockunspent", 0},
         {"lockunspent", 1},
         {"importprivkey", 2},
@@ -174,7 +181,7 @@ UniValue ParseNonRFCJSONValue(const std::string& strVal)
     UniValue jVal;
     if (!jVal.read(std::string("[")+strVal+std::string("]")) ||
         !jVal.isArray() || jVal.size()!=1)
-        throw runtime_error(string("Error parsing JSON:")+strVal);
+        throw std::runtime_error(std::string("Error parsing JSON:")+strVal);
     return jVal[0];
 }
 

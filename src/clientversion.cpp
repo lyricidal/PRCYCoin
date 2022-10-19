@@ -9,10 +9,10 @@
 
 /**
  * Name of client reported in the 'version' message. Report the same name
- * for both dapscoind and dapscoin-qt, to make it harder for attackers to
+ * for both prcycoind and prcycoin-qt, to make it harder for attackers to
  * target servers or GUI users specifically.
  */
-const std::string CLIENT_NAME("DAPS");
+const std::string CLIENT_NAME("PRCY");
 
 /**
  * Client version number
@@ -38,7 +38,7 @@ const std::string CLIENT_NAME("DAPS");
 
 //! First, include build.h if requested
 #ifdef HAVE_BUILD_INFO
-#include "build.h"
+#include "obj/build.h"
 #endif
 
 //! git will put "#define GIT_ARCHIVE 1" on the next line inside archives. 

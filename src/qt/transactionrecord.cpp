@@ -8,7 +8,6 @@
 #include "transactionrecord.h"
 
 #include "base58.h"
-#include "obfuscation.h"
 #include "swifttx.h"
 #include "timedata.h"
 #include "wallet/wallet.h"
@@ -68,7 +67,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
                 sub.idx = parts.size(); // sequence number
                 sub.involvesWatchAddress = mine & ISMINE_WATCH_ONLY;
                 if (ExtractDestination(txout.scriptPubKey, address) && IsMine(*wallet, address)) {
-                    // Received by DAPS Address
+                    // Received by PRCY Address
                     sub.credit = IsMine(*wallet, address) ? wallet->getCTxOutValue(wtx, txout) : 0;
                     sub.type = TransactionRecord::RecvWithAddress;
                     sub.address = CBitcoinAddress(address).ToString();
@@ -86,13 +85,11 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
             }
         }
     } else {
-        bool fAllFromMeDenom = true;
         int nFromMe = 0;
         bool involvesWatchAddress = false;
         isminetype fAllFromMe = ISMINE_SPENDABLE;
         for (const CTxIn& txin : wtx.vin) {
             if (wallet->IsMine(txin)) {
-                fAllFromMeDenom = fAllFromMeDenom && wallet->IsDenominated(txin);
                 nFromMe++;
             }
             isminetype mine = wallet->IsMine(txin);
@@ -101,12 +98,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
         }
 
         isminetype fAllToMe = ISMINE_SPENDABLE;
-        bool fAllToMeDenom = true;
         int nToMe = 0;
         for (const CTxOut& txout : wtx.vout) {
             if (wallet->IsMine(txout)) {
                 CAmount c = wallet->getCTxOutValue(wtx, txout);
-                fAllToMeDenom = fAllToMeDenom && wallet->IsDenominatedAmount(c);
                 nToMe++;
             }
             isminetype mine = wallet->IsMine(txout);
@@ -114,10 +109,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
             if (fAllToMe > mine) fAllToMe = mine;
         }
 
-        if (fAllFromMeDenom && fAllToMeDenom && nFromMe && nToMe) {
-            parts.append(TransactionRecord(hash, nTime, TransactionRecord::ObfuscationDenominate, "", -nDebit, nCredit));
-            parts.last().involvesWatchAddress = false; // maybe pass to TransactionRecord as constructor argument
-        } else if (fAllFromMe && fAllToMe) {
+        if (fAllFromMe && fAllToMe) {
             // Payment to self
             TransactionRecord sub(hash, nTime);
             // Payment to self by default
@@ -127,13 +119,10 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
             for (unsigned int nOut = 0; nOut < wtx.vout.size(); nOut++) {
                     const CTxOut& txout = wtx.vout[nOut];
                     sub.idx = parts.size();
-
-                    if (wallet->IsCollateralAmount(wallet->getCTxOutValue(wtx, txout))) sub.type = TransactionRecord::ObfuscationMakeCollaterals;
-                    if (nDebit - wtx.GetValueOut() == OBFUSCATION_COLLATERAL) sub.type = TransactionRecord::ObfuscationCollateralPayment;
                 }
                 CTxDestination address;
                 if (ExtractDestination(wtx.vout[0].scriptPubKey, address)) {
-                    // Sent to DAPS Address
+                    // Sent to PRCY Address
                     sub.address = CBitcoinAddress(address).ToString();
             }
 
@@ -165,7 +154,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet* 
 
                 CTxDestination address;
                 if (ExtractDestination(txout.scriptPubKey, address)) {
-                    // Sent to DAPS Address
+                    // Sent to PRCY Address
                     sub.type = TransactionRecord::SendToAddress;
                     sub.address = CBitcoinAddress(address).ToString();
                 } else {

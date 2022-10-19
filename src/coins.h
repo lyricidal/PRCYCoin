@@ -7,6 +7,8 @@
 #define BITCOIN_COINS_H
 
 #include "compressor.h"
+#include "memusage.h"
+#include "consensus/consensus.h"  // can be removed once policy/ established
 #include "script/standard.h"
 #include "serialize.h"
 #include "uint256.h"
@@ -21,7 +23,7 @@ extern bool GetTransaction(const uint256& hash, CTransaction& tx, uint256& hashB
 
 /** 
 
-    ****Note - for DAPS we added fCoinStake to the 2nd bit. Keep in mind when reading the following and adjust as needed.
+    ****Note - for PRCY we added fCoinStake to the 2nd bit. Keep in mind when reading the following and adjust as needed.
  * Pruned version of CTransaction: only retains metadata and unspent transaction outputs
  *
  * Serialized format:
@@ -284,6 +286,14 @@ public:
                 return false;
         return true;
     }
+
+    size_t DynamicMemoryUsage() const {
+        size_t ret = memusage::DynamicUsage(vout);
+        for(const CTxOut &out : vout) {
+            ret += memusage::DynamicUsage(*static_cast<const CScriptBase*>(&out.scriptPubKey));
+        }
+        return ret;
+    }
 };
 
 class CCoinsKeyHasher
@@ -328,7 +338,7 @@ struct CCoinsStats {
     uint256 hashSerialized;
     CAmount nTotalAmount;
 
-    CCoinsStats() : nHeight(0), hashBlock(0), nTransactions(0), nTransactionOutputs(0), nSerializedSize(0), hashSerialized(0), nTotalAmount(0) {}
+    CCoinsStats() : nHeight(0), nTransactions(0), nTransactionOutputs(0), nSerializedSize(0), nTotalAmount(0) {}
 };
 
 
@@ -376,15 +386,6 @@ public:
 
 class CCoinsViewCache;
 
-/** Flags for nSequence and nLockTime locks */
-enum {
-    /* Interpret sequence numbers as relative lock-time constraints. */
-    LOCKTIME_VERIFY_SEQUENCE = (1 << 0),
-
-    /* Use GetMedianTimePast() instead of nTime for end point timestamp. */
-    LOCKTIME_MEDIAN_TIME_PAST = (1 << 1),
-};
-
 /** Used as the flags parameter to sequence and nLocktime checks in non-consensus code. */
 static const unsigned int STANDARD_LOCKTIME_VERIFY_FLAGS = LOCKTIME_VERIFY_SEQUENCE |
                                                            LOCKTIME_MEDIAN_TIME_PAST;
@@ -399,7 +400,8 @@ class CCoinsModifier
 private:
     CCoinsViewCache& cache;
     CCoinsMap::iterator it;
-    CCoinsModifier(CCoinsViewCache& cache_, CCoinsMap::iterator it_);
+    size_t cachedCoinUsage; // Cached memory usage of the CCoins object before modification
+    CCoinsModifier(CCoinsViewCache& cache_, CCoinsMap::iterator it_, size_t usage);
 
 public:
     CCoins* operator->() { return &it->second.coins; }
@@ -421,6 +423,9 @@ protected:
      */
     mutable uint256 hashBlock;
     mutable CCoinsMap cacheCoins;
+
+    /* Cached dynamic memory usage for the inner CCoins objects. */
+    mutable size_t cachedCoinsUsage;
 
 public:
     CCoinsViewCache(CCoinsView* baseIn);
@@ -456,6 +461,9 @@ public:
 
     //! Calculate the size of the cache (in number of transactions)
     unsigned int GetCacheSize() const;
+
+    //! Calculate the size of the cache (in bytes)
+    size_t DynamicMemoryUsage() const;
 
     //! Check whether all prevouts of the transaction are present in the UTXO set represented by this view
     bool HaveInputs(const CTransaction& tx) const;

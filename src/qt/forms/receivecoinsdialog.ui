@@ -66,7 +66,7 @@
         <item row="5" column="1">
          <widget class="QLineEdit" name="reqID">
           <property name="toolTip">
-           <string>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the DAPS network.</string>
+           <string>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the PRCY network.</string>
           </property>
           <property name="placeholderText">
            <string>Description (optional)</string>
@@ -76,7 +76,7 @@
         <item row="5" column="0">
          <widget class="QLabel" name="label_3">
           <property name="toolTip">
-           <string>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the DAPS network.</string>
+           <string>An optional message to attach to the payment request, which will be displayed when the request is opened.&lt;br&gt;Note: The message will not be sent with the payment over the PRCY network.</string>
           </property>
           <property name="text">
            <string>Description:</string>
@@ -174,7 +174,7 @@
            <string>An optional amount to request. Leave this empty or zero to not request a specific amount.</string>
           </property>
           <property name="placeholderText">
-           <string>DAPS Amount (optional)</string>
+           <string>PRCY Amount (optional)</string>
           </property>
          </widget>
         </item>
@@ -214,7 +214,7 @@
          </spacer>
         </item>
         <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,1">
+         <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0,0">
           <property name="spacing">
            <number>6</number>
           </property>
@@ -250,6 +250,26 @@
             </property>
             <property name="readOnly">
              <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonRemove">
+            <property name="toolTip">
+             <string>Remove Integrated Address</string>
+            </property>
+            <property name="text">
+             <string/>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="pushButtonGenerate">
+            <property name="toolTip">
+             <string>Generate Integrated Address</string>
+            </property>
+            <property name="text">
+             <string/>
             </property>
            </widget>
           </item>

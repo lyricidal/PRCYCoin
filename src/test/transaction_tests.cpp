@@ -5,6 +5,7 @@
 #include "data/tx_invalid.json.h"
 #include "data/tx_valid.json.h"
 
+#include "consensus/tx_verify.h"
 #include "clientversion.h"
 #include "key.h"
 #include "keystore.h"
@@ -12,6 +13,7 @@
 #include "script/script.h"
 #include "script/script_error.h"
 #include "core_io.h"
+#include "test/test_prcycoin.h"
 
 #include <map>
 #include <string>
@@ -24,33 +26,33 @@
 
 #include <univalue.h>
 
-using namespace std;
-using namespace boost::algorithm;
 
 // In script_tests.cpp
 extern UniValue read_json(const std::string& jsondata);
 
-static std::map<string, unsigned int> mapFlagNames = boost::assign::map_list_of
-        (string("NONE"), (unsigned int)SCRIPT_VERIFY_NONE)
-        (string("P2SH"), (unsigned int)SCRIPT_VERIFY_P2SH)
-        (string("STRICTENC"), (unsigned int)SCRIPT_VERIFY_STRICTENC)
-        (string("DERSIG"), (unsigned int)SCRIPT_VERIFY_DERSIG)
-        (string("LOW_S"), (unsigned int)SCRIPT_VERIFY_LOW_S)
-        (string("SIGPUSHONLY"), (unsigned int)SCRIPT_VERIFY_SIGPUSHONLY)
-        (string("MINIMALDATA"), (unsigned int)SCRIPT_VERIFY_MINIMALDATA)
-        (string("NULLDUMMY"), (unsigned int)SCRIPT_VERIFY_NULLDUMMY)
-        (string("DISCOURAGE_UPGRADABLE_NOPS"), (unsigned int)SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS);
-
-unsigned int ParseScriptFlags(string strFlags)
+static std::map<std::string, unsigned int> mapFlagNames = boost::assign::map_list_of
+        (std::string("NONE"), (unsigned int)SCRIPT_VERIFY_NONE)
+        (std::string("P2SH"), (unsigned int)SCRIPT_VERIFY_P2SH)
+        (std::string("STRICTENC"), (unsigned int)SCRIPT_VERIFY_STRICTENC)
+        (std::string("DERSIG"), (unsigned int)SCRIPT_VERIFY_DERSIG)
+        (std::string("LOW_S"), (unsigned int)SCRIPT_VERIFY_LOW_S)
+        (std::string("SIGPUSHONLY"), (unsigned int)SCRIPT_VERIFY_SIGPUSHONLY)
+        (std::string("MINIMALDATA"), (unsigned int)SCRIPT_VERIFY_MINIMALDATA)
+        (std::string("NULLDUMMY"), (unsigned int)SCRIPT_VERIFY_NULLDUMMY)
+        (std::string("DISCOURAGE_UPGRADABLE_NOPS"), (unsigned int)SCRIPT_VERIFY_DISCOURAGE_UPGRADABLE_NOPS)
+        (std::string("CLEANSTACK"), (unsigned int)SCRIPT_VERIFY_CLEANSTACK)
+        (std::string("CHECKLOCKTIMEVERIFY"), (unsigned int)SCRIPT_VERIFY_CHECKLOCKTIMEVERIFY);
+	
+unsigned int ParseScriptFlags(std::string strFlags)
 {
     if (strFlags.empty()) {
         return 0;
     }
     unsigned int flags = 0;
-    vector<string> words;
-    split(words, strFlags, is_any_of(","));
+    std::vector<std::string> words;
+    boost::algorithm::split(words, strFlags, boost::algorithm::is_any_of(","));
 
-    for (string word : words)
+    for (std::string word : words)
     {
         if (!mapFlagNames.count(word))
             BOOST_ERROR("Bad test: unknown verification flag '" << word << "'");
@@ -60,13 +62,13 @@ unsigned int ParseScriptFlags(string strFlags)
     return flags;
 }
 
-string FormatScriptFlags(unsigned int flags)
+std::string FormatScriptFlags(unsigned int flags)
 {
     if (flags == 0) {
         return "";
     }
-    string ret;
-    std::map<string, unsigned int>::const_iterator it = mapFlagNames.begin();
+    std::string ret;
+    std::map<std::string, unsigned int>::const_iterator it = mapFlagNames.begin();
     while (it != mapFlagNames.end()) {
         if (flags & it->second) {
             ret += it->first + ",";
@@ -77,7 +79,7 @@ string FormatScriptFlags(unsigned int flags)
 }
 
 #ifdef DISABLE_FAILED_TEST
-BOOST_AUTO_TEST_SUITE(transaction_tests)
+BOOST_FIXTURE_TEST_SUITE(transaction_tests, TestingSetup)
 
 BOOST_AUTO_TEST_CASE(tx_valid)
         {
@@ -133,7 +135,7 @@ BOOST_AUTO_TEST_CASE(tx_valid)
                 stream >> tx;
 
                 CValidationState state;
-                BOOST_CHECK_MESSAGE(CheckTransaction(tx, false, false, state), strTest);
+                BOOST_CHECK_MESSAGE(CheckTransaction(tx, false, state), strTest);
                 BOOST_CHECK(state.IsValid());
 
                 for (unsigned int i = 0; i < tx.vin.size(); i++)
@@ -208,7 +210,7 @@ BOOST_AUTO_TEST_CASE(tx_invalid)
                 stream >> tx;
 
                 CValidationState state;
-                fValid = CheckTransaction(tx, false, false, state) && state.IsValid();
+                fValid = CheckTransaction(tx, false, state) && state.IsValid();
 
                 for (unsigned int i = 0; i < tx.vin.size() && fValid; i++)
                 {
@@ -237,11 +239,11 @@ BOOST_AUTO_TEST_CASE(basic_transaction_tests)
     CMutableTransaction tx;
     stream >> tx;
     CValidationState state;
-    BOOST_CHECK_MESSAGE(CheckTransaction(tx, false, false, state) && state.IsValid(), "Simple deserialized transaction should be valid.");
+    BOOST_CHECK_MESSAGE(CheckTransaction(tx, false, state) && state.IsValid(), "Simple deserialized transaction should be valid.");
 
     // Check that duplicate txins fail
     tx.vin.push_back(tx.vin[0]);
-    BOOST_CHECK_MESSAGE(!CheckTransaction(tx, false, false, state) || !state.IsValid(), "Transaction with duplicate txins should be invalid.");
+    BOOST_CHECK_MESSAGE(!CheckTransaction(tx, false, state) || !state.IsValid(), "Transaction with duplicate txins should be invalid.");
 }
 
 //

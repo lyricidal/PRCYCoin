@@ -5,6 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "amount.h"
 #include "bitcoinunits.h"
 #include "chainparams.h"
 #include "primitives/transaction.h"
@@ -20,18 +21,18 @@ BitcoinUnits::BitcoinUnits(QObject* parent) : QAbstractListModel(parent),
 QList<BitcoinUnits::Unit> BitcoinUnits::availableUnits()
 {
     QList<BitcoinUnits::Unit> unitlist;
-    unitlist.append(DAPS);
-    unitlist.append(mDAPS);
-    unitlist.append(uDAPS);
+    unitlist.append(PRCY);
+    unitlist.append(mPRCY);
+    unitlist.append(uPRCY);
     return unitlist;
 }
 
 bool BitcoinUnits::valid(int unit)
 {
     switch (unit) {
-    case DAPS:
-    case mDAPS:
-    case uDAPS:
+    case PRCY:
+    case mPRCY:
+    case uPRCY:
         return true;
     default:
         return false;
@@ -41,12 +42,12 @@ bool BitcoinUnits::valid(int unit)
 QString BitcoinUnits::id(int unit)
 {
     switch (unit) {
-    case DAPS:
-        return QString("dapscoin");
-    case mDAPS:
-        return QString("mdapscoin");
-    case uDAPS:
-        return QString::fromUtf8("udapscoin");
+    case PRCY:
+        return QString("prcycoin");
+    case mPRCY:
+        return QString("mprcycoin");
+    case uPRCY:
+        return QString::fromUtf8("uprcycoin");
     default:
         return QString("???");
     }
@@ -54,25 +55,26 @@ QString BitcoinUnits::id(int unit)
 
 QString BitcoinUnits::name(int unit)
 {
+    const QString CURR_UNIT = QString(CURRENCY_UNIT.c_str());
     if (Params().NetworkID() == CBaseChainParams::MAIN) {
         switch (unit) {
-        case DAPS:
-            return QString("DAPS");
-        case mDAPS:
-            return QString("mDAPS");
-        case uDAPS:
-            return QString::fromUtf8("μDAPS");
+        case PRCY:
+            return CURR_UNIT;
+        case mPRCY:
+            return QString("m") + CURR_UNIT;
+        case uPRCY:
+            return QString::fromUtf8("μ") + CURR_UNIT;
         default:
             return QString("???");
         }
     } else {
         switch (unit) {
-        case DAPS:
-            return QString("tDAPS");
-        case mDAPS:
-            return QString("mtDAPS");
-        case uDAPS:
-            return QString::fromUtf8("μtDAPS");
+        case PRCY:
+            return QString("t") + CURR_UNIT;
+        case mPRCY:
+            return QString("mt") + CURR_UNIT;
+        case uPRCY:
+            return QString::fromUtf8("μt") + CURR_UNIT;
         default:
             return QString("???");
         }
@@ -81,25 +83,26 @@ QString BitcoinUnits::name(int unit)
 
 QString BitcoinUnits::description(int unit)
 {
+    const QString CURR_UNIT = QString(CURRENCY_UNIT.c_str());
     if (Params().NetworkID() == CBaseChainParams::MAIN) {
         switch (unit) {
-        case DAPS:
-            return QString("DAPS");
-        case mDAPS:
-            return QString("Milli-DAPS (1 / 1" THIN_SP_UTF8 "000)");
-        case uDAPS:
-            return QString("Micro-DAPS (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+        case PRCY:
+            return CURR_UNIT;
+        case mPRCY:
+            return QString("Milli-") + CURR_UNIT + QString(" (1 / 1" THIN_SP_UTF8 "000)");
+        case uPRCY:
+            return QString("Micro-") + CURR_UNIT + QString(" (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
         default:
             return QString("???");
         }
     } else {
         switch (unit) {
-        case DAPS:
-            return QString("TestDAPSs");
-        case mDAPS:
-            return QString("Milli-TestDAPS (1 / 1" THIN_SP_UTF8 "000)");
-        case uDAPS:
-            return QString("Micro-TestDAPS (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
+        case PRCY:
+            return QString("Test") + CURR_UNIT;
+        case mPRCY:
+            return QString("Milli-Test") + CURR_UNIT + QString(" (1 / 1" THIN_SP_UTF8 "000)");
+        case uPRCY:
+            return QString("Micro-Test") + CURR_UNIT + QString(" (1 / 1" THIN_SP_UTF8 "000" THIN_SP_UTF8 "000)");
         default:
             return QString("???");
         }
@@ -109,11 +112,11 @@ QString BitcoinUnits::description(int unit)
 qint64 BitcoinUnits::factor(int unit)
 {
     switch (unit) {
-    case DAPS:
+    case PRCY:
         return 100000000;
-    case mDAPS:
+    case mPRCY:
         return 100000;
-    case uDAPS:
+    case uPRCY:
         return 100;
     default:
         return 100000000;
@@ -123,11 +126,11 @@ qint64 BitcoinUnits::factor(int unit)
 int BitcoinUnits::decimals(int unit)
 {
     switch (unit) {
-    case DAPS:
+    case PRCY:
         return 8;
-    case mDAPS:
+    case mPRCY:
         return 5;
-    case uDAPS:
+    case uPRCY:
         return 2;
     default:
         return 0;
@@ -283,5 +286,5 @@ QVariant BitcoinUnits::data(const QModelIndex& index, int role) const
 
 CAmount BitcoinUnits::maxMoney()
 {
-    return Params().MaxMoneyOut();
+    return MAX_MONEY_OUT;
 }

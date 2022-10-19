@@ -12,7 +12,6 @@
 #include "guiconstants.h"
 #include "guiutil.h"
 #include "init.h"
-#include "obfuscation.h"
 #include "optionsmodel.h"
 #include "transactionfilterproxy.h"
 #include "transactiontablemodel.h"
@@ -21,9 +20,12 @@
 
 #include <QAbstractItemDelegate>
 #include <QPainter>
-#include <QSettings>
 #include <QTimer>
 #include <QtMath>
+#include <QNetworkAccessManager>
+#include <QJsonObject>
+#include <QJsonArray>
+#include <QJsonDocument>
 
 #define DECORATION_SIZE 48
 #define ICON_OFFSET 16
@@ -35,7 +37,7 @@ class TxViewDelegate : public QAbstractItemDelegate
 {
     Q_OBJECT
 public:
-    TxViewDelegate() : QAbstractItemDelegate(), unit(BitcoinUnits::DAPS)
+    TxViewDelegate() : QAbstractItemDelegate(), unit(BitcoinUnits::PRCY)
     {
     }
 
@@ -122,6 +124,11 @@ OverviewPage::OverviewPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMe
     pingNetworkInterval->setInterval(3000);
     pingNetworkInterval->start();
 
+    checkCurrencyValueInterval = new QTimer(this);
+    connect(checkCurrencyValueInterval, SIGNAL(timeout()), this, SLOT(checkCurrencyValue()));
+    checkCurrencyValueInterval->setInterval(300000);
+    checkCurrencyValueInterval->start();
+
     initSyncCircle(.8);
 
     connect(ui->btnLockUnlock, SIGNAL(clicked()), this, SLOT(on_lockUnlock()));
@@ -140,13 +147,13 @@ OverviewPage::~OverviewPage()
     delete ui;
 }
 
-void OverviewPage::getPercentage(CAmount nUnlockedBalance, QString& sDAPSPercentage)
+void OverviewPage::getPercentage(CAmount nUnlockedBalance, QString& sPRCYPercentage)
 {
     int nPrecision = 2;
 
     double dPercentage = 100.0;
     
-    sDAPSPercentage = "(" + QLocale(QLocale::system()).toString(dPercentage, 'f', nPrecision) + " %)";
+    sPRCYPercentage = "(" + QLocale(QLocale::system()).toString(dPercentage, 'f', nPrecision) + " %)";
 }
 void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmedBalance, const CAmount& immatureBalance, 
                               const CAmount& watchOnlyBalance, const CAmount& watchUnconfBalance, const CAmount& watchImmatureBalance)
@@ -168,22 +175,26 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
         //if staking enabled
         nSpendableDisplayed = nSpendableDisplayed > nReserveBalance ? nReserveBalance:nSpendableDisplayed;
     }
-    // DAPS labels
+    // PRCY labels
     //TODO-NOTE: Remove immatureBalance from showing on qt wallet (as requested)
-    if (walletStatus == WalletModel::Locked || walletStatus == WalletModel::UnlockedForAnonymizationOnly) {
+    if (walletStatus == WalletModel::Locked || walletStatus == WalletModel::UnlockedForStakingOnly) {
         ui->labelBalance_2->setText("Locked; Hidden");
         ui->labelBalance->setText("Locked; Hidden");
         ui->labelUnconfirmed->setText("Locked; Hidden");
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/lock) 0 0 0 0 stretch stretch; width: 20px;");
+    } else if (settings.value("fHideBalance", false).toBool()) {
+        ui->labelBalance_2->setText("Hidden");
+        ui->labelBalance->setText("Hidden");
+        ui->labelUnconfirmed->setText("Hidden");
     } else {
         if (stkStatus && !nLastCoinStakeSearchInterval && !fLiteMode) {
             ui->labelBalance_2->setText("Enabling Staking...");
             ui->labelBalance_2->setToolTip("Enabling Staking... Please wait up to 1.5 hours for it to be properly enabled after consolidation.");
             ui->labelBalance->setText("Enabling Staking...");
         } else {
-            ui->labelBalance_2->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, balance, false, BitcoinUnits::separatorAlways));
+            ui->labelBalance_2->setText(BitcoinUnits::formatHtmlWithUnit(0, balance, false, BitcoinUnits::separatorAlways));
             ui->labelBalance_2->setToolTip("Your current balance");
-            ui->labelBalance->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, nSpendableDisplayed, false, BitcoinUnits::separatorAlways));
+            ui->labelBalance->setText(BitcoinUnits::formatHtmlWithUnit(0, nSpendableDisplayed, false, BitcoinUnits::separatorAlways));
         }
         ui->labelUnconfirmed->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, unconfirmedBalance, false, BitcoinUnits::separatorAlways));
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/unlock) 0 0 0 0 stretch stretch; width: 30px;");
@@ -194,6 +205,7 @@ void OverviewPage::setBalance(const CAmount& balance, const CAmount& unconfirmed
     ui->labelBalance_2->setFont(font);   
 
     updateRecentTransactions();
+    checkCurrencyValue();
 }
 
 // show/hide watch-only labels
@@ -264,11 +276,10 @@ void OverviewPage::setWalletModel(WalletModel* model)
         connect(model, SIGNAL(notifyWatchonlyChanged(bool)), this, SLOT(updateWatchOnlyLabels(bool)));
         updateLockStatus(walletModel->getEncryptionStatus());
     }
-    // update the display unit, to not use the default ("DAPS")
+    // update the display unit, to not use the default ("PRCY")
     updateDisplayUnit();
 
     // Hide orphans
-    QSettings settings;
     hideOrphans(settings.value("fHideOrphans", false).toBool());
 }
 
@@ -311,7 +322,7 @@ void OverviewPage::showBalanceSync(bool fShow){
         ui->labelBalanceText->setVisible(true);
         isSyncingBalance = fShow;
         if (isSyncingBalance){
-            QString tooltip = "The displayed information may be out of date. Your wallet automatically synchronizes with the DAPS network after a connection is established, but this process has not completed yet.";
+            QString tooltip = "The displayed information may be out of date. Your wallet automatically synchronizes with the PRCY network after a connection is established, but this process has not completed yet.";
             ui->labelUnconfirmed->setToolTip(tooltip);
             ui->labelBalance->setToolTip(tooltip);
         } else {
@@ -332,11 +343,11 @@ void OverviewPage::showBlockSync(bool fShow)
 
     if (isSyncingBlocks){
         ui->labelBlockStatus->setText("(syncing)");
-        ui->labelBlockStatus->setToolTip("The displayed information may be out of date. Your wallet automatically synchronizes with the DAPS network after a connection is established, but this process has not completed yet.");
+        ui->labelBlockStatus->setToolTip("The displayed information may be out of date. Your wallet automatically synchronizes with the PRCY network after a connection is established, but this process has not completed yet.");
         ui->labelBlockCurrent->setAlignment((Qt::AlignRight|Qt::AlignVCenter));
     } else {
         ui->labelBlockStatus->setText("(synced)");
-        ui->labelBlockStatus->setToolTip("Your wallet is fully synchronized with the DAPS network.");
+        ui->labelBlockStatus->setToolTip("Your wallet is fully synchronized with the PRCY network.");
         ui->labelBlockCurrent->setAlignment((Qt::AlignHCenter|Qt::AlignVCenter));
     }
 }
@@ -385,7 +396,7 @@ void OverviewPage::onAnimTick()
     } else {
         blockSyncCircle->setStyleSheet("image:url(':/images/syncb')");
         blockAnimSyncCircle->setVisible(false);
-        ui->lblHelp->setVisible(false);
+        ui->lblHelp->setText(ui->lblHelp->text().remove("It is advised not to send or receive coins until your current sync is complete."));
     }
     if (isSyncingBalance){
         moveSyncCircle(balanceSyncCircle, balanceAnimSyncCircle, 3, -100, 130);
@@ -456,7 +467,7 @@ void OverviewPage::updateRecentTransactions() {
         }
         if (pwalletMain) {
             {
-                vector<std::map<QString, QString>> txs;// = WalletUtil::getTXs(pwalletMain);
+                std::vector<std::map<QString, QString>> txs;// = WalletUtil::getTXs(pwalletMain);
 
                 std::map<uint256, CWalletTx> txMap = pwalletMain->mapWallet;
                 std::vector<CWalletTx> latestTxes;
@@ -493,12 +504,23 @@ void OverviewPage::updateRecentTransactions() {
                     int64_t txTime = wtx.GetComputedTxTime();
                     if (pwalletMain->IsLocked()) {
                         entry->setData(txTime, "Locked; Hidden", "Locked; Hidden", "Locked; Hidden", "Locked; Hidden");
+                    } else if (settings.value("fHideBalance", false).toBool()) {
+                        entry->setData(txTime, "Hidden", "Hidden", "Hidden", "Hidden");
                     } else {
                         entry->setData(txTime, txs[i]["address"] , txs[i]["amount"], txs[i]["id"], txs[i]["type"]);
                     }
 
                     if (i % 2 == 0) {
                         entry->setObjectName("secondaryTxEntry");
+                    }
+                }
+                if (latestTxes.size() >= 10000) {
+                    QString txWarning = "Your wallet has more than 10,000 Transactions. It may run slowly. It's recommended to send your funds to a new wallet.";
+                    QString kbURL = "https://prcycoin.com/knowledge-base/wallets/sluggish-large-wallet-dat-solution/";
+                    QString kbTitle = "Need Help?";
+                    txWarning.append(" <a href=\"" + kbURL + "\">" + kbTitle + "</a>");
+                    if (!ui->lblHelp->text().contains(txWarning)) {
+                        ui->lblHelp->setText(ui->lblHelp->text() + "\n" + txWarning);
                     }
                 }
 
@@ -511,26 +533,27 @@ void OverviewPage::updateRecentTransactions() {
 }
 
 void OverviewPage::on_lockUnlock() {
-    if (walletModel->getEncryptionStatus() == WalletModel::Locked || walletModel->getEncryptionStatus() == WalletModel::UnlockedForAnonymizationOnly) {
+    if (walletModel->getEncryptionStatus() == WalletModel::Locked || walletModel->getEncryptionStatus() == WalletModel::UnlockedForStakingOnly) {
         WalletModel::UnlockContext ctx(walletModel->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
         if (ctx.isValid()) {
             ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/unlock) 0 0 0 0 stretch stretch; width: 30px;");
-            ui->labelBalance_2->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getBalance(), false, BitcoinUnits::separatorAlways));
-            ui->labelBalance->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getSpendableBalance(), false, BitcoinUnits::separatorAlways));
+            ui->labelBalance_2->setText(BitcoinUnits::formatHtmlWithUnit(0, walletModel->getBalance(), false, BitcoinUnits::separatorAlways));
+            ui->labelBalance->setText(BitcoinUnits::formatHtmlWithUnit(0, walletModel->getSpendableBalance(), false, BitcoinUnits::separatorAlways));
             ui->labelUnconfirmed->setText(BitcoinUnits::floorHtmlWithUnit(nDisplayUnit, walletModel->getUnconfirmedBalance(), false, BitcoinUnits::separatorAlways));
-            pwalletMain->stakingMode = StakingMode::STAKING_WITH_CONSOLIDATION;
+            pwalletMain->combineMode = CombineMode::ON;
+            checkCurrencyValue();
         }
     }
     else {
         QMessageBox::StandardButton msgReply;
-        msgReply = QMessageBox::question(this, "Lock Keychain Wallet", "Would you like to lock your keychain wallet now?\n\n(Staking will also be stopped)", QMessageBox::Yes|QMessageBox::No);
+        msgReply = QMessageBox::question(this, "Lock Wallet", "Would you like to lock your wallet now?\n\n(Staking will also be stopped)", QMessageBox::Yes|QMessageBox::No);
         if (msgReply == QMessageBox::Yes) {
             walletModel->setWalletLocked(true);
             ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/lock) 0 0 0 0 stretch stretch; width: 20px;");
             ui->labelBalance_2->setText("Locked; Hidden");
             ui->labelBalance->setText("Locked; Hidden");
             ui->labelUnconfirmed->setText("Locked; Hidden");
-            pwalletMain->stakingMode = StakingMode::STOPPED;
+            checkCurrencyValue();
         }
     }
 }
@@ -540,8 +563,79 @@ void OverviewPage::updateLockStatus(int status) {
         return;
 
     // update wallet state
-    if (status == WalletModel::Locked || status == WalletModel::UnlockedForAnonymizationOnly)
+    if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly)
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/lock) 0 0 0 0 stretch stretch; width: 20px;");
     else
         ui->btnLockUnlock->setStyleSheet("border-image: url(:/images/unlock) 0 0 0 0 stretch stretch; width: 30px;");
+}
+
+void OverviewPage::checkCurrencyValue()
+{
+    QSettings settings;
+    // Get Default Currency from Settings
+    bool fDisplayCurrencyValue = settings.value("fDisplayCurrencyValue").toBool();
+    QString defaultCurrency = settings.value("strDefaultCurrency").toString();
+
+    // Don't check value if wallet is locked, balance is 0, or fDisplayCurrencyValue is set to false
+    if (pwalletMain->IsLocked() || pwalletMain->GetBalance() == 0 || !fDisplayCurrencyValue) {
+        ui->labelCurrencyValue->setText("");
+        return;
+    }
+    if (isRuninngQuery) {
+        return;
+    }
+    isRuninngQuery = true;
+    QUrl serviceUrl = QUrl("https://api.coingecko.com/api/v3/simple/price?ids=prcy-coin&vs_currencies=" + defaultCurrency + "&include_market_cap=false&include_24hr_vol=false&include_24hr_change=false&include_last_updated_at=false");
+    QNetworkAccessManager *manager = new QNetworkAccessManager(this);
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(checkCurrencyValueserviceRequestFinished(QNetworkReply*)));
+    QNetworkRequest request;
+    request.setUrl(serviceUrl);
+    QNetworkReply* reply = manager->get(request);
+}
+
+void OverviewPage::checkCurrencyValueserviceRequestFinished(QNetworkReply* reply)
+{
+    QSettings settings;
+    // Get Default Currency from Settings
+    QString defaultCurrency = settings.value("strDefaultCurrency").toString();
+    QString defaultCurrencySymbol;
+
+    // Set the Default Currency symbol to match
+    if (defaultCurrency == "USD" || defaultCurrency == "CAD") {
+        defaultCurrencySymbol = "$";
+    } else if (defaultCurrency == "EUR") {
+        defaultCurrencySymbol = "€";
+    } else if (defaultCurrency == "GBP") {
+        defaultCurrencySymbol = "£";
+    } else if (defaultCurrency == "BTC") {
+        defaultCurrencySymbol = "₿";
+    } else if (defaultCurrency == "ETH") {
+        defaultCurrencySymbol = "Ξ";
+    } else if (defaultCurrency == "XAU") {
+        defaultCurrencySymbol = "XAU";
+    } else if (defaultCurrency == "XAG") {
+        defaultCurrencySymbol = "XAG";
+    }
+
+    reply->deleteLater();
+    if(reply->error() == QNetworkReply::NoError) {
+        // Parse data
+        QByteArray data = reply->readAll();
+        QJsonDocument jsonDocument(QJsonDocument::fromJson(data));
+        const QJsonObject item  = jsonDocument.object();
+        const QJsonObject currency  = item["prcy-coin"].toObject();
+        auto currencyValue = currency[defaultCurrency.toLower()].toDouble();
+
+        // Get current balance
+        int balance = pwalletMain->GetBalance() / COIN;
+
+        // Calculate value
+        double currentValue = balance *  currencyValue;
+
+        // Set value
+        ui->labelCurrencyValue->setText(defaultCurrency + " Value: " + defaultCurrencySymbol + QString::number(currentValue, 'f', 2));
+    } else {
+        LogPrintf("%s: Error checking for Alternative Currency value.\n", __func__);
+    }
+    isRuninngQuery = false;
 }

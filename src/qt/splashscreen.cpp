@@ -27,23 +27,24 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle* networkStyle) 
 {
     // set reference point, paddings
     int paddingLeft = 14;
-    int paddingTop = 460;
+    int paddingTop = 420;
     int titleVersionVSpace = 17;
-    int titleCopyrightVSpace = 32;
+    int titleCopyrightVSpace = 48;
 
     float fontFactor = 1.0;
 
     // define text to place
-    QString titleText = tr("DAPS Coin Keychain Wallet");
+    QString titleText = tr("PRivaCY Coin Wallet");
     fLiteMode = GetBoolArg("-litemode", false);
     if (fLiteMode) {
-        titleText = tr("DAPS Coin Lite Mode Wallet");
+        titleText = tr("PRivaCY Coin Lite Mode Wallet");
     }
     QString versionText = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
     QString copyrightTextBtc = QChar(0xA9) + QString(" 2009-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The Bitcoin Core developers"));
     QString copyrightTextDash = QChar(0xA9) + QString(" 2014-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The Dash Core developers"));
     QString copyrightTextPivx = QChar(0xA9) + QString(" 2015-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The PIVX Core developers"));
     QString copyrightTextDAPS = QChar(0xA9) + QString(" 2018-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The DAPS Project developers"));
+    QString copyrightTextPRCY = QChar(0xA9) + QString(" 2020-%1 ").arg(COPYRIGHT_YEAR) + QString(tr("The PRivaCY Coin developers"));
     QString titleAddText = networkStyle->getTitleAddText();
 
     QString font = QApplication::font().toString();
@@ -52,7 +53,7 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle* networkStyle) 
     pixmap = networkStyle->getSplashImage();
 
     QPainter pixPaint(&pixmap);
-    pixPaint.setPen(QColor(100, 100, 100));
+    pixPaint.setPen(QColor(200, 200, 200));
 
     // check font size and drawing with
     pixPaint.setFont(QFont(font, 28 * fontFactor));
@@ -67,7 +68,7 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle* networkStyle) 
     fm = pixPaint.fontMetrics();
     pixPaint.drawText(paddingLeft, paddingTop, titleText);
 
-    pixPaint.setFont(QFont(font, 15 * fontFactor));
+    pixPaint.setFont(QFont(font, 14 * fontFactor));
     pixPaint.drawText(paddingLeft, paddingTop + titleVersionVSpace, versionText);
 
     // draw copyright stuff
@@ -76,6 +77,7 @@ SplashScreen::SplashScreen(Qt::WindowFlags f, const NetworkStyle* networkStyle) 
     pixPaint.drawText(paddingLeft, paddingTop + titleCopyrightVSpace + 12, copyrightTextDash);
     pixPaint.drawText(paddingLeft, paddingTop + titleCopyrightVSpace + 24, copyrightTextPivx);
     pixPaint.drawText(paddingLeft, paddingTop + titleCopyrightVSpace + 36, copyrightTextDAPS);
+    pixPaint.drawText(paddingLeft, paddingTop + titleCopyrightVSpace + 48, copyrightTextPRCY);
 
     // draw additional text if special network
     if (!titleAddText.isEmpty()) {

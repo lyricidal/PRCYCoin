@@ -10,13 +10,14 @@
 #define BITCOIN_MAIN_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dapscoin-config.h"
+#include "config/prcycoin-config.h"
 #endif
 
 #include "amount.h"
 #include "chain.h"
 #include "chainparams.h"
 #include "coins.h"
+#include "consensus/validation.h"
 #include "net.h"
 #include "poa.h"
 #include "primitives/block.h"
@@ -65,15 +66,9 @@ static const unsigned int DEFAULT_BLOCK_MIN_SIZE = 0;
 /** Default for -blockprioritysize, maximum space for zero/low-fee transactions **/
 static const unsigned int DEFAULT_BLOCK_PRIORITY_SIZE = 50000;
 /** The maximum size for transactions we're willing to relay/mine */
-static const unsigned int MAX_STANDARD_TX_SIZE = 100000;
-/** The maximum allowed number of signature check operations in a block (network rule) */
-static const unsigned int MAX_BLOCK_SIGOPS_CURRENT = MAX_BLOCK_SIZE_CURRENT / 50;
-static const unsigned int MAX_BLOCK_SIGOPS_LEGACY = MAX_BLOCK_SIZE_LEGACY / 50;
+static const unsigned int MAX_STANDARD_TX_SIZE = 150000;
 /** Maximum number of signature check operations in an IsStandard() P2SH script */
 static const unsigned int MAX_P2SH_SIGOPS = 15;
-/** The maximum number of sigops we're willing to relay/mine in a single tx */
-static const unsigned int MAX_TX_SIGOPS_CURRENT = MAX_BLOCK_SIGOPS_CURRENT / 5;
-static const unsigned int MAX_TX_SIGOPS_LEGACY = MAX_BLOCK_SIGOPS_LEGACY / 5;
 /** Default for -maxorphantx, maximum number of orphan transactions kept in memory */
 static const unsigned int DEFAULT_MAX_ORPHAN_TRANSACTIONS = 100;
 /** The maximum size of a blk?????.dat file (since 0.8) */
@@ -84,8 +79,6 @@ static const unsigned int BLOCKFILE_CHUNK_SIZE = 0x1000000; // 16 MiB
 static const unsigned int UNDOFILE_CHUNK_SIZE = 0x100000; // 1 MiB
 /** Coinbase transaction outputs can only be spent after this number of new blocks (network rule) */
 static const int COINBASE_MATURITY = 100;
-/** Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp. */
-static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 /** Maximum number of script-checking threads allowed */
 static const int MAX_SCRIPTCHECK_THREADS = 16;
 /** -par default (number of script-checking threads, 0 = auto) */
@@ -102,31 +95,37 @@ static const unsigned int MAX_HEADERS_RESULTS = 2000;
  *  degree of disordering of blocks on disk (which make reindexing and in the future perhaps pruning
  *  harder). We'll probably want to make this a per-peer adaptive value at some point. */
 static const unsigned int BLOCK_DOWNLOAD_WINDOW = 1024;
-/** Time to wait (in seconds) between writing blockchain state to disk. */
-static const unsigned int DATABASE_WRITE_INTERVAL = 3600;
+/** Time to wait (in seconds) between writing blocks/block index to disk. */
+static const unsigned int DATABASE_WRITE_INTERVAL = 60 * 60;
+/** Time to wait (in seconds) between flushing chainstate to disk. */
+static const unsigned int DATABASE_FLUSH_INTERVAL = 24 * 60 * 60;
 /** Maximum length of reject messages. */
 static const unsigned int MAX_REJECT_MESSAGE_LENGTH = 111;
+/** Average delay between local address broadcasts in seconds. */
+static const unsigned int AVG_LOCAL_ADDRESS_BROADCAST_INTERVAL = 24 * 24 * 60;
+/** Average delay between peer address broadcasts in seconds. */
+static const unsigned int AVG_ADDRESS_BROADCAST_INTERVAL = 30;
+/** Average delay between trickled inventory broadcasts in seconds.
+ *  Blocks, whitelisted receivers, and a random 25% of transactions bypass this. */
+static const unsigned int AVG_INVENTORY_BROADCAST_INTERVAL = 5;
 
 /** Enable bloom filter */
  static const bool DEFAULT_PEERBLOOMFILTERS = true;
 
+ /** Default for -blockspamfilter, use header spam filter */
+ static const bool DEFAULT_BLOCK_SPAM_FILTER = true;
+ /** Default for -blockspamfiltermaxsize, maximum size of the list of indexes in the block spam filter */
+ static const unsigned int DEFAULT_BLOCK_SPAM_FILTER_MAX_SIZE = COINBASE_MATURITY;
+ /** Default for -blockspamfiltermaxavg, maximum average size of an index occurrence in the block spam filter */
+ static const unsigned int DEFAULT_BLOCK_SPAM_FILTER_MAX_AVG = 10;
+
 /** If the tip is older than this (in seconds), the node is considered to be in initial block download. */
 static const int64_t DEFAULT_MAX_TIP_AGE = 24 * 60 * 60;
 
-/** "reject" message codes */
-static const unsigned char REJECT_MALFORMED = 0x01;
-static const unsigned char REJECT_INVALID = 0x10;
-static const unsigned char REJECT_OBSOLETE = 0x11;
-static const unsigned char REJECT_DUPLICATE = 0x12;
-static const unsigned char REJECT_NONSTANDARD = 0x40;
-static const unsigned char REJECT_DUST = 0x41;
-static const unsigned char REJECT_INSUFFICIENTFEE = 0x42;
-static const unsigned char REJECT_CHECKPOINT = 0x43;
-
-static const std::string FOUNDATION_WALLET = "41jsGvYo3GMWCvFVZekSnrRV8ptJfMGhuhRjB9tYEv5NSA47VqyLp6gKSCpS3wHTBhCGu9DJ5k1HMWXeHVnL9nUs15CjyeCQDiT";
+//static const std::string FOUNDATION_WALLET = "PandirQr3T895NCsDrSKdCD4TJ324z3VDB8Amcj6wx2kKdB7LztTDefdvP4QTMdgGA72W7SHzQeFzLTo2sikmmbd19E5C8UZbbi";
 
 struct BlockHasher {
-    size_t operator()(const uint256& hash) const { return hash.GetLow64(); }
+    size_t operator()(const uint256& hash) const { return hash.GetCheapHash(); }
 };
 
 extern CScript COINBASE_FLAGS;
@@ -150,11 +149,11 @@ extern int nScriptCheckThreads;
 extern bool fTxIndex;
 extern bool fIsBareMultisigStd;
 extern bool fCheckBlockIndex;
-extern unsigned int nCoinCacheSize;
+extern size_t nCoinCacheUsage;
 extern CFeeRate minRelayTxFee;
 extern int64_t nMaxTipAge;
 extern bool fVerifyingBlocks;
-extern bool fGenerateDapscoins;
+extern bool fGeneratePrcycoins;
 
 extern bool fLargeWorkForkFound;
 extern bool fLargeWorkInvalidChainFound;
@@ -164,15 +163,14 @@ extern int64_t nLastCoinStakeSearchInterval;
 //extern int64_t nConsolidationTime;
 extern int64_t nLastCoinStakeSearchTime;
 
-extern const int MIN_RING_SIZE;
-extern const int MAX_RING_SIZE;
+extern int MIN_RING_SIZE;
+extern int MAX_RING_SIZE;
 extern const int MAX_TX_INPUTS;
 extern const int MIN_TX_INPUTS_FOR_SWEEPING;
 
 extern std::map<uint256, int64_t> mapRejectedBlocks;
 extern std::map<unsigned int, unsigned int> mapHashedBlocks;
 extern std::map<COutPoint, COutPoint> mapInvalidOutPoints;
-extern std::map<CBigNum, CAmount> mapInvalidSerials;
 
 /** Best header we've seen so far (used for getheaders queries' starting points). */
 extern CBlockIndex* pindexBestHeader;
@@ -213,7 +211,7 @@ FILE* OpenBlockFile(const CDiskBlockPos& pos, bool fReadOnly = false);
 /** Open an undo file (rev?????.dat) */
 FILE* OpenUndoFile(const CDiskBlockPos& pos, bool fReadOnly = false);
 /** Translation to a filesystem path */
-boost::filesystem::path GetBlockPosFilename(const CDiskBlockPos& pos, const char* prefix);
+fs::path GetBlockPosFilename(const CDiskBlockPos& pos, const char* prefix);
 /** Import blocks from an external file */
 bool LoadExternalBlockFile(FILE* fileIn, CDiskBlockPos* dbp = NULL);
 /** Initialize a new block tree database + block data on disk */
@@ -226,13 +224,13 @@ void UnloadBlockIndex();
 int ActiveProtocol();
 /** Process protocol messages received from a given node */
 bool ProcessMessages(CNode* pfrom);
+bool VerifyZeroBlindCommitment(const CTxOut& out);
 /**
  * Send queued protocol messages to be sent to a give node.
  *
  * @param[in]   pto             The node which we are sending messages to.
- * @param[in]   fSendTrickle    When true send the trickled data, otherwise trickle the data until true.
  */
-bool SendMessages(CNode* pto, bool fSendTrickle);
+bool SendMessages(CNode* pto);
 /** Run an instance of the script checking thread */
 void ThreadScriptCheck();
 
@@ -252,16 +250,13 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCou
 unsigned int GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlockHeader* pblock, bool fProofOfStake);
 
 bool ActivateBestChain(CValidationState& state, CBlock* pblock = NULL, bool fAlreadyChecked = false);
-CAmount GetBlockValue(const CBlockIndex *ptip);
-CAmount TeamRewards(const CBlockIndex *ptip);
-CAmount PoSBlockReward();
+CAmount GetBlockValue(int nHeight);
 
 void RemoveInvalidTransactionsFromMempool();
+void SetRingSize(int nHeight);
 
 /** Create a new block index entry for a given block hash */
 CBlockIndex* InsertBlockIndex(uint256 hash);
-/** Abort with a message */
-bool AbortNode(const std::string& msg, const std::string& userMessage = "");
 /** Get statistics from node state */
 bool GetNodeStateStats(NodeId nodeid, CNodeStateStats& stats);
 /** Increase a node's misbehavior score. */
@@ -278,19 +273,17 @@ bool AcceptToMemoryPool(CTxMemPool& pool, CValidationState& state, const CTransa
 
 bool AcceptableInputs(CTxMemPool& pool, CValidationState& state, const CTransaction& tx, bool fLimitFree, bool* pfMissingInputs, bool fRejectInsaneFee = false, bool isDSTX = false);
 
-bool IsKeyImageSpend1(const std::string& kiHex, const uint256& againsHash);
+bool IsSpentKeyImage(const std::string& kiHex, const uint256& againsHash);
 bool CheckKeyImageSpendInMainChain(const std::string& kiHex, int& confirmations);
 
 double GetPriority(const CTransaction& tx, int nHeight);
 
-bool IsKeyImageSpend2(const std::string&, const uint256& bh);
 uint256 GetTxSignatureHash(const CTransaction& tx);
 uint256 GetTxInSignatureHash(const CTxIn& txin);
 bool VerifyShnorrKeyImageTx(const CTransaction& tx);
 bool VerifyShnorrKeyImageTxIn(const CTxIn& txin, uint256 sigHash);
 
 int GetInputAge(CTxIn& vin);
-int GetInputAgeIX(uint256 nTXHash, CTxIn& vin);
 int GetIXConfirmations(uint256 nTXHash);
 
 struct CNodeStateStats {
@@ -299,35 +292,6 @@ struct CNodeStateStats {
     int nCommonHeight;
     std::vector<int> vHeightInFlight;
 };
-
-struct CDiskTxPos : public CDiskBlockPos {
-    unsigned int nTxOffset; // after header
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
-    {
-        READWRITE(*(CDiskBlockPos*)this);
-        READWRITE(VARINT(nTxOffset));
-    }
-
-    CDiskTxPos(const CDiskBlockPos& blockIn, unsigned int nTxOffsetIn) : CDiskBlockPos(blockIn.nFile, blockIn.nPos), nTxOffset(nTxOffsetIn)
-    {
-    }
-
-    CDiskTxPos()
-    {
-        SetNull();
-    }
-
-    void SetNull()
-    {
-        CDiskBlockPos::SetNull();
-        nTxOffset = 0;
-    }
-};
-
 
 CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowFree);
 
@@ -351,14 +315,6 @@ CAmount GetMinRelayFee(const CTransaction& tx, unsigned int nBytes, bool fAllowF
 bool AreInputsStandard(const CTransaction& tx, const CCoinsViewCache& mapInputs);
 
 /**
- * Count ECDSA signature operations the old-fashioned (pre-0.6) way
- * @return number of sigops this transaction's outputs will produce when spent
- * @see CTransaction::FetchInputs
- */
-unsigned int GetLegacySigOpCount(const CTransaction& tx);
-
-
-/**
  * Check whether all inputs of this transaction are valid (no double spends, scripts & sigs, amounts)
  * This does not modify the UTXO set. If pvChecks is not NULL, script checks are pushed onto it
  * instead of being performed inline.
@@ -369,16 +325,9 @@ bool CheckInputs(const CTransaction& tx, CValidationState& state, const CCoinsVi
 void UpdateCoins(const CTransaction& tx, CValidationState& state, CCoinsViewCache& inputs, CTxUndo& txundo, int nHeight);
 
 /** Context-independent validity checks */
-bool CheckTransaction(const CTransaction& tx, bool fzcActive, bool fRejectBadUTXO, CValidationState& state);
-bool IsSerialInBlockchain(const CBigNum& bnSerial, int& nHeightTx);
-bool RemoveSerialFromDB(const CBigNum& bnSerial);
 bool IsTransactionInChain(uint256 txId, int& nHeightTx);
 bool IsBlockHashInChain(const uint256& hashBlock);
-void PopulateInvalidOutPointMap();
-bool ValidOutPoint(const COutPoint out, int nHeight);
-bool RecalculateDAPSSupply(int nHeightStart);
-bool ReindexAccumulators(list<uint256>& listMissingCheckpoints, string& strError);
-
+bool RecalculatePRCYSupply(int nHeightStart);
 
 /**
  * Check if transaction will be final in the next block to be created.
@@ -393,27 +342,6 @@ bool CheckFinalTx(const CTransaction& tx, int flags = -1);
  * @return True if all outputs (scriptPubKeys) use only standard transaction forms
  */
 bool IsStandardTx(const CTransaction& tx, std::string& reason);
-
-bool IsFinalTx(const CTransaction& tx, int nBlockHeight = 0, int64_t nBlockTime = 0);
-
-/** Undo information for a CBlock */
-class CBlockUndo
-{
-public:
-    std::vector<CTxUndo> vtxundo; // for all but the coinbase
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
-    {
-        READWRITE(vtxundo);
-    }
-
-    bool WriteToDisk(CDiskBlockPos& pos, const uint256& hashBlock);
-    bool ReadFromDisk(const CDiskBlockPos& pos, const uint256& hashBlock);
-};
-
 
 /**
  * Closure representing one script verification
@@ -465,7 +393,8 @@ bool ReadBlockFromDisk(CBlock& block, const CBlockIndex* pindex);
 bool DisconnectBlock(CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& coins, bool* pfClean = NULL);
 
 /** Reprocess a number of blocks to try and get on the correct chain again **/
-bool DisconnectBlocksAndReprocess(int blocks);
+bool DisconnectBlocks(int nBlocks);
+void ReprocessBlocks(int nBlocks);
 
 /** Apply the effects of this block (with given index) on the UTXO set represented by coins */
 bool ConnectBlock(const CBlock& block, CValidationState& state, CBlockIndex* pindex, CCoinsViewCache& coins, bool fJustCheck, bool fAlreadyChecked = false);
@@ -486,137 +415,6 @@ bool TestBlockValidity(CValidationState& state, const CBlock& block, CBlockIndex
 bool AcceptBlock(CBlock& block, CValidationState& state, CBlockIndex** pindex, CDiskBlockPos* dbp = NULL, bool fAlreadyCheckedBlock = false);
 bool AcceptBlockHeader(const CBlockHeader& block, CValidationState& state, CBlockIndex** ppindex = NULL);
 
-
-class CBlockFileInfo
-{
-public:
-    unsigned int nBlocks;      //! number of blocks stored in file
-    unsigned int nSize;        //! number of used bytes of block file
-    unsigned int nUndoSize;    //! number of used bytes in the undo file
-    unsigned int nHeightFirst; //! lowest height of block in file
-    unsigned int nHeightLast;  //! highest height of block in file
-    uint64_t nTimeFirst;       //! earliest time of block in file
-    uint64_t nTimeLast;        //! latest time of block in file
-
-    ADD_SERIALIZE_METHODS;
-
-    template <typename Stream, typename Operation>
-    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
-    {
-        READWRITE(VARINT(nBlocks));
-        READWRITE(VARINT(nSize));
-        READWRITE(VARINT(nUndoSize));
-        READWRITE(VARINT(nHeightFirst));
-        READWRITE(VARINT(nHeightLast));
-        READWRITE(VARINT(nTimeFirst));
-        READWRITE(VARINT(nTimeLast));
-    }
-
-    void SetNull()
-    {
-        nBlocks = 0;
-        nSize = 0;
-        nUndoSize = 0;
-        nHeightFirst = 0;
-        nHeightLast = 0;
-        nTimeFirst = 0;
-        nTimeLast = 0;
-    }
-
-    CBlockFileInfo()
-    {
-        SetNull();
-    }
-
-    std::string ToString() const;
-
-    /** update statistics (does not update nSize) */
-    void AddBlock(unsigned int nHeightIn, uint64_t nTimeIn)
-    {
-        if (nBlocks == 0 || nHeightFirst > nHeightIn)
-            nHeightFirst = nHeightIn;
-        if (nBlocks == 0 || nTimeFirst > nTimeIn)
-            nTimeFirst = nTimeIn;
-        nBlocks++;
-        if (nHeightIn > nHeightLast)
-            nHeightLast = nHeightIn;
-        if (nTimeIn > nTimeLast)
-            nTimeLast = nTimeIn;
-    }
-};
-
-/** Capture information about block/transaction validation */
-class CValidationState
-{
-private:
-    enum mode_state {
-        MODE_VALID,   //! everything ok
-        MODE_INVALID, //! network rule violation (DoS value may be set)
-        MODE_ERROR,   //! run-time error
-    } mode;
-    int nDoS;
-    std::string strRejectReason;
-    unsigned char chRejectCode;
-    bool corruptionPossible;
-
-public:
-    CValidationState() : mode(MODE_VALID), nDoS(0), chRejectCode(0), corruptionPossible(false) {}
-    bool DoS(int level, bool ret = false, unsigned char chRejectCodeIn = 0, std::string strRejectReasonIn = "", bool corruptionIn = false)
-    {
-        chRejectCode = chRejectCodeIn;
-        strRejectReason = strRejectReasonIn;
-        corruptionPossible = corruptionIn;
-        if (mode == MODE_ERROR)
-            return ret;
-        nDoS += level;
-        mode = MODE_INVALID;
-        return ret;
-    }
-    bool Invalid(bool ret = false,
-        unsigned char _chRejectCode = 0,
-        std::string _strRejectReason = "")
-    {
-        return DoS(0, ret, _chRejectCode, _strRejectReason);
-    }
-    bool Error(std::string strRejectReasonIn = "")
-    {
-        if (mode == MODE_VALID)
-            strRejectReason = strRejectReasonIn;
-        mode = MODE_ERROR;
-        return false;
-    }
-    bool Abort(const std::string& msg)
-    {
-        AbortNode(msg);
-        return Error(msg);
-    }
-    bool IsValid() const
-    {
-        return mode == MODE_VALID;
-    }
-    bool IsInvalid() const
-    {
-        return mode == MODE_INVALID;
-    }
-    bool IsError() const
-    {
-        return mode == MODE_ERROR;
-    }
-    bool IsInvalid(int& nDoSOut) const
-    {
-        if (IsInvalid()) {
-            nDoSOut = nDoS;
-            return true;
-        }
-        return false;
-    }
-    bool CorruptionPossible() const
-    {
-        return corruptionPossible;
-    }
-    unsigned char GetRejectCode() const { return chRejectCode; }
-    std::string GetRejectReason() const { return strRejectReason; }
-};
 
 /** RAII wrapper for VerifyDB: Verify consistency of the block and coin databases */
 class CVerifyDB
@@ -644,11 +442,5 @@ extern CCoinsViewCache* pcoinsTip;
 
 /** Global variable that points to the active block tree (protected by cs_main) */
 extern CBlockTreeDB* pblocktree;
-
-struct CBlockTemplate {
-    CBlock block;
-    std::vector<CAmount> vTxFees;
-    std::vector<int64_t> vTxSigOps;
-};
 
 #endif // BITCOIN_MAIN_H

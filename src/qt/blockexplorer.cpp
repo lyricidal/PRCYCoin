@@ -1,3 +1,4 @@
+#include "amount.h"
 #include "blockexplorer.h"
 #include "bitcoinunits.h"
 #include "chainparams.h"
@@ -44,7 +45,7 @@ static std::string ValueToString(CAmount nValue, bool AllowNegative = false)
     if (nValue < 0 && !AllowNegative)
         return "<span>" + _("unknown") + "</span>";
 
-    QString Str = BitcoinUnits::formatWithUnit(BitcoinUnits::DAPS, nValue);
+    QString Str = BitcoinUnits::formatWithUnit(BitcoinUnits::PRCY, nValue);
     if (AllowNegative && nValue > 0)
         Str = '+' + Str;
     return std::string("<span>") + Str.toUtf8().data() + "</span>";
@@ -209,7 +210,7 @@ std::string BlockToString(CBlockIndex* pBlock)
         if (tx.IsCoinBase())
             Reward += Out;
         else if (In < 0)
-            Fees = -Params().MaxMoneyOut();
+            Fees = -MAX_MONEY_OUT;
         else {
             Fees += In - Out;
             OutVolume += Out;
@@ -221,7 +222,7 @@ std::string BlockToString(CBlockIndex* pBlock)
     if (pBlock->nHeight == 0)
         Generated = OutVolume;
     else
-        Generated = GetBlockValue(pBlock->pprev);
+        Generated = GetBlockValue(pBlock->pprev->nHeight);
 
     std::string BlockContentCells[] =
         {
@@ -283,7 +284,7 @@ std::string TxToString(uint256 BlockHash, const CTransaction& tx)
             COutPoint Out = tx.vin[i].prevout;
             CTxOut PrevOut = getPrevOut(tx.vin[i].prevout);
             if (PrevOut.nValue < 0)
-                Input = -Params().MaxMoneyOut();
+                Input = -MAX_MONEY_OUT;
             else
                 Input += PrevOut.nValue;
             std::string InputsContentCells[] =
@@ -418,8 +419,8 @@ void BlockExplorer::showEvent(QShowEvent*)
         updateNavButtons();
 
         if (!GetBoolArg("-txindex", true)) {
-            QString Warning = tr("Not all transactions will be shown. To view all transactions you need to set txindex=1 in the configuration file (dapscoin.conf).");
-            QMessageBox::warning(this, "DAPS Blockchain Explorer", Warning, QMessageBox::Ok);
+            QString Warning = tr("Not all transactions will be shown. To view all transactions you need to set txindex=1 in the configuration file (prcycoin.conf).");
+            QMessageBox::warning(this, "PRCY Blockchain Explorer", Warning, QMessageBox::Ok);
         }
     }
 }
@@ -450,7 +451,7 @@ bool BlockExplorer::switchTo(const QString& query)
 
     // If the query is neither an integer nor a block hash, assume a transaction hash
     CTransaction tx;
-    uint256 hashBlock = 0;
+    uint256 hashBlock = UINT256_ZERO;
     if (GetTransaction(hash, tx, hashBlock, true)) {
         setContent(TxToString(hashBlock, tx));
         return true;

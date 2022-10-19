@@ -8,9 +8,7 @@
 #include "scheduler.h"
 
 #if defined(HAVE_CONFIG_H)
-#include "config/dapscoin-config.h"
-#else
-#define HAVE_WORKING_BOOST_SLEEP_FOR
+#include "config/prcycoin-config.h"
 #endif
 
 #include <boost/bind.hpp>
@@ -37,20 +35,11 @@ static void microTask(CScheduler &s, boost::mutex &mutex, int &counter, int delt
 }
 
 static void MicroSleep(uint64_t n) {
-#if defined(HAVE_WORKING_BOOST_SLEEP_FOR)
     boost::this_thread::sleep_for(boost::chrono::microseconds(n));
-#elif defined(HAVE_WORKING_BOOST_SLEEP)
-    boost::this_thread::sleep(boost::posix_time::microseconds(n));
-#else
-    //should never get here
-#error missing boost sleep implementation
-#endif
 }
 
 BOOST_AUTO_TEST_CASE(manythreads)
         {
-                seed_insecure_rand(false);
-
                 // Stress test: hundreds of microsecond-scheduled tasks,
                 // serviced by 10 threads.
                 //
@@ -65,7 +54,7 @@ BOOST_AUTO_TEST_CASE(manythreads)
 
                 boost::mutex counterMutex[10];
                 int counter[10] = { 0 };
-                boost::random::mt19937 rng(insecure_rand());
+                boost::random::mt19937 rng(42);
                 boost::random::uniform_int_distribution<> zeroToNine(0, 9);
                 boost::random::uniform_int_distribution<> randomMsec(-11, 1000);
                 boost::random::uniform_int_distribution<> randomDelta(-1000, 1000);

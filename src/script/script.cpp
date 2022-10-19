@@ -17,7 +17,6 @@ inline std::string ValueString(const std::vector<unsigned char>& vch)
 }
 } // anon namespace
 
-using namespace std;
 
 const char* GetOpName(opcodetype opcode)
 {
@@ -194,7 +193,7 @@ unsigned int CScript::GetSigOpCount(const CScript& scriptSig) const
     // get the last item that the scriptSig
     // pushes onto the stack:
     const_iterator pc = scriptSig.begin();
-    vector<unsigned char> data;
+    std::vector<unsigned char> data;
     while (pc < scriptSig.end())
     {
         opcodetype opcode;
@@ -237,9 +236,9 @@ bool CScript::IsPayToScriptHash() const
 {
     // Extra-fast test for pay-to-script-hash CScripts:
     return (this->size() == 23 &&
-            this->at(0) == OP_HASH160 &&
-            this->at(1) == 0x14 &&
-            this->at(22) == OP_EQUAL);
+            (*this)[0] == OP_HASH160 &&
+            (*this)[1] == 0x14 &&
+            (*this)[22] == OP_EQUAL);
 }
 
 bool CScript::IsPushOnly(const_iterator pc) const

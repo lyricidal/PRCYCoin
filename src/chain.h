@@ -8,13 +8,70 @@
 #ifndef BITCOIN_CHAIN_H
 #define BITCOIN_CHAIN_H
 
-#include "poa.h"
 #include "primitives/block.h"
 #include "tinyformat.h"
 #include "uint256.h"
 #include "util.h"
 
 #include <vector>
+
+class CBlockFileInfo
+{
+public:
+    unsigned int nBlocks;      //! number of blocks stored in file
+    unsigned int nSize;        //! number of used bytes of block file
+    unsigned int nUndoSize;    //! number of used bytes in the undo file
+    unsigned int nHeightFirst; //! lowest height of block in file
+    unsigned int nHeightLast;  //! highest height of block in file
+    uint64_t nTimeFirst;       //! earliest time of block in file
+    uint64_t nTimeLast;        //! latest time of block in file
+
+    ADD_SERIALIZE_METHODS;
+
+    template <typename Stream, typename Operation>
+    inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion)
+    {
+        READWRITE(VARINT(nBlocks));
+        READWRITE(VARINT(nSize));
+        READWRITE(VARINT(nUndoSize));
+        READWRITE(VARINT(nHeightFirst));
+        READWRITE(VARINT(nHeightLast));
+        READWRITE(VARINT(nTimeFirst));
+        READWRITE(VARINT(nTimeLast));
+    }
+
+    void SetNull()
+    {
+        nBlocks = 0;
+        nSize = 0;
+        nUndoSize = 0;
+        nHeightFirst = 0;
+        nHeightLast = 0;
+        nTimeFirst = 0;
+        nTimeLast = 0;
+    }
+
+    CBlockFileInfo()
+    {
+        SetNull();
+    }
+
+    std::string ToString() const;
+
+    /** update statistics (does not update nSize) */
+    void AddBlock(unsigned int nHeightIn, uint64_t nTimeIn)
+    {
+        if (nBlocks == 0 || nHeightFirst > nHeightIn)
+            nHeightFirst = nHeightIn;
+        if (nBlocks == 0 || nTimeFirst > nTimeIn)
+            nTimeFirst = nTimeIn;
+        nBlocks++;
+        if (nHeightIn > nHeightLast)
+            nHeightLast = nHeightIn;
+        if (nTimeIn > nTimeLast)
+            nTimeLast = nTimeIn;
+    }
+};
 
 struct CDiskBlockPos {
     int nFile;
@@ -205,15 +262,15 @@ public:
         nStakeTime = 0;
 
         nVersion = 0;
-        hashMerkleRoot = uint256();
+        hashMerkleRoot = UINT256_ZERO;
         nTime = 0;
         nBits = 0;
         nNonce = 0;
-        nAccumulatorCheckpoint = 0;
+        nAccumulatorCheckpoint = UINT256_ZERO;
 
-        hashPoAMerkleRoot = uint256();
-        minedHash = uint256();
-        hashPrevPoABlock = uint256();
+        hashPoAMerkleRoot = UINT256_ZERO;
+        minedHash = UINT256_ZERO;
+        hashPrevPoABlock = UINT256_ZERO;
     }
 
     CBlockIndex()
@@ -234,13 +291,13 @@ public:
             nAccumulatorCheckpoint = block.nAccumulatorCheckpoint;
 
         //Proof of Stake
-        bnChainTrust = uint256();
+        bnChainTrust = UINT256_ZERO;
         nMint = 0;
         nMoneySupply = 0;
         nFlags = 0;
         nStakeModifier = 0;
         nStakeModifierChecksum = 0;
-        hashProofOfStake = uint256();
+        hashProofOfStake = UINT256_ZERO;
 
         if (block.IsProofOfAudit()) {
             SetProofOfAudit();
@@ -351,8 +408,8 @@ public:
 
     unsigned int GetStakeEntropyBit() const
     {
-        unsigned int nEntropyBit = ((GetBlockHash().Get64()) & 1);
-        if (fDebug || GetBoolArg("-printstakemodifier", false))
+        unsigned int nEntropyBit = ((GetBlockHash().GetCheapHash()) & 1);
+        if (GetBoolArg("-printstakemodifier", false))
             LogPrintf("GetStakeEntropyBit: nHeight=%u hashBlock=%s nEntropyBit=%u\n", nHeight, GetBlockHash().ToString().c_str(), nEntropyBit);
 
         return nEntropyBit;
@@ -433,13 +490,13 @@ public:
 
     CDiskBlockIndex()
     {
-        hashPrev = uint256();
-        hashNext = uint256();
+        hashPrev = UINT256_ZERO;
+        hashNext = UINT256_ZERO;
     }
 
     explicit CDiskBlockIndex(const CBlockIndex* pindex) : CBlockIndex(*pindex)
     {
-        hashPrev = (pprev ? pprev->GetBlockHash() : uint256(0));
+        hashPrev = (pprev ? pprev->GetBlockHash() : UINT256_ZERO);
         if (IsProofOfAudit()) {
             hashPoAMerkleRoot = pindex->hashPoAMerkleRoot;
             minedHash = pindex->minedHash;
@@ -481,7 +538,7 @@ public:
         } else {
             const_cast<CDiskBlockIndex*>(this)->prevoutStake.SetNull();
             const_cast<CDiskBlockIndex*>(this)->nStakeTime = 0;
-            const_cast<CDiskBlockIndex*>(this)->hashProofOfStake = uint256();
+            const_cast<CDiskBlockIndex*>(this)->hashProofOfStake = UINT256_ZERO;
         }
 
         // block header
