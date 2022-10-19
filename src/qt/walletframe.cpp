@@ -40,11 +40,8 @@ bool WalletFrame::addWallet(const QString& name, WalletModel* walletModel)
 {
     if (!gui || !clientModel || !walletModel || mapWalletViews.count(name) > 0)
         return false;
-    LogPrint("wallet", "initializing walletview");
     WalletView* walletView = new WalletView(walletStack);
-    LogPrint("wallet", "setting bitcoin GUI");
     walletView->setBitcoinGUI(gui);
-    LogPrint("wallet", "setting client model");
     walletView->setClientModel(clientModel);
     walletView->setWalletModel(walletModel);
     walletView->showSyncStatus(bOutOfSync);
@@ -141,6 +138,11 @@ void WalletFrame::gotoOptionsPage()
 
 void WalletFrame::gotoSendCoinsPage(QString addr)
 {
+    QSettings settings;
+    if (settings.value("fLockSendStaking", false).toBool()) {
+       LogPrintf("Attempt to go to Send tab.\n");
+       return;
+    }
     QMap<QString, WalletView*>::const_iterator i;
     for (i = mapWalletViews.constBegin(); i != mapWalletViews.constEnd(); ++i)
         i.value()->gotoSendCoinsPage(addr);

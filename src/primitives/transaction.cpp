@@ -115,7 +115,7 @@ void CTransaction::UpdateHash() const
     *const_cast<uint256*>(&hash) = SerializeHash(*this);
 }
 
-CTransaction::CTransaction() : hash(), nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), hasPaymentID(0), paymentID(0), txType(TX_TYPE_FULL), nTxFee(0) { }
+CTransaction::CTransaction() : nVersion(CTransaction::CURRENT_VERSION), vin(), vout(), nLockTime(0), hasPaymentID(0), paymentID(0), txType(TX_TYPE_FULL), nTxFee(0) { }
 
 CTransaction::CTransaction(const CMutableTransaction &tx) : nVersion(tx.nVersion), vin(tx.vin), vout(tx.vout), nLockTime(tx.nLockTime), hasPaymentID(tx.hasPaymentID), paymentID(tx.paymentID), txType(tx.txType), bulletproofs(tx.bulletproofs), nTxFee(tx.nTxFee), c(tx.c), S(tx.S), ntxFeeKeyImage(tx.ntxFeeKeyImage) {
     UpdateHash();
@@ -145,7 +145,7 @@ CAmount CTransaction::GetValueOut() const
     CAmount nValueOut = 0;
     for (std::vector<CTxOut>::const_iterator it(vout.begin()); it != vout.end(); ++it)
     {
-        // DAPScoin: previously MoneyRange() was called here. This has been replaced with negative check and boundary wrap check.
+        // PRCYcoin: previously MoneyRange() was called here. This has been replaced with negative check and boundary wrap check.
         if (it->nValue < 0)
             throw std::runtime_error("CTransaction::GetValueOut() : value out of range : less than 0");
 

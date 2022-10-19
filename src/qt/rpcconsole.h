@@ -103,7 +103,7 @@ public Q_SLOTS:
     void showPeers();
     /** Switch to wallet-repair tab and show */
     void showRepair();
-    /** Open external (default) editor with dapscoin.conf */
+    /** Open external (default) editor with prcycoin.conf */
     void showConfEditor();
     /** Open external (default) editor with masternode.conf */
     void showMNConfEditor();
@@ -119,6 +119,8 @@ public Q_SLOTS:
     void unbanSelectedNode();
     /** Show DataDir folder in default browser */
     void showDataDir();
+    /** Show Qt Dir folder in default browser */
+    void showQtDir();
     /** Show folder with wallet backups in default browser */
     void showBackups();
 
@@ -130,7 +132,6 @@ Q_SIGNALS:
     void handleRestart(QStringList args);
 
 private:
-    static QString FormatBytes(quint64 bytes);
     void startExecutor();
     void setTrafficGraphRange(int mins);
     /** Build parameter list for restart */

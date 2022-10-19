@@ -6,6 +6,7 @@
 #include "data/script_valid.json.h"
 
 #include "core_io.h"
+#include "fs.h"
 #include "key.h"
 #include "keystore.h"
 #include "main.h"
@@ -13,6 +14,7 @@
 #include "script/script_error.h"
 #include "script/sign.h"
 #include "util.h"
+#include "test_prcycoin.h"
 
 #if defined(HAVE_CONSENSUS_LIB)
 #include "script/bitcoinconsensus.h"
@@ -27,20 +29,16 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
 #include <boost/test/unit_test.hpp>
 
 #include <univalue.h>
 
-using namespace std;
-using namespace boost::algorithm;
 
 // Uncomment if you want to output updated JSON tests.
 // #define UPDATE_JSON_TESTS
 
-unsigned int ParseScriptFlags(string strFlags);
-string FormatScriptFlags(unsigned int flags);
+unsigned int ParseScriptFlags(std::string strFlags);
+std::string FormatScriptFlags(unsigned int flags);
 
 UniValue
 read_json(const std::string& jsondata)
@@ -56,7 +54,7 @@ read_json(const std::string& jsondata)
 }
 
 #ifdef DISABLE_FAILED_TEST
-BOOST_AUTO_TEST_SUITE(script_tests)
+BOOST_FIXTURE_TEST_SUITE(script_tests, TestingSetup)
 
 CMutableTransaction BuildCreditingTransaction(const CScript& scriptPubKey)
 {
@@ -101,7 +99,7 @@ void DoTest(const CScript& scriptPubKey, const CScript& scriptSig, int flags, bo
 #if defined(HAVE_CONSENSUS_LIB)
     CDataStream stream(SER_NETWORK, PROTOCOL_VERSION);
     stream << tx2;
-    BOOST_CHECK_MESSAGE(bitcoinconsensus_verify_script(begin_ptr(scriptPubKey), scriptPubKey.size(), (const unsigned char*)&stream[0], stream.size(), 0, flags, NULL) == expect,message);
+    BOOST_CHECK_MESSAGE(bitcoinconsensus_verify_script(scriptPubKey.data()), scriptPubKey.size(), (const unsigned char*)&stream[0], stream.size(), 0, flags, NULL) == expect,message);
 #endif
 }
 
@@ -266,7 +264,7 @@ public:
 
     TestBuilder& PushRedeem()
     {
-        DoPush(static_cast<std::vector<unsigned char> >(scriptPubKey));
+        DoPush(std::vector<unsigned char>(scriptPubKey.begin(), scriptPubKey.end()));
         return *this;
     }
 
@@ -602,10 +600,10 @@ BOOST_AUTO_TEST_CASE(script_build)
     }
 
 #ifdef UPDATE_JSON_TESTS
-    FILE* valid = fopen("script_valid.json.gen", "w");
+    FILE* valid = fsbridge::fopen("script_valid.json.gen", "w");
     fputs(strGood.c_str(), valid);
     fclose(valid);
-    FILE* invalid = fopen("script_invalid.json.gen", "w");
+    FILE* invalid = fsbridge::fopen("script_invalid.json.gen", "w");
     fputs(strBad.c_str(), invalid);
     fclose(invalid);
 #endif
@@ -826,7 +824,7 @@ BOOST_AUTO_TEST_CASE(script_CHECKMULTISIG23)
     CScript badsig6 = sign_multisig(scriptPubKey23, keys, txTo23);
     BOOST_CHECK(!VerifyScript(badsig6, scriptPubKey23, flags, MutableTransactionSignatureChecker(&txTo23, 0), &err));
     BOOST_CHECK_MESSAGE(err == SCRIPT_ERR_INVALID_STACK_OPERATION, ScriptErrorString(err));
-}    
+}
 
 BOOST_AUTO_TEST_CASE(script_combineSigs)
 {
@@ -878,7 +876,7 @@ BOOST_AUTO_TEST_CASE(script_combineSigs)
     combined = CombineSignatures(scriptPubKey, txTo, 0, scriptSigCopy, scriptSig);
     BOOST_CHECK(combined == scriptSigCopy || combined == scriptSig);
     // dummy scriptSigCopy with placeholder, should always choose non-placeholder:
-    scriptSigCopy = CScript() << OP_0 << static_cast<vector<unsigned char> >(pkSingle);
+    scriptSigCopy = CScript() << OP_0 << std::vector<unsigned char>(pkSingle.begin(), pkSingle.end());
     combined = CombineSignatures(scriptPubKey, txTo, 0, scriptSigCopy, scriptSig);
     BOOST_CHECK(combined == scriptSig);
     combined = CombineSignatures(scriptPubKey, txTo, 0, scriptSig, scriptSigCopy);

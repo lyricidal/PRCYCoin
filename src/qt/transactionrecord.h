@@ -6,6 +6,7 @@
 #define BITCOIN_QT_TRANSACTIONRECORD_H
 
 #include "amount.h"
+#include "script/script.h"
 #include "uint256.h"
 
 #include <QList>
@@ -80,13 +81,7 @@ public:
         RecvWithAddress,
         MNReward,
         RecvFromOther,
-        SendToSelf,
-        RecvWithObfuscation,
-        ObfuscationDenominate,
-        ObfuscationCollateralPayment,
-        ObfuscationMakeCollaterals,
-        ObfuscationCreateDenominations,
-        Obfuscated
+        SendToSelf
     };
 
     /** Number of confirmation recommended for accepting a transaction */

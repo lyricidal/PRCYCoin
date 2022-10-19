@@ -6,6 +6,7 @@
 #define BITCOIN_QT_GUIUTIL_H
 
 #include "amount.h"
+#include "fs.h"
 
 #include <QCalendarWidget>
 #include <QEvent>
@@ -17,7 +18,6 @@
 #include <QTableView>
 #include <QTableWidget>
 
-#include <boost/filesystem.hpp>
 
 class QValidatedLineEdit;
 class SendCoinsRecipient;
@@ -31,7 +31,7 @@ class QUrl;
 class QWidget;
 QT_END_NAMESPACE
 
-/** Utility functions used by the DAPS Qt UI.
+/** Utility functions used by the PRCY Qt UI.
  */
 namespace GUIUtil
 {
@@ -39,7 +39,7 @@ namespace GUIUtil
 QString dateTimeStr(const QDateTime& datetime);
 QString dateTimeStr(qint64 nTime);
 
-// Render DAPS addresses in monospace font
+// Render PRCY addresses in monospace font
 QFont bitcoinAddressFont();
 
 void HideDisabledWidgets(QVector<QWidget*> widgets  );
@@ -49,7 +49,7 @@ void HideDisabledWidgets(QVector<QWidget*> widgets  );
 void setupAddressWidget(QValidatedLineEdit* widget, QWidget* parent);
 void setupAmountWidget(QLineEdit* widget, QWidget* parent);
 
-// Parse "dapscoin:" URI into recipient object, return true on successful parsing
+// Parse "prcycoin:" URI into recipient object, return true on successful parsing
 bool parseBitcoinURI(const QUrl& uri, SendCoinsRecipient* out);
 bool parseBitcoinURI(QString uri, SendCoinsRecipient* out);
 QString formatBitcoinURI(const SendCoinsRecipient& info);
@@ -75,7 +75,7 @@ void copyEntryData(QAbstractItemView* view, int column, int role = Qt::EditRole)
        @param[in] role    Data role to extract from the model
        @see  TransactionView::copyLabel, TransactionView::copyAmount, TransactionView::copyAddress
      */
-QString getEntryData(QAbstractItemView *view, int column, int role);
+QVariant getEntryData(QAbstractItemView *view, int column, int role);
 
 void setClipboard(const QString& str);
 
@@ -109,26 +109,29 @@ QString getOpenFileName(QWidget* parent, const QString& caption, const QString& 
     */
 Qt::ConnectionType blockingGUIThreadConnection();
 
+// Activate, show and raise the widget
+void bringToFront(QWidget* w);
+
 // Determine whether a widget is hidden behind other windows
 bool isObscured(QWidget* w);
 
 // Open debug.log
-void openDebugLogfile();
+bool openDebugLogfile();
 
-// Open dapscoin.conf
-void openConfigfile();
+// Open prcycoin.conf
+bool openConfigfile();
 
 // Open masternode.conf
-void openMNConfigfile();
+bool openMNConfigfile();
 
 // Browse DataDir folder
-void showDataDir();
+bool showDataDir();
+
+// Browse Qt Dir folder
+void showQtDir();
 
 // Browse backup folder
-void showBackups();
-
-// Replace invalid default fonts with known good ones
-void SubstituteFonts(const QString& language);
+bool showBackups();
 
 /** Qt event filter that intercepts ToolTipChange events, and replaces the tooltip with a rich text
       representation if needed. This assures that Qt can word-wrap long tooltip messages.
@@ -243,10 +246,10 @@ bool isExternal(QString theme);
 void prompt(QString message);
 
 /* Convert QString to OS specific boost path through UTF-8 */
-boost::filesystem::path qstringToBoostPath(const QString& path);
+fs::path qstringToBoostPath(const QString& path);
 
 /* Convert OS specific boost path to QString through UTF-8 */
-QString boostPathToQString(const boost::filesystem::path& path);
+QString boostPathToQString(const fs::path& path);
 
 /* Convert seconds into a QString with days, hours, mins, secs */
 QString formatDurationStr(int secs);
@@ -260,19 +263,9 @@ QString formatPingTime(double dPingTime);
 /* Format a CNodeCombinedStats.nTimeOffset into a user-readable string. */
 QString formatTimeOffset(int64_t nTimeOffset);
 
-#if defined(Q_OS_MAC)
-    // workaround for Qt OSX Bug:
-    // https://bugreports.qt-project.org/browse/QTBUG-15631
-    // QProgressBar uses around 10% CPU even when app is in background
-    class ProgressBar : public QProgressBar
-    {
-        bool event(QEvent *e) {
-            return (e->type() != QEvent::StyleAnimationUpdate) ? QProgressBar::event(e) : false;
-        }
-    };
-#else
-    typedef QProgressBar ProgressBar;
-#endif
+QString formatBytes(uint64_t bytes);
+
+typedef QProgressBar ProgressBar;
 
 } // namespace GUIUtil
 

@@ -24,7 +24,6 @@
 
 class AddressTableModel;
 class OptionsModel;
-class RecentRequestsTableModel;
 class TransactionTableModel;
 class WalletModelTransaction;
 
@@ -127,14 +126,15 @@ public:
         Unencrypted,                 // !wallet->IsCrypted()
         Locked,                      // wallet->IsCrypted() && wallet->IsLocked()
         Unlocked,                    // wallet->IsCrypted() && !wallet->IsLocked()
-        UnlockedForAnonymizationOnly // wallet->IsCrypted() && !wallet->IsLocked() && wallet->fWalletUnlockAnonymizeOnly
+        UnlockedForStakingOnly // wallet->IsCrypted() && !wallet->IsLocked() && wallet->fWalletUnlockStakingOnly
     };
 
     OptionsModel* getOptionsModel();
     AddressTableModel* getAddressTableModel();
     TransactionTableModel* getTransactionTableModel();
     QAbstractTableModel* getTxTableModel();
-    RecentRequestsTableModel* getRecentRequestsTableModel();
+
+    bool isShutdownRequested();
 
     CAmount getBalance(const CCoinControl* coinControl = NULL) const;
     CAmount getUnconfirmedBalance() const;
@@ -147,7 +147,7 @@ public:
     CAmount getWatchImmatureBalance() const;
     EncryptionStatus getEncryptionStatus() const;
     CKey generateNewKey() const; //for temporary paper wallet key generation
-    bool setAddressBook(const CTxDestination& address, const string& strName, const string& strPurpose);
+    bool setAddressBook(const CTxDestination& address, const std::string& strName, const std::string& strPurpose);
     void encryptKey(const CKey key, const std::string& pwd, const std::string& slt, std::vector<unsigned char>& crypted);
     void decryptKey(const std::vector<unsigned char>& crypted, const std::string& slt, const std::string& pwd, CKey& key);
     void emitBalanceChanged(); // Force update of UI-elements even when no values have changed
@@ -179,7 +179,7 @@ public:
     bool lockForStakingOnly(const SecureString& passPhrase = SecureString());
 
     bool changePassphrase(const SecureString& oldPass, const SecureString& newPass);
-    // Is wallet unlocked for anonymization only?
+    // Is wallet unlocked for staking only?
     bool isAnonymizeOnlyUnlocked();
     // Wallet backup
     bool backupWallet(const QString& filename);
@@ -223,6 +223,7 @@ public:
     void unlockCoin(COutPoint& output);
     void listLockedCoins(std::vector<COutPoint>& vOutpts);
 
+    std::string GetUniqueWalletBackupName();
     void loadReceiveRequests(std::vector<std::string>& vReceiveRequests);
     bool saveReceiveRequest(const std::string& sAddress, const int64_t nId, const std::string& sRequest);
 
@@ -237,7 +238,6 @@ private:
 
     AddressTableModel* addressTableModel;
     TransactionTableModel* transactionTableModel;
-    RecentRequestsTableModel* recentRequestsTableModel;
     QAbstractTableModel* txTableModel;
 
     // Cache some values to be able to detect changes
@@ -301,7 +301,7 @@ public Q_SLOTS:
 namespace WalletUtil
 {
 // get transaction string maps with keys ["date","address", "amount", "id", "type"]
-vector<std::map<QString, QString> > getTXs(CWallet* wallet);
+std::vector<std::map<QString, QString> > getTXs(CWallet* wallet);
 std::map<QString, QString> getTx(CWallet* wallet, uint256 hash);
 std::map<QString, QString> getTx(CWallet* wallet, CWalletTx tx);
 //

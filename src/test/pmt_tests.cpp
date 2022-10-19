@@ -7,27 +7,28 @@
 #include "streams.h"
 #include "uint256.h"
 #include "version.h"
+#include "random.h"
+#include "test/test_prcycoin.h"
 
 #include <vector>
 
 #include <boost/test/unit_test.hpp>
 
-using namespace std;
 
 class CPartialMerkleTreeTester : public CPartialMerkleTree
 {
 public:
     // flip one bit in one of the hashes - this should break the authentication
     void Damage() {
-        unsigned int n = rand() % vHash.size();
-        int bit = rand() % 256;
+        unsigned int n = InsecureRandRange(vHash.size());
+        int bit = InsecureRandBits(8);
         uint256 &hash = vHash[n];
         hash ^= ((uint256)1 << bit);
     }
 };
 
 #ifdef DISABLE_PASSED_TEST
-BOOST_AUTO_TEST_SUITE(pmt_tests)
+BOOST_FIXTURE_TEST_SUITE(pmt_tests, BasicTestingSetup)
 
 BOOST_AUTO_TEST_CASE(pmt_test1)
 {
@@ -46,7 +47,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
 
         // calculate actual merkle root and height
         uint256 merkleRoot1 = block.BuildMerkleTree();
-        std::vector<uint256> vTxid(nTx, 0);
+        std::vector<uint256> vTxid(nTx, UINT256_ZERO);
         for (unsigned int j=0; j<nTx; j++)
             vTxid[j] = block.vtx[j].GetHash();
         int nHeight = 1, nTx_ = nTx;
@@ -61,7 +62,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
             std::vector<bool> vMatch(nTx, false);
             std::vector<uint256> vMatchTxid1;
             for (unsigned int j=0; j<nTx; j++) {
-                bool fInclude = (secp256k1_rand32() & ((1 << (att/2)) - 1)) == 0;
+                bool fInclude = InsecureRandBits(att / 2) == 0;
                 vMatch[j] = fInclude;
                 if (fInclude)
                     vMatchTxid1.push_back(vTxid[j]);
@@ -88,7 +89,7 @@ BOOST_AUTO_TEST_CASE(pmt_test1)
 
             // check that it has the same merkle root as the original, and a valid one
             BOOST_CHECK(merkleRoot1 == merkleRoot2);
-            BOOST_CHECK(merkleRoot2 != 0);
+            BOOST_CHECK(!merkleRoot2.IsNull());
 
             // check that it contains the matched transactions (in the same order!)
             BOOST_CHECK(vMatchTxid1 == vMatchTxid2);

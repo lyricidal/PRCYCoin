@@ -10,6 +10,7 @@
 
 #include "addressbookpage.h"
 #include "addresstablemodel.h"
+#include "bitcoinunits.h"
 #include "guiutil.h"
 #include "optionsmodel.h"
 #include "walletmodel.h"
@@ -31,7 +32,7 @@ SendCoinsEntry::SendCoinsEntry(QWidget* parent) : QStackedWidget(parent),
     ui->payToLayout_s->setSpacing(4);
 #endif
 
-    // normal dapscoin address field
+    // normal prcycoin address field
     GUIUtil::setupAddressWidget(ui->payTo, this);
 
     // Connect signals
@@ -46,7 +47,7 @@ SendCoinsEntry::SendCoinsEntry(QWidget* parent) : QStackedWidget(parent),
 
     QLocale lo(QLocale::C);
     lo.setNumberOptions(QLocale::RejectGroupSeparator);
-    QDoubleValidator *dblVal = new QDoubleValidator(0, Params().MAX_MONEY, 8, ui->payAmount);
+    QDoubleValidator *dblVal = new QDoubleValidator(0, MAX_MONEY_OUT, 8, ui->payAmount);
     dblVal->setNotation(QDoubleValidator::StandardNotation);
     dblVal->setLocale(lo);
     ui->payAmount->setValidator(dblVal);
@@ -75,14 +76,14 @@ void SendCoinsEntry::on_addressBookButton_clicked()
     }
 }
 
-/*void SendCoinsEntry::on_clearAllButton_clicked()
+void SendCoinsEntry::on_clearAllButton_clicked()
 {
     ui->payTo->clear();
     ui->addAsLabel->clear();
     ui->payAmount->clear();
     ui->payTo->setStyleSheet(GUIUtil::loadStyleSheet());
     ui->payAmount->setStyleSheet(GUIUtil::loadStyleSheet());
-}*/
+}
 
 void SendCoinsEntry::on_payTo_textChanged(const QString& address)
 {
@@ -130,10 +131,10 @@ static inline int64_t roundint64(double d)
 
 CAmount SendCoinsEntry::getValidatedAmount() {
     double dAmount = ui->payAmount->text().toDouble();
-    if (dAmount < 0.0 || dAmount > Params().MAX_MONEY) {
+    if (dAmount < 0.0 || dAmount > MAX_MONEY_OUT) {
         QMessageBox msgBox;
         msgBox.setWindowTitle("Invalid Amount");
-        msgBox.setText("Invalid amount entered. Please enter an amount less than 2.1B DAPS.");
+        msgBox.setText("Invalid amount entered. Please enter an amount less than 2.1B PRCY.");
         msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
         msgBox.setIcon(QMessageBox::Warning);
         msgBox.exec();
@@ -245,4 +246,9 @@ void SendCoinsEntry::errorAmount(bool valid){
     if (valid)
         ui->payAmount->setStyleSheet(GUIUtil::loadStyleSheet());
     else ui->payAmount->setStyleSheet("border-color: red;");
+}
+
+void SendCoinsEntry::on_useAllSpendableButton_clicked()
+{
+    ui->payAmount->setText(BitcoinUnits::format(BitcoinUnits::PRCY, pwalletMain->GetSpendableBalance(), false, BitcoinUnits::separatorNever));
 }

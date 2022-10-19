@@ -8,6 +8,7 @@
 
 #include "base58.h"
 #include "clientversion.h"
+#include "httpserver.h"
 #include "init.h"
 #include "main.h"
 #include "masternode-sync.h"
@@ -27,9 +28,6 @@
 #include <univalue.h>
 #include <boost/assign/list_of.hpp>
 
-using namespace boost;
-using namespace boost::assign;
-using namespace std;
 
 /**
  * @note Do not add or change anything in the information returned by this
@@ -46,7 +44,7 @@ using namespace std;
  **/
 UniValue getinfo(const UniValue &params, bool fHelp) {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
+        throw std::runtime_error(
             "getinfo\n"
             "Returns an object containing various state info.\n"
             "\nResult:\n"
@@ -54,8 +52,9 @@ UniValue getinfo(const UniValue &params, bool fHelp) {
             "  \"version\": xxxxx,           (numeric) the server version\n"
             "  \"protocolversion\": xxxxx,   (numeric) the protocol version\n"
             "  \"walletversion\": xxxxx,     (numeric) the wallet version\n"
-            "  \"balance\": xxxxxxx,         (numeric) the total dapscoin balance of the wallet\n"
+            "  \"balance\": xxxxxxx,         (numeric) the total prcycoin balance of the wallet\n"
             "  \"blocks\": xxxxxx,           (numeric) the current number of blocks processed in the server\n"
+            "  \"synced\": xxxxxx,           (boolean) if the server is synced or not\n"
             "  \"timeoffset\": xxxxx,        (numeric) the time offset\n"
             "  \"connections\": xxxxx,       (numeric) the number of connections\n"
             "  \"proxy\": \"host:port\",     (string, optional) the proxy used by the server\n"
@@ -65,8 +64,8 @@ UniValue getinfo(const UniValue &params, bool fHelp) {
             "  \"keypoololdest\": xxxxxx,    (numeric) the timestamp (seconds since GMT epoch) of the oldest pre-generated key in the key pool\n"
             "  \"keypoolsize\": xxxx,        (numeric) how many new keys are pre-generated\n"
             "  \"unlocked_until\": ttt,      (numeric) the timestamp in seconds since epoch (midnight Jan 1 1970 GMT) that the wallet is unlocked for transfers, or 0 if the wallet is locked\n"
-            "  \"paytxfee\": x.xxxx,         (numeric) the transaction fee set in dapscoin/kb\n"
-            "  \"relayfee\": x.xxxx,         (numeric) minimum relay fee for non-free transactions in dapscoin/kb\n"
+            "  \"paytxfee\": x.xxxx,         (numeric) the transaction fee set in prcycoin/kb\n"
+            "  \"relayfee\": x.xxxx,         (numeric) minimum relay fee for non-free transactions in prcycoin/kb\n"
             "  \"staking mode\": enabled|disabled,  (string) if staking is enabled or disabled\n"
             "  \"staking status\": active|inactive, (string) if staking is active or inactive\n"
             "  \"errors\": \"...\"           (string) any error messages\n"
@@ -87,18 +86,12 @@ UniValue getinfo(const UniValue &params, bool fHelp) {
     }
 #endif
     obj.push_back(Pair("blocks", (int) chainActive.Height()));
+    obj.push_back(Pair("synced", masternodeSync.IsBlockchainSynced()));
     obj.push_back(Pair("timeoffset", GetTimeOffset()));
     obj.push_back(Pair("connections", (int) vNodes.size()));
-    obj.push_back(Pair("proxy", (proxy.IsValid() ? proxy.proxy.ToStringIPPort() : string())));
+    obj.push_back(Pair("proxy", (proxy.IsValid() ? proxy.proxy.ToStringIPPort() : std::string())));
     obj.push_back(Pair("difficulty", (double) GetDifficulty()));
     obj.push_back(Pair("testnet", Params().TestnetToBeDeprecatedFieldRPC()));
-
-    // During inital block verification chainActive.Tip() might be not yet initialized
-    if (chainActive.Tip() == NULL) {
-        obj.push_back(Pair("status", "Blockchain information not yet available"));
-        return obj;
-    }
-
     obj.push_back(Pair("moneysupply",ValueFromAmount(chainActive.Tip()->nMoneySupply)));
 
 #ifdef ENABLE_WALLET
@@ -124,7 +117,7 @@ UniValue getinfo(const UniValue &params, bool fHelp) {
             obj.push_back(Pair("staking status", ("inactive (no peer connections)")));
         } else if (!masternodeSync.IsSynced()) {
             obj.push_back(Pair("staking status", ("inactive (syncing masternode list)")));
-        } else if (!pwalletMain->MintableCoins() && pwalletMain->stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
+        } else if (!pwalletMain->MintableCoins() && pwalletMain->combineMode == CombineMode::ON) {
             obj.push_back(Pair("staking status", ("delayed (waiting for 100 blocks)")));
         } else if (!pwalletMain->MintableCoins()) {
             obj.push_back(Pair("staking status", ("inactive (no mintable coins)")));
@@ -136,13 +129,31 @@ UniValue getinfo(const UniValue &params, bool fHelp) {
     return obj;
 }
 
+UniValue getversion(const UniValue &params, bool fHelp) {
+    if (fHelp || params.size() != 0)
+        throw std::runtime_error(
+            "getversion\n"
+            "Returns the server version.\n"
+            "\nResult:\n"
+            "{\n"
+            "  \"version\": xxxxx,           (numeric) the server version\n"
+            "}\n"
+            "\nExamples:\n" +
+            HelpExampleCli("getversion", "") + HelpExampleRpc("getversion", ""));
+    LOCK(cs_main);
+
+    UniValue obj(UniValue::VOBJ);
+    obj.push_back(Pair("version", CLIENT_VERSION));
+    return obj;
+}
+
 UniValue mnsync(const UniValue &params, bool fHelp) {
     std::string strMode;
     if (params.size() == 1)
         strMode = params[0].get_str();
 
     if (fHelp || params.size() != 1 || (strMode != "status" && strMode != "reset")) {
-        throw runtime_error(
+        throw std::runtime_error(
                 "mnsync \"status|reset\"\n"
                 "\nReturns the sync status or resets sync.\n"
 
@@ -255,15 +266,15 @@ public:
 UniValue validateaddress(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
-                "validateaddress \"dapscoinaddress\"\n"
-                "\nReturn information about the given dapscoin address.\n"
+        throw std::runtime_error(
+                "validateaddress \"prcycoinaddress\"\n"
+                "\nReturn information about the given prcycoin address.\n"
                 "\nArguments:\n"
-                "1. \"dapscoinaddress\"     (string, required) The dapscoin address to validate\n"
+                "1. \"prcycoinaddress\"     (string, required) The prcycoin address to validate\n"
                 "\nResult:\n"
                 "{\n"
                 "  \"isvalid\" : true|false,         (boolean) If the address is valid or not. If not, this is the only property returned.\n"
-                "  \"address\" : \"dapscoinaddress\", (string) The dapscoin address validated\n"
+                "  \"address\" : \"prcycoinaddress\", (string) The prcycoin address validated\n"
                 "  \"scriptPubKey\" : \"hex\",       (string) The hex encoded scriptPubKey generated by the address\n"
                 "  \"ismine\" : true|false,          (boolean) If the address is yours or not\n"
                 "  \"iswatchonly\" : true|false,     (boolean) If the address is watchonly\n"
@@ -290,7 +301,7 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
     ret.push_back(Pair("isvalid", isValid));
     if (isValid) {
         CTxDestination dest = address.Get();
-        string currentAddress = address.ToString();
+        std::string currentAddress = address.ToString();
         ret.push_back(Pair("address", currentAddress));
         CScript scriptPubKey = GetScriptForDestination(dest);
         ret.push_back(Pair("scriptPubKey", HexStr(scriptPubKey.begin(), scriptPubKey.end())));
@@ -308,6 +319,39 @@ UniValue validateaddress(const UniValue& params, bool fHelp)
     return ret;
 }
 
+UniValue validatestealthaddress(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw std::runtime_error(
+                "validatestealthaddress \"prcycoinstealthaddress\"\n"
+                "\nReturn information about the given prcycoin stealth address.\n"
+                "\nArguments:\n"
+                "1. \"prcycoinstealthaddress\"     (string, required) The prcycoin stealth address to validate\n"
+                "\nResult:\n"
+                "{\n"
+                "  \"isvalid\" : true|false,         (boolean) If the address is valid or not. If not, this is the only property returned.\n"
+                "}\n"
+                "\nExamples:\n" +
+                HelpExampleCli("validatestealthaddress", "\"Pap5WCV4SjVMGLyYf98MEX82ErBEMVpg9ViQ1up3aBib6Fz4841SahrRXG6eSNSLBSNvEiGuQiWKXJC3RDfmotKv15oCrh6N2Ym\"") +
+                HelpExampleRpc("validatestealthaddress", "\"Pap5WCV4SjVMGLyYf98MEX82ErBEMVpg9ViQ1up3aBib6Fz4841SahrRXG6eSNSLBSNvEiGuQiWKXJC3RDfmotKv15oCrh6N2Ym\""));
+    EnsureWallet();
+
+    std::string addr = params[0].get_str();
+
+    UniValue ret(UniValue::VOBJ);
+    CPubKey viewKey, spendKey;
+    bool hasPaymentID;
+    uint64_t paymentID;
+    bool isValid = true;
+
+    if (!CWallet::DecodeStealthAddress(addr, viewKey, spendKey, hasPaymentID, paymentID)) {
+        isValid = false;
+    }
+    ret.push_back(Pair("isvalid", isValid));
+
+    return ret;
+}
+
 /**
  * Used by addmultisigaddress / createmultisig:
  */
@@ -317,33 +361,33 @@ CScript _createmultisig_redeemScript(const UniValue& params) {
 
     // Gather public keys
     if (nRequired < 1)
-        throw runtime_error("a multisignature address must require at least one key to redeem");
+        throw std::runtime_error("a multisignature address must require at least one key to redeem");
     if ((int) keys.size() < nRequired)
-        throw runtime_error(
+        throw std::runtime_error(
                 strprintf("not enough keys supplied "
                           "(got %u keys, but need at least %d to redeem)",
                           keys.size(), nRequired));
     if (keys.size() > 16)
-        throw runtime_error(
+        throw std::runtime_error(
                 "Number of addresses involved in the multisignature address creation > 16\nReduce the number");
     std::vector <CPubKey> pubkeys;
     pubkeys.resize(keys.size());
     for (unsigned int i = 0; i < keys.size(); i++) {
         const std::string &ks = keys[i].get_str();
 #ifdef ENABLE_WALLET
-        // Case 1: DAPS address and we have full public key:
+        // Case 1: PRCY address and we have full public key:
         CBitcoinAddress address(ks);
         if (pwalletMain && address.IsValid()) {
             CKeyID keyID;
             if (!address.GetKeyID(keyID))
-                throw runtime_error(
+                throw std::runtime_error(
                     strprintf("%s does not refer to a key", ks));
             CPubKey vchPubKey;
             if (!pwalletMain->GetPubKey(keyID, vchPubKey))
-                throw runtime_error(
+                throw std::runtime_error(
                     strprintf("no full public key for address %s", ks));
             if (!vchPubKey.IsFullyValid())
-                throw runtime_error(" Invalid public key: " + ks);
+                throw std::runtime_error(" Invalid public key: " + ks);
             pubkeys[i] = vchPubKey;
         }
 
@@ -353,16 +397,16 @@ CScript _createmultisig_redeemScript(const UniValue& params) {
         if (IsHex(ks)) {
             CPubKey vchPubKey(ParseHex(ks));
             if (!vchPubKey.IsFullyValid())
-                throw runtime_error(" Invalid public key: " + ks);
+                throw std::runtime_error(" Invalid public key: " + ks);
             pubkeys[i] = vchPubKey;
         } else {
-            throw runtime_error(" Invalid public key: " + ks);
+            throw std::runtime_error(" Invalid public key: " + ks);
         }
     }
     CScript result = GetScriptForMultisig(nRequired, pubkeys);
 
     if (result.size() > MAX_SCRIPT_ELEMENT_SIZE)
-        throw runtime_error(
+        throw std::runtime_error(
                 strprintf("redeemScript exceeds size limit: %d > %d", result.size(), MAX_SCRIPT_ELEMENT_SIZE));
 
     return result;
@@ -370,15 +414,15 @@ CScript _createmultisig_redeemScript(const UniValue& params) {
 
 UniValue createmultisig(const UniValue& params, bool fHelp) {
     if (fHelp || params.size() < 2 || params.size() > 2) {
-        string msg = "createmultisig nrequired [\"key\",...]\n"
+        std::string msg = "createmultisig nrequired [\"key\",...]\n"
                      "\nCreates a multi-signature address with n signature of m keys required.\n"
                      "It returns a json object with the address and redeemScript.\n"
 
                      "\nArguments:\n"
                      "1. nrequired      (numeric, required) The number of required signatures out of the n keys or addresses.\n"
-                     "2. \"keys\"       (string, required) A json array of keys which are dapscoin addresses or hex-encoded public keys\n"
+                     "2. \"keys\"       (string, required) A json array of keys which are prcycoin addresses or hex-encoded public keys\n"
                      "     [\n"
-                     "       \"key\"    (string) dapscoin address or hex-encoded public key\n"
+                     "       \"key\"    (string) prcycoin address or hex-encoded public key\n"
                      "       ,...\n"
                      "     ]\n"
 
@@ -394,7 +438,7 @@ UniValue createmultisig(const UniValue& params, bool fHelp) {
                                     "2 \"[\\\"16sSauSf5pF2UkUwvKGq4qjNRzBZYqgEL5\\\",\\\"171sgjn4YtPu27adkKGrdDwzRTxnRkBfKV\\\"]\"") +
                      "\nAs a json rpc call\n" + HelpExampleRpc("createmultisig",
                                                                "2, \"[\\\"16sSauSf5pF2UkUwvKGq4qjNRzBZYqgEL5\\\",\\\"171sgjn4YtPu27adkKGrdDwzRTxnRkBfKV\\\"]\"");
-        throw runtime_error(msg);
+        throw std::runtime_error(msg);
     }
 
     // Construct using pay-to-script-hash:
@@ -411,11 +455,11 @@ UniValue createmultisig(const UniValue& params, bool fHelp) {
 
 UniValue verifymessage(const UniValue& params, bool fHelp) {
     if (fHelp || params.size() != 3)
-        throw runtime_error(
-            "verifymessage \"dapscoinaddress\" \"signature\" \"message\"\n"
+        throw std::runtime_error(
+            "verifymessage \"prcycoinaddress\" \"signature\" \"message\"\n"
             "\nVerify a signed message\n"
             "\nArguments:\n"
-            "1. \"dapscoinaddress\"  (string, required) The dapscoin address to use for the signature.\n"
+            "1. \"prcycoinaddress\"  (string, required) The prcycoin address to use for the signature.\n"
             "2. \"signature\"       (string, required) The signature provided by the signer in base 64 encoding (see signmessage).\n"
             "3. \"message\"         (string, required) The message that was signed.\n"
             "\nResult:\n"
@@ -427,9 +471,9 @@ UniValue verifymessage(const UniValue& params, bool fHelp) {
             "\nVerify the signature\n" + HelpExampleCli("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XZ\" \"signature\" \"my message\"") +
             "\nAs json rpc\n" + HelpExampleRpc("verifymessage", "\"1D1ZrZNe3JUo7ZycKEYQQiQAWd9y54F4XZ\", \"signature\", \"my message\""));
 
-    string strAddress = params[0].get_str();
-    string strSign = params[1].get_str();
-    string strMessage = params[2].get_str();
+    std::string strAddress = params[0].get_str();
+    std::string strSign = params[1].get_str();
+    std::string strMessage = params[2].get_str();
 
     CBitcoinAddress addr(strAddress);
     if (!addr.IsValid())
@@ -440,7 +484,7 @@ UniValue verifymessage(const UniValue& params, bool fHelp) {
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to key");
 
     bool fInvalid = false;
-    vector<unsigned char> vchSig = DecodeBase64(strSign.c_str(), &fInvalid);
+    std::vector<unsigned char> vchSig = DecodeBase64(strSign.c_str(), &fInvalid);
 
     if (fInvalid)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Malformed base64 encoding");
@@ -458,7 +502,7 @@ UniValue verifymessage(const UniValue& params, bool fHelp) {
 
 UniValue setmocktime(const UniValue& params, bool fHelp) {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
                 "setmocktime timestamp\n"
                 "\nSet the local time to given timestamp (-regtest only)\n"
                 "\nArguments:\n"
@@ -466,7 +510,7 @@ UniValue setmocktime(const UniValue& params, bool fHelp) {
                 "   Pass 0 to go back to using the system time.");
 
     if (!Params().MineBlocksOnDemand())
-        throw runtime_error("setmocktime for regression testing (-regtest mode) only");
+        throw std::runtime_error("setmocktime for regression testing (-regtest mode) only");
 
     LOCK(cs_main);
 
@@ -476,11 +520,83 @@ UniValue setmocktime(const UniValue& params, bool fHelp) {
     return NullUniValue;
 }
 
+void EnableOrDisableLogCategories(UniValue cats, bool enable) {
+    cats = cats.get_array();
+    for (unsigned int i = 0; i < cats.size(); ++i) {
+        std::string cat = cats[i].get_str();
+
+        bool success;
+        if (enable) {
+            success = g_logger->EnableCategory(cat);
+        } else {
+            success = g_logger->DisableCategory(cat);
+        }
+
+        if (!success)
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "unknown logging category " + cat);
+    }
+}
+
+UniValue logging(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() > 2) {
+        throw std::runtime_error(
+            "logging [include,...] <exclude>\n"
+            "Gets and sets the logging configuration.\n"
+            "When called without an argument, returns the list of categories that are currently being debug logged.\n"
+            "When called with arguments, adds or removes categories from debug logging.\n"
+            "The valid logging categories are: " + ListLogCategories() + "\n"
+            "libevent logging is configured on startup and cannot be modified by this RPC during runtime."
+            "Arguments:\n"
+            "1. \"include\" (array of strings) add debug logging for these categories.\n"
+            "2. \"exclude\" (array of strings) remove debug logging for these categories.\n"
+            "\nResult: <categories>  (string): a list of the logging categories that are active.\n"
+            "\nExamples:\n"
+            + HelpExampleCli("logging", "\"[\\\"all\\\"]\" \"[\\\"http\\\"]\"")
+            + HelpExampleRpc("logging", "[\"all\"], \"[libevent]\"")
+        );
+    }
+
+    uint32_t original_log_categories = g_logger->GetCategoryMask();
+    if (params.size() > 0 && params[0].isArray()) {
+        EnableOrDisableLogCategories(params[0], true);
+    }
+
+    if (params.size() > 1 && params[1].isArray()) {
+        EnableOrDisableLogCategories(params[1], false);
+    }
+
+    uint32_t updated_log_categories = g_logger->GetCategoryMask();
+    uint32_t changed_log_categories = original_log_categories ^ updated_log_categories;
+
+    // Update libevent logging if BCLog::LIBEVENT has changed.
+    // If the library version doesn't allow it, UpdateHTTPServerLogging() returns false,
+    // in which case we should clear the BCLog::LIBEVENT flag.
+    // Throw an error if the user has explicitly asked to change only the libevent
+    // flag and it failed.
+    if (changed_log_categories & BCLog::LIBEVENT) {
+        if (!UpdateHTTPServerLogging(g_logger->WillLogCategory(BCLog::LIBEVENT))) {
+            g_logger->DisableCategory(BCLog::LIBEVENT);
+            if (changed_log_categories == BCLog::LIBEVENT) {
+            throw JSONRPCError(RPC_INVALID_PARAMETER, "libevent logging cannot be updated when using libevent before v2.1.1.");
+            }
+        }
+    }
+
+    UniValue result(UniValue::VOBJ);
+    std::vector<CLogCategoryActive> vLogCatActive = ListActiveLogCategories();
+    for (const auto& logCatActive : vLogCatActive) {
+        result.pushKV(logCatActive.category, logCatActive.active);
+    }
+
+    return result;
+}
+
 #ifdef ENABLE_WALLET
 UniValue getstakingstatus(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
+        throw std::runtime_error(
             "getstakingstatus\n"
             "Returns an object containing various staking information.\n"
             "\nResult:\n"
@@ -526,7 +642,7 @@ UniValue getstakingstatus(const UniValue& params, bool fHelp)
             obj.push_back(Pair("staking status", ("inactive (no peer connections)")));
         } else if (!masternodeSync.IsSynced()) {
             obj.push_back(Pair("staking status", ("inactive (syncing masternode list)")));
-        } else if (!pwalletMain->MintableCoins() && pwalletMain->stakingMode == StakingMode::STAKING_WITH_CONSOLIDATION) {
+        } else if (!pwalletMain->MintableCoins() && pwalletMain->combineMode == CombineMode::ON) {
             obj.push_back(Pair("staking status", ("delayed (waiting for 100 blocks)")));
         } else if (!pwalletMain->MintableCoins()) {
             obj.push_back(Pair("staking status", ("inactive (no mintable coins)")));

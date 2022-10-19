@@ -24,7 +24,6 @@
 #include <stdint.h>
 #include <string>
 
-using namespace std;
 
 QString TransactionDesc::FormatTxStatus(const CWalletTx& wtx)
 {
@@ -257,15 +256,15 @@ QString TransactionDesc::toHTML(CWallet* wallet, CWalletTx& wtx, TransactionReco
     strHTML += "<b>" + tr("Transaction ID") + ":</b> " + rec->getTxID() + "<br>";
     strHTML += "<b>" + tr("Output index") + ":</b> " + QString::number(rec->getOutputIndex()) + "<br>";
 
-    // Message from normal dapscoin:URI (dapscoin:XyZ...?message=example)
-   Q_FOREACH (const PAIRTYPE(string, string) & r, wtx.vOrderForm)
+    // Message from normal prcycoin:URI (prcycoin:XyZ...?message=example)
+   Q_FOREACH (const PAIRTYPE(std::string, std::string) & r, wtx.vOrderForm)
         if (r.first == "Message")
             strHTML += "<br><b>" + tr("Message") + ":</b><br>" + GUIUtil::HtmlEscape(r.second, true) + "<br>";
 
     //
     // PaymentRequest info:
     //
-   Q_FOREACH (const PAIRTYPE(string, string) & r, wtx.vOrderForm) {
+   Q_FOREACH (const PAIRTYPE(std::string, std::string) & r, wtx.vOrderForm) {
         if (r.first == "PaymentRequest") {
             PaymentRequestPlus req;
             req.parse(QByteArray::fromRawData(r.second.data(), r.second.size()));
@@ -283,7 +282,7 @@ QString TransactionDesc::toHTML(CWallet* wallet, CWalletTx& wtx, TransactionReco
     //
     // Debug view
     //
-    if (fDebug) {
+    if (!GetBoolArg("-shrinkdebugfile", g_logger->DefaultShrinkDebugFile())) {
         strHTML += "<hr><br>" + tr("Debug information") + "<br><br>";
         for (const CTxIn& txin : wtx.vin)
             if (wallet->IsMine(txin))

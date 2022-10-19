@@ -33,8 +33,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>806</width>
-        <height>541</height>
+        <width>809</width>
+        <height>885</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayout">
@@ -135,6 +135,9 @@
            </property>
            <item alignment="Qt::AlignRight">
             <widget class="QLabel" name="labelTheme">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                <horstretch>0</horstretch>
@@ -151,6 +154,9 @@
            </item>
            <item alignment="Qt::AlignRight">
             <widget class="ToggleButton" name="toggleTheme" native="true">
+             <property name="enabled">
+              <bool>true</bool>
+             </property>
              <property name="sizePolicy">
               <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
                <horstretch>0</horstretch>
@@ -158,7 +164,7 @@
               </sizepolicy>
              </property>
              <property name="toolTip">
-              <string>Switch between Dark and Light theme</string>
+              <string>Switch between Dark and Web Wallet theme</string>
              </property>
              <property name="layoutDirection">
               <enum>Qt::LeftToRight</enum>
@@ -167,7 +173,7 @@
               <string>Dark</string>
              </property>
              <property name="OptionB">
-              <string>Light</string>
+              <string>Web</string>
              </property>
              <property name="fixedSize" stdset="0">
               <size>
@@ -227,6 +233,41 @@
                 <width>100</width>
                 <height>55</height>
                </size>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_8">
+              <item>
+               <widget class="QLabel" name="twoFADigits">
+                <property name="text">
+                 <string>Number of digits to use:</string>
+                </property>
+               </widget>
+              </item>
+              <item alignment="Qt::AlignLeft">
+               <widget class="QComboBox" name="comboBox">
+                <property name="maxVisibleItems">
+                 <number>2</number>
+                </property>
+                <item>
+                 <property name="text">
+                  <string>6</string>
+                 </property>
+                </item>
+                <item>
+                 <property name="text">
+                  <string>8</string>
+                 </property>
+                </item>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="alwaysRequest2FA">
+              <property name="text">
+               <string>Request authentication code before sending any transactions</string>
               </property>
              </widget>
             </item>
@@ -383,6 +424,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QCheckBox" name="showPassphraseCheckBox">
+              <property name="text">
+               <string>Show passphrase</string>
+              </property>
+             </widget>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="horizontalLayout_5">
               <property name="spacing">
                <number>100</number>
@@ -426,7 +474,7 @@
        <item>
         <widget class="QGroupBox" name="reservegroupBox">
          <property name="title">
-          <string>Quantity of DAPS to keep as spendable (not staking)</string>
+          <string>Quantity of PRCY to keep as spendable (not staking)</string>
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_6">
           <item>
@@ -442,7 +490,7 @@
               <item>
                <widget class="QCheckBox" name="addNewFunds">
                 <property name="toolTip">
-                 <string>Enabling this will incur a minimum 1 DAPS fee each time you receive a new deposit that needs to be consolidated for staking.</string>
+                 <string>Enabling this will incur a minimum 1 PRCY fee each time you receive a new deposit that needs to be consolidated for staking.</string>
                 </property>
                 <property name="text">
                  <string>Automatically add any new deposits received to your staked balance</string>
@@ -550,7 +598,7 @@
           <item>
            <widget class="QCheckBox" name="mapPortUpnp">
             <property name="toolTip">
-             <string>Automatically open the DAPS client port on the router. This only works when your router supports UPnP and it is enabled.</string>
+             <string>Automatically open the PRCY client port on the router. This only works when your router supports UPnP and it is enabled.</string>
             </property>
             <property name="text">
              <string>Map port using &amp;UPnP</string>
@@ -579,6 +627,103 @@
              <string>M&amp;inimize on close</string>
             </property>
            </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="privacygroupBox">
+         <property name="title">
+          <string>Privacy Settings</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_7">
+          <item>
+           <widget class="QCheckBox" name="hideBalanceStaking">
+            <property name="text">
+             <string>Hide Balance when unlocked</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QCheckBox" name="lockSendStaking">
+            <property name="text">
+             <string>Lock &quot;Send&quot; tab when unlocked</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="currencyValuegroupBox">
+         <property name="title">
+          <string>Alternative Currency Value</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_9">
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_10">
+            <item>
+             <widget class="QCheckBox" name="displayCurrencyValue">
+              <property name="text">
+               <string>Display alternative currency value of wallet on Overview</string>
+              </property>
+             </widget>
+            </item>
+            <item alignment="Qt::AlignRight">
+             <widget class="QLabel" name="label">
+              <property name="text">
+               <string>Default Currency:</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="defaultCurrency">
+              <property name="layoutDirection">
+               <enum>Qt::LeftToRight</enum>
+              </property>
+              <item>
+               <property name="text">
+                <string>USD</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>CAD</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>EUR</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>GBP</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>BTC</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>ETH</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>XAU</string>
+               </property>
+              </item>
+              <item>
+               <property name="text">
+                <string>XAG</string>
+               </property>
+              </item>
+             </widget>
+            </item>
+           </layout>
           </item>
          </layout>
         </widget>

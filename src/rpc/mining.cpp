@@ -28,7 +28,6 @@
 
 #include <univalue.h>
 
-using namespace std;
 
 static uint256 PoAMerkleRoot;
 
@@ -78,7 +77,7 @@ UniValue GetNetworkHashPS(int lookup, int height)
 UniValue getnetworkhashps(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 2)
-        throw runtime_error(
+        throw std::runtime_error(
             "getnetworkhashps ( blocks height )\n"
             "\nReturns the estimated network hashes per second based on the last n blocks.\n"
             "Pass in [blocks] to override # of blocks, -1 specifies since last difficulty change.\n"
@@ -99,10 +98,10 @@ UniValue getnetworkhashps(const UniValue& params, bool fHelp)
 UniValue getgenerate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
+        throw std::runtime_error(
             "getgenerate\n"
             "\nReturn if the server is set to generate coins or not. The default is false.\n"
-            "It is set with the command line argument -gen (or dapscoin.conf setting gen)\n"
+            "It is set with the command line argument -gen (or prcycoin.conf setting gen)\n"
             "It can also be set with the setgenerate call.\n"
             "\nResult\n"
             "true|false      (boolean) If the server is set to generate coins or not\n"
@@ -117,7 +116,7 @@ UniValue getgenerate(const UniValue& params, bool fHelp)
 UniValue setgenerate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
+        throw std::runtime_error(
             "setgenerate generate ( genproclimit )\n"
             "\nSet 'generate' true or false to turn generation on or off.\n"
             "Generation is limited to 'genproclimit' processors, -1 is unlimited.\n"
@@ -148,7 +147,8 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
         if (nGenProcLimit == 0)
             fGenerate = false;
     }
-
+	pwalletMain->WriteStakingStatus(fGenerate);
+	
     // -regtest mode: don't return until nGenProcLimit blocks are generated
     if (fGenerate && Params().MineBlocksOnDemand()) {
         int nHeightStart = 0;
@@ -169,7 +169,7 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
             bool createPoSBlock = false;
             if (nHeight > Params().LAST_POW_BLOCK())
                 createPoSBlock = true;
-            unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey, pwalletMain, createPoSBlock));
+            std::unique_ptr<CBlockTemplate> pblocktemplate(CreateNewBlockWithKey(reservekey, pwalletMain, createPoSBlock));
             if (!pblocktemplate.get())
                 throw JSONRPCError(RPC_INTERNAL_ERROR, "Wallet keypool empty");
             CBlock* pblock = &pblocktemplate->block;
@@ -193,8 +193,8 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
     {
         mapArgs["-gen"] = (fGenerate ? "1" : "0");
         mapArgs["-genproclimit"] = itostr(nGenProcLimit);
-        pwalletMain->stakingMode = StakingMode::STAKING_WITH_CONSOLIDATION;
-        GenerateDapscoins(fGenerate, pwalletMain, nGenProcLimit);
+        pwalletMain->combineMode = CombineMode::ON;
+        GeneratePrcycoins(fGenerate, pwalletMain, nGenProcLimit);
     }
 
     return "Done";
@@ -204,7 +204,7 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
 UniValue generatepoa(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "generatepoa generate PoA blocks ( genproclimit )\n"
             "\nArguments:\n"
             "1. period     (numeric, optional) Set the interval for creating a poa block \n"
@@ -222,6 +222,8 @@ UniValue generatepoa(const UniValue& params, bool fHelp)
     if (pwalletMain == NULL)
         throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Method not found (disabled)");
 
+    // We need this here as CreateNewPoABlockWithKey requires unlocked wallet to GenerateAddress
+    EnsureWalletIsUnlocked();
 
     int period = 60;//default value
     if (params.size() > 1) {
@@ -255,7 +257,7 @@ UniValue generatepoa(const UniValue& params, bool fHelp)
         return NullUniValue;
     }
 
-    unique_ptr<CBlockTemplate> pblocktemplate(CreateNewPoABlockWithKey(reservekey, pwalletMain));
+    std::unique_ptr<CBlockTemplate> pblocktemplate(CreateNewPoABlockWithKey(reservekey, pwalletMain));
     if (!pblocktemplate.get())
         throw JSONRPCError(RPC_INTERNAL_ERROR, "Wallet keypool empty");
     CBlock* pblock = &pblocktemplate->block;
@@ -271,7 +273,7 @@ UniValue generatepoa(const UniValue& params, bool fHelp)
 UniValue gethashespersec(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
+        throw std::runtime_error(
             "gethashespersec\n"
             "\nReturns a recent hashes per second performance measurement while generating.\n"
             "See the getgenerate and setgenerate calls to turn generation on and off.\n"
@@ -290,7 +292,7 @@ UniValue gethashespersec(const UniValue& params, bool fHelp)
 UniValue getmininginfo(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
+        throw std::runtime_error(
             "getmininginfo\n"
             "\nReturns a json object containing mining-related information."
             "\nResult:\n"
@@ -335,7 +337,7 @@ UniValue getmininginfo(const UniValue& params, bool fHelp)
 UniValue prioritisetransaction(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 3)
-        throw runtime_error(
+        throw std::runtime_error(
             "prioritisetransaction <txid> <priority delta> <fee delta>\n"
             "Accepts the transaction into mined blocks at a higher (or lower) priority\n"
             "\nArguments:\n"
@@ -383,7 +385,7 @@ static UniValue BIP22ValidationResult(const CValidationState& state)
 UniValue getblocktemplate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "getblocktemplate ( \"jsonrequestobject\" )\n"
             "\nIf the request parameters include a 'mode' key, that is used to explicitly select between the default 'template' request or a 'proposal'.\n"
             "It returns data needed to construct a block to work on.\n"
@@ -497,10 +499,10 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
 
     if (vNodes.empty())
-        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "DAPS is not connected!");
+        throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "PRCY is not connected!");
 
     if (IsInitialBlockDownload())
-        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "DAPS is downloading blocks...");
+        throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "PRCY is downloading blocks...");
 
     static unsigned int nTransactionsUpdatedLast;
 
@@ -568,7 +570,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
         CPubKey des, txPub;
         CKey txPriv;
         if (!pwalletMain->GenerateAddress(des, txPub, txPriv)) {
-            throw runtime_error("Wallet is locked, please unlock it");
+            throw std::runtime_error("Wallet is locked, please unlock it");
         }
         CScript scriptDummy = CScript() << OP_TRUE;
         pblocktemplate = CreateNewBlock(scriptDummy, txPub, txPriv, pwalletMain, false);
@@ -587,7 +589,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     UniValue aCaps(UniValue::VARR); aCaps.push_back("proposal");
 
     UniValue transactions(UniValue::VARR);
-    map<uint256, int64_t> setTxIndex;
+    std::map<uint256, int64_t> setTxIndex;
     int i = 0;
     for (CTransaction& tx : pblock->vtx) {
         uint256 txHash = tx.GetHash();
@@ -668,7 +670,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
 UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 0)
-        throw runtime_error(
+        throw std::runtime_error(
                 "getpoablocktemplate\n"
                 "It returns data needed to construct a block to work on.\n"
 
@@ -703,6 +705,10 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
 
                 "\nExamples:\n" +
                 HelpExampleCli("getpoablocktemplate", "") + HelpExampleRpc("getpoablocktemplate", ""));
+
+    // We need this here as CreateNewPoABlockWithKey requires unlocked wallet to GenerateAddress
+    EnsureWalletIsUnlocked();
+
     LOCK(cs_main);
 
     {
@@ -713,10 +719,10 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid mode");
 
         if (vNodes.empty())
-            throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "DAPS is not connected!");
+            throw JSONRPCError(RPC_CLIENT_NOT_CONNECTED, "PRCY is not connected!");
 
         if (IsInitialBlockDownload())
-            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "DAPS is downloading blocks...");
+            throw JSONRPCError(RPC_CLIENT_IN_INITIAL_DOWNLOAD, "PRCY is downloading blocks...");
 
         // Update block
         static CBlockIndex* pindexPrev;
@@ -753,7 +759,7 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
     //    static const Array aCaps = boost::assign::list_of("proposal");
 
         UniValue transactions(UniValue::VARR);
-        map<uint256, int64_t> setTxIndex;
+        std::map<uint256, int64_t> setTxIndex;
         int i = 0;
         for (CTransaction& tx : pblock->vtx) {
             uint256 txHash = tx.GetHash();
@@ -844,7 +850,7 @@ UniValue getpoablocktemplate(const UniValue& params, bool fHelp)
 
 UniValue setminingnbits(const UniValue& params, bool fHelp) {
     if (fHelp || params.size() != 2)
-        throw runtime_error(
+        throw std::runtime_error(
                 "setminingnbits value 1/0\n");
     unsigned int nbits = (unsigned int) params[0].get_int64();
     int changed= params[1].get_int();
@@ -880,7 +886,7 @@ protected:
 UniValue submitblock(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
-        throw runtime_error(
+        throw std::runtime_error(
             "submitblock \"hexdata\" ( \"jsonparametersobject\" )\n"
             "\nAttempts to submit new block to network.\n"
             "The 'jsonparametersobject' parameter is currently ignored.\n"
@@ -952,7 +958,7 @@ UniValue submitblock(const UniValue& params, bool fHelp)
 UniValue estimatefee(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "estimatefee nblocks\n"
             "\nEstimates the approximate fee per kilobyte\n"
             "needed for a transaction to begin confirmation\n"
@@ -983,7 +989,7 @@ UniValue estimatefee(const UniValue& params, bool fHelp)
 UniValue estimatepriority(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
-        throw runtime_error(
+        throw std::runtime_error(
             "estimatepriority nblocks\n"
             "\nEstimates the approximate priority\n"
             "a zero-fee transaction needs to begin confirmation\n"

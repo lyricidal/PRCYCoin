@@ -1,8 +1,9 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
-// Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2009-2015 The Bitcoin developers
 // Copyright (c) 2014-2015 The Dash developers
 // Copyright (c) 2015-2018 The PIVX developers
 // Copyright (c) 2018-2020 The DAPS Project developers
+// Copyright (c) 2020-2022 The PRivaCY Coin Developers
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -19,17 +20,20 @@
 
 typedef unsigned char MessageStartChars[MESSAGE_START_SIZE];
 
-class CDNSSeedData {
-public:
+struct CDNSSeedData {
     std::string name, host;
     bool supportsServiceBitsFiltering;
-    std::string getHost(uint64_t requiredServiceBits) const;
     CDNSSeedData(const std::string& strName, const std::string& strHost, bool supportsServiceBitsFilteringIn = false) : name(strName), host(strHost), supportsServiceBitsFiltering(supportsServiceBitsFilteringIn) {}
+};
+
+struct SeedSpec6 {
+    uint8_t addr[16];
+    uint16_t port;
 };
 
 /**
  * CChainParams defines various tweakable parameters of a given instance of the
- * DAPS system. There are three: the main network on which people trade goods
+ * PRCY system. There are three: the main network on which people trade goods
  * and services, the public test network which gets reset from time to time and
  * a regression test mode which is intended for private networks only. It has
  * minimal difficulty to ensure that blocks can be found instantly.
@@ -58,7 +62,7 @@ public:
     int ToCheckBlockUpgradeMajority() const { return nToCheckBlockUpgradeMajority; }
     int MaxReorganizationDepth() const { return nMaxReorganizationDepth; }
 
-    /** Used if GenerateDapscoins is called with a negative number of threads */
+    /** Used if GeneratePrcycoins is called with a negative number of threads */
     int DefaultMinerThreads() const { return nMinerThreads; }
     const CBlock& GenesisBlock() const { return genesis; }
     bool RequireRPCPassword() const { return fRequireRPCPassword; }
@@ -78,7 +82,8 @@ public:
     int64_t TargetSpacing() const { return nTargetSpacing; }
     int64_t Interval() const { return nTargetTimespan / nTargetSpacing; }
     int COINBASE_MATURITY() const { return nMaturity; }
-    CAmount MaxMoneyOut() const { return nMaxMoneyOut; }
+    CAmount MNCollateralAmt() const { return nMNCollateralAmt; }
+    CAmount MinimumStakeAmount() const { return nMinimumStakeAmount; }
     /** The masternode count that we will allow the see-saw reward payments to be off by */
     int MasternodeCountDrift() const { return nMasternodeCountDrift; }
     /** Make miner stop after a block is found. In RPC, don't return until nGenProcLimit blocks are generated */
@@ -89,28 +94,37 @@ public:
     std::string NetworkIDString() const { return strNetworkID; }
     const std::vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<unsigned char>& Base58Prefix(Base58Type type) const { return base58Prefixes[type]; }
-    const std::vector<CAddress>& FixedSeeds() const { return vFixedSeeds; }
+    const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
     virtual const Checkpoints::CCheckpointData& Checkpoints() const = 0;
     int PoolMaxTransactions() const { return nPoolMaxTransactions; }
-    std::string ObfuscationPoolDummyAddress() const { return strObfuscationPoolDummyAddress; }
     int64_t StartMasternodePayments() const { return nStartMasternodePayments; }
     int64_t Budget_Fee_Confirmations() const { return nBudget_Fee_Confirmations; }
     CBaseChainParams::Network NetworkID() const { return networkID; }
+    bool IsRegTestNet() const { return NetworkID() == CBaseChainParams::REGTEST; }
     int ExtCoinType() const { return nExtCoinType; }
+    int StealthPrefix() const { return nStealthPrefix; }
+    int IntegratedPrefix() const { return nIntegratedPrefix; }
 
     /** Height or Time Based Activations **/
     int ModifierUpgradeBlock() const { return nModifierUpdateBlock; }
     int LAST_POW_BLOCK() const { return nLastPOWBlock; }
     int START_POA_BLOCK() const { return nStartPOABlock; }
-    int Block_Enforce_Invalid() const { return nBlockEnforceInvalidUTXO; }
+    int SoftFork() const { return nSoftForkBlock;}
+    int PoANewDiff() const { return nPoANewDiff;}
+    int PoAFixTime() const { return nPoAFixTime;}
+    int PoAPaddingBlock() const { return nPoAPaddingBlock;}
+    int PoAPadding() const { return nPoAPadding;}
+    int BIP65ActivationHeight() const { return nBIP65ActivationHeight; }
+    int HardFork() const { return nHardForkBlock;}
+    int HardForkRingSize() const { return nHardForkBlockRingSize;}
+    int HardForkRingSize2() const { return nHardForkBlockRingSize2;}
 
     //For PoA block time
     int POA_BLOCK_TIME() const { return nPoABlockTime; }
     int MIN_NUM_POS_BLOCKS_AUDITED() const {return nMinNumPoSBlocks;}
+    int MAX_NUM_POS_BLOCKS_AUDITED() const {return nMaxNumPoSBlocks;}
     int nLastPOWBlock;
-    int TEAM_REWARD_FREQUENCY = 3; //every  TEAM_REWARD_FREQUENCY PoA blocks, reward the daps team
-    double MAX_MONEY;
-    CAmount TOTAL_SUPPLY = 70000000000*COIN; //70B DAPS
+    CAmount TOTAL_SUPPLY = 70000000 * COIN; //70M PRCY
 
 protected:
     CChainParams() {}
@@ -120,6 +134,8 @@ protected:
     //! Raw pub key bytes for the broadcast alert signing key.
     int nDefaultPort;
     int nExtCoinType;
+    int nStealthPrefix;
+    int nIntegratedPrefix;
     uint256 bnProofOfWorkLimit;
     mutable int nMaxReorganizationDepth;
     int nSubsidyHalvingInterval;
@@ -129,17 +145,26 @@ protected:
     int64_t nTargetTimespan;
     int64_t nTargetSpacing;
     int nStartPOABlock;
+    int nSoftForkBlock;
+    int nHardForkBlock;
+    int nHardForkBlockRingSize;
+    int nHardForkBlockRingSize2;
+    int nPoANewDiff;
+    int nPoAFixTime;
+    int nPoAPaddingBlock;
+    int nPoAPadding;
     int nMasternodeCountDrift;
     int nMaturity;
     int nModifierUpdateBlock;
-    CAmount nMaxMoneyOut;
+    CAmount nMNCollateralAmt;
+    CAmount nMinimumStakeAmount;
     int nMinerThreads;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<unsigned char> base58Prefixes[MAX_BASE58_TYPES];
     CBaseChainParams::Network networkID;
     std::string strNetworkID;
     CBlock genesis;
-    std::vector<CAddress> vFixedSeeds;
+    std::vector<SeedSpec6> vFixedSeeds;
     bool fRequireRPCPassword;
     bool fMiningRequiresPeers;
     bool fAllowMinDifficultyBlocks;
@@ -150,18 +175,14 @@ protected:
     bool fTestnetToBeDeprecatedFieldRPC;
     bool fHeadersFirstSyncingActive;
     int nPoolMaxTransactions;
-    std::string strObfuscationPoolDummyAddress;
     int64_t nStartMasternodePayments;
     int64_t nBudget_Fee_Confirmations;
-    int nBlockEnforceSerialRange;
-    int nBlockRecalculateAccumulators;
-    int nBlockFirstFraudulent;
-    int nBlockLastGoodCheckpoint;
-    int nBlockEnforceInvalidUTXO;
+    int nBIP65ActivationHeight;
 
     //For PoA blocks
     int nPoABlockTime;
     int nMinNumPoSBlocks;
+    int nMaxNumPoSBlocks;
 public:
     void ChangeMaxReorg(int num) const {
         nMaxReorganizationDepth = num;

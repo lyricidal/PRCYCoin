@@ -11,6 +11,9 @@ TwoFADialog::TwoFADialog(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->txtcode_7->setVisible(false);
+    ui->txtcode_8->setVisible(false);
+
     QIntValidator *intVal_1 = new QIntValidator(0, 9, ui->txtcode_1);
     intVal_1->setLocale(QLocale::C);
     ui->txtcode_1->setValidator(intVal_1);
@@ -41,6 +44,23 @@ TwoFADialog::TwoFADialog(QWidget *parent) :
     ui->txtcode_6->setValidator(intVal_6);
     ui->txtcode_6->setAlignment(Qt::AlignCenter);
 
+    QSettings settings;
+    int digits = settings.value("2fadigits").toInt();
+    if (digits == 8) {
+        ui->label_3->setText("Please enter an eight digit 2FA code:");
+        ui->txtcode_7->setVisible(true);
+        ui->txtcode_8->setVisible(true);
+        QIntValidator *intVal_7 = new QIntValidator(0, 9, ui->txtcode_7);
+        intVal_7->setLocale(QLocale::C);
+        ui->txtcode_7->setValidator(intVal_7);
+        ui->txtcode_7->setAlignment(Qt::AlignCenter);
+
+        QIntValidator *intVal_8 = new QIntValidator(0, 9, ui->txtcode_8);
+        intVal_8->setLocale(QLocale::C);
+        ui->txtcode_8->setValidator(intVal_8);
+        ui->txtcode_8->setAlignment(Qt::AlignCenter);
+    }
+
     connect(ui->btnOK, SIGNAL(clicked()), this, SLOT(on_acceptCode()));
     connect(ui->btnCancel, SIGNAL(clicked()), this, SLOT(reject()));
     connect(ui->txtcode_1, &QLineEdit::textChanged, this, &TwoFADialog::codeChanged);
@@ -49,6 +69,8 @@ TwoFADialog::TwoFADialog(QWidget *parent) :
     connect(ui->txtcode_4, &QLineEdit::textChanged, this, &TwoFADialog::codeChanged);
     connect(ui->txtcode_5, &QLineEdit::textChanged, this, &TwoFADialog::codeChanged);
     connect(ui->txtcode_6, &QLineEdit::textChanged, this, &TwoFADialog::codeChanged);
+    connect(ui->txtcode_7, &QLineEdit::textChanged, this, &TwoFADialog::codeChanged);
+    connect(ui->txtcode_8, &QLineEdit::textChanged, this, &TwoFADialog::codeChanged);
 
     ui->lblOpenAppURL->setVisible(false);
     bool status = pwalletMain->Read2FA();
@@ -66,7 +88,7 @@ TwoFADialog::~TwoFADialog()
 void TwoFADialog::on_acceptCode()
 {
     QString code;
-    char code1, code2, code3, code4, code5, code6;
+    char code1, code2, code3, code4, code5, code6, code7, code8;
     QString input;
     char* chrlist;
     QRegExp re("\\d*");  // a digit (\d), zero or more times (*)
@@ -117,8 +139,30 @@ void TwoFADialog::on_acceptCode()
         return;
     chrlist = input.toUtf8().data();
     code6 = chrlist[0];
+	
+	input = ui->txtcode_7->text();
+    if (input.length() > 1)
+        return;
+    if (!re.exactMatch(input))
+        return;
+    chrlist = input.toUtf8().data();
+    code7 = chrlist[0];
+	
+	input = ui->txtcode_8->text();
+    if (input.length() > 1)
+        return;
+    if (!re.exactMatch(input))
+        return;
+    chrlist = input.toUtf8().data();
+    code8 = chrlist[0];
 
-    code.sprintf("%c%c%c%c%c%c", code1, code2, code3, code4, code5, code6);
+    QSettings settings;
+    int digits = settings.value("2fadigits").toInt();
+    if (digits == 8) {
+        code.sprintf("%c%c%c%c%c%c%c%c", code1, code2, code3, code4, code5, code6, code7, code8);
+    } else if (digits == 6) {
+        code.sprintf("%c%c%c%c%c%c", code1, code2, code3, code4, code5, code6);
+    }
 
     QString result = "";
     QString secret = QString::fromStdString(pwalletMain->Read2FASecret());
