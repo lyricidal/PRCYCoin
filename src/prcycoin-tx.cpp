@@ -40,7 +40,6 @@
 static bool fCreateBlank;
 static bool fCreateBP;
 static std::map<std::string, UniValue> registers;
-CClientUIInterface uiInterface;
 
 static bool AppInitRawTx(int argc, char* argv[])
 {
@@ -597,7 +596,7 @@ static int CommandLineRawTx(int argc, char* argv[])
                     if (ret) {
                         uint256 hashName = Hash(txData.begin(), txData.end());
                         std::string outFileName = HexStr(hashName.begin(), hashName.end());
-                        ofstream outfile;
+                        std::ofstream outfile;
                         outfile.open("/bptempfiles/" + outFileName + ".json");
                         outfile << "{\"bp\":\"" + HexStr(proof, proof + len) + "\"}";
                         outfile.close();

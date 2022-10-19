@@ -200,7 +200,7 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
 UniValue crawlrawtransactions(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1) {
-        throw runtime_error("Syntax invalid!");
+        throw std::runtime_error("Syntax invalid!");
     }
 
     int nHeight = params[0].get_int();
