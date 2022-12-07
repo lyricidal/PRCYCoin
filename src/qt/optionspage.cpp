@@ -155,6 +155,7 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
     ui->minimizeToTray->setChecked(settings.value("fMinimizeToTray", false).toBool());
     ui->minimizeOnClose->setChecked(settings.value("fMinimizeOnClose", false).toBool());
     ui->alwaysRequest2FA->setChecked(settings.value("fAlwaysRequest2FA", false).toBool());
+    ui->alwaysRequestPassphrase->setChecked(settings.value("fAlwaysRequestPassphrase", false).toBool());
     ui->hideBalanceStaking->setChecked(settings.value("fHideBalance", false).toBool());
     ui->lockSendStaking->setChecked(settings.value("fLockSendStaking", false).toBool());
     ui->displayCurrencyValue->setChecked(settings.value("fDisplayCurrencyValue", false).toBool());
@@ -522,7 +523,7 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
         } else {
             errorMessage = "In order to enable staking with 100% of your current balance except the reserve balance, your previous PRCY deposits must be consolidated and reorganized. This will incur a fee of between " + FormatMoney(minFee) + " to " + FormatMoney(maxFee) + " PRCY.\n\nWould you like to do this?";
         }
-        reply = QMessageBox::question(this, "Staking Needs Consolidation", QString::fromStdString(errorMessage), QMessageBox::Yes|QMessageBox::No);
+        reply = QMessageBox::question(this, "Staking Needs Consolidation", QString::fromStdString(errorMessage), QMessageBox::Yes|QMessageBox::No|QMessageBox::Ignore);
         if (reply == QMessageBox::Yes) { 
             pwalletMain->WriteStakingStatus(true);
             Q_EMIT model->stakingStatusChanged(true);
@@ -531,12 +532,13 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
             pwalletMain->combineMode = CombineMode::ON;
             saveConsolidationSettingTime(ui->addNewFunds->isChecked());
             bool success = false;
+            const CAmount minStakingAmount = model->getMinStakingAmount();;
             try {
                 uint32_t nTime = pwalletMain->ReadAutoConsolidateSettingTime();
                 nTime = (nTime == 0)? GetAdjustedTime() : nTime;
                 success = model->getCWallet()->CreateSweepingTransaction(
-                                Params().MinimumStakeAmount(),
-                                Params().MinimumStakeAmount(), nTime);
+                                minStakingAmount,
+                                minStakingAmount, nTime);
                 if (success) {
                     //nConsolidationTime = 1800;
                     QString msg = "Consolidation transaction created!";
@@ -551,12 +553,17 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
                 LogPrintf("Sweeping failed, will be done automatically when coins become mature");
             }            
             return;
-        } else {
+        } else if (reply == QMessageBox::No) {
             nLastCoinStakeSearchInterval = 0;
             model->generateCoins(false, 0);
             Q_EMIT model->stakingStatusChanged(false);
             pwalletMain->walletStakingInProgress = false;
             pwalletMain->WriteStakingStatus(false);
+            return;
+        } else {
+            pwalletMain->WriteStakingStatus(true);
+            Q_EMIT model->stakingStatusChanged(true);
+            model->generateCoins(true, 1);
             return;
         }
         /* if (!error.length()) {
@@ -589,7 +596,7 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
                     try {
                         success = model->getCWallet()->SendToStealthAddress(
                                 masterAddr,
-                                Params().MinimumStakeAmount(),
+                                minStakingAmount,
                                 resultTx,
                                 false
                         );
@@ -994,6 +1001,16 @@ void OptionsPage::alwaysRequest2FA_clicked(int state)
         settings.setValue("fAlwaysRequest2FA", true);
     } else {
         settings.setValue("fAlwaysRequest2FA", false);
+    }
+}
+
+void OptionsPage::alwaysRequestPassphrase_clicked(int state)
+{
+    checkForUnlock();
+    if (ui->alwaysRequestPassphrase->isChecked()) {
+        settings.setValue("fAlwaysRequestPassphrase", true);
+    } else {
+        settings.setValue("fAlwaysRequestPassphrase", false);
     }
 }
 

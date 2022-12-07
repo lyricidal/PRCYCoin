@@ -9,6 +9,7 @@
 
 #include "main.h"
 #include "random.h"
+#include "script/sigcache.h"
 #include "txdb.h"
 #include "guiinterface.h"
 #include "util.h"
@@ -32,6 +33,7 @@ BasicTestingSetup::BasicTestingSetup()
         RandomInit();
         //ECC_Start();
         SetupEnvironment();
+        InitSignatureCache();
         fCheckBlockIndex = true;
         SelectParams(CBaseChainParams::TESTNET);
 }
@@ -46,7 +48,7 @@ TestingSetup::TestingSetup()
         bitdb.MakeMock();
 #endif
         ClearDatadirCache();
-        pathTemp = GetTempPath() / strprintf("test_pivx_%lu_%i", (unsigned long)GetTime(), (int)(InsecureRandRange(100000)));
+        pathTemp = GetTempPath() / strprintf("test_prcycoin_%lu_%i", (unsigned long)GetTime(), (int)(InsecureRandRange(100000)));
         fs::create_directories(pathTemp);
         mapArgs["-datadir"] = pathTemp.string();
         pblocktree = new CBlockTreeDB(1 << 20, true);

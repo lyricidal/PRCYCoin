@@ -127,13 +127,6 @@ unsigned short GetListenPort() {
     return (unsigned short) (GetArg("-port", Params().GetDefaultPort()));
 }
 
-bool IsUnsupportedVersion(std::string strSubVer, int nHeight) {
-    /*if (nHeight >= Params().HardFork()) {
-        return (strSubVer == "/PRCY:1.0.0.2/" || strSubVer == "/PRCY:1.0.0.3/" || strSubVer == "/PRCY:1.0.0.4/" || strSubVer == "/PRCY:1.0.0.5/" || strSubVer == "/PRCY:1.0.0.6/" || strSubVer == "/PRCY:1.0.0.7/");
-    }*/
-    return (strSubVer == "/PRCY:1.0.0.2/" || strSubVer == "/PRCY:1.0.0.3/" || strSubVer == "/PRCY:1.0.0.4/" || strSubVer == "/PRCY:1.0.0.5/" || strSubVer == "/PRCY:1.0.0.6/" || strSubVer == "/PRCY:1.0.0.7/" || strSubVer == "/PRCY:1.0.0.8/" || strSubVer == "/PRCY:1.0.0.9/");
-}
-
 // find 'best' local address for a particular peer
 bool GetLocal(CService &addr, const CNetAddr *paddrPeer) {
     if (!fListen)
@@ -455,6 +448,22 @@ bool CNode::DisconnectOldProtocol(int nVersionRequired, std::string strLastComma
         fDisconnect = true;
     }
 
+    return fDisconnect;
+}
+
+bool CNode::DisconnectOldVersion(std::string strSubVer, int nHeight, std::string strLastCommand) {
+    fDisconnect = false;
+    //if (nHeight >= Params().HardFork()) {
+        if (strSubVer == "/PRCY:1.0.0.2/" || strSubVer == "/PRCY:1.0.0.3/" ||
+                strSubVer == "/PRCY:1.0.0.4/" || strSubVer == "/PRCY:1.0.0.5/" ||
+                strSubVer == "/PRCY:1.0.0.6/" || strSubVer == "/PRCY:1.0.0.7/" ||
+                strSubVer == "/PRCY:1.0.0.8/" || strSubVer == "/PRCY:1.0.0.9/") {
+            LogPrintf("%s : peer=%d using unsupported version %i; disconnecting\n",  __func__, id, strSubVer);
+            PushMessage(NetMsgType::REJECT, strLastCommand, REJECT_OBSOLETE,
+                        strprintf("Using unsupported version %i; disconnecting\n", strSubVer));
+            fDisconnect = true;
+        }
+    //}
     return fDisconnect;
 }
 
@@ -950,7 +959,6 @@ static void AcceptConnection(const ListenSocket& hListenSocket) {
     CAddress addr;
     int nInbound = 0;
     int nMaxInbound = nMaxConnections - (MAX_OUTBOUND_CONNECTIONS + MAX_FEELER_CONNECTIONS);
-    assert(nMaxInbound > 0);
 
     if (hSocket != INVALID_SOCKET)
         if (!addr.SetSockAddr((const struct sockaddr*)&sockaddr))
@@ -1119,8 +1127,8 @@ void ThreadSocketHandler() {
                 // * We wait for data to be received (and disconnect after timeout).
                 // * We process a message in the buffer (message handler thread).
                 {
-                    TRY_LOCK(pnode->cs_vSend, lockSend);
-                    if (lockSend && !pnode->vSendMsg.empty()) {
+                    LOCK(pnode->cs_vSend);
+                    if (!pnode->vSendMsg.empty()) {
                         FD_SET(pnode->hSocket, &fdsetSend);
                         continue;
                     }
@@ -1216,9 +1224,8 @@ void ThreadSocketHandler() {
             if (pnode->hSocket == INVALID_SOCKET)
                 continue;
             if (FD_ISSET(pnode->hSocket, &fdsetSend)) {
-                TRY_LOCK(pnode->cs_vSend, lockSend);
-                if (lockSend)
-                    SocketSendData(pnode);
+                LOCK(pnode->cs_vSend);
+                SocketSendData(pnode);
             }
 
             //
@@ -1520,7 +1527,6 @@ void ThreadOpenConnections() {
                 }
             }
         }
-        assert(nOutbound <= (MAX_OUTBOUND_CONNECTIONS + MAX_FEELER_CONNECTIONS));
 
         // Feeler Connections
         //
@@ -1719,7 +1725,6 @@ void ThreadMessageHandler() {
         bool fSleep = true;
         for (CNode * pnode : vNodesCopy)
         {
-            if (!pnode) continue;
             if (pnode->fDisconnect)
                 continue;
             // Receive messages
@@ -1740,9 +1745,8 @@ void ThreadMessageHandler() {
             boost::this_thread::interruption_point();
             // Send messages
             {
-                TRY_LOCK(pnode->cs_vSend, lockSend);
-                if (lockSend)
-                    GetNodeSignals().SendMessages(pnode);
+                LOCK(pnode->cs_sendProcessing);
+                GetNodeSignals().SendMessages(pnode);
             }
             boost::this_thread::interruption_point();
         }
@@ -2269,6 +2273,7 @@ CNode::CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn, bool fIn
     fWhitelisted = false;
     fOneShot = false;
     fClient = false; // set by version message
+    fFeeler = false;
     fInbound = fInboundIn;
     fNetworkNode = false;
     fSuccessfullyConnected = false;

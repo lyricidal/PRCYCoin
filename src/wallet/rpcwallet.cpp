@@ -2480,8 +2480,9 @@ UniValue multisend(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid PRCY address");
     if (std::stoi(params[1].get_str().c_str()) < 0)
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter, expected valid percentage");
-    if (pwalletMain->IsLocked())
-        throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Error: Please enter the wallet passphrase with unlockwallet first.");
+
+    EnsureWalletIsUnlocked();
+
     unsigned int nPercent = (unsigned int) std::stoul(params[1].get_str().c_str());
 
     LOCK(pwalletMain->cs_wallet);
@@ -2830,13 +2831,14 @@ UniValue sendtostealthaddress(const UniValue& params, bool fHelp)
 
 UniValue sendalltostealthaddress(const UniValue& params, bool fHelp)
 {
-    if (fHelp || params.size() != 1)
+    if (fHelp || params.size() < 1 || params.size() > 2)
         throw std::runtime_error(
-                "sendalltostealthaddress \"prcystealthaddress\"\n"
+                "sendalltostealthaddress \"prcystealthaddress\" ( includeLocked )\n"
                 "\nSend all PRCY to stealth address\n" +
                 HelpRequiringPassphrase() +
                 "\nArguments:\n"
                 "1. \"prcystealthaddress\"  (string, required) The prcycoin stealth address to send to.\n"
+                "2. \"include_locked\"      (bool, optional, default=false) Whether to include locked coins or not.\n"
                 "\nResult:\n"
                 "\"transactionid\"  (string) The transaction id.\n"
                 "\nExamples:\n" +
@@ -2850,7 +2852,12 @@ UniValue sendalltostealthaddress(const UniValue& params, bool fHelp)
     // Wallet comments
     CWalletTx wtx;
 
-    if (!pwalletMain->SendAll(stealthAddr, wtx)) {
+    // Include Locked Coins
+    bool inclLocked = false;
+    if (params.size() > 1)
+        inclLocked = params[1].get_bool();
+
+    if (!pwalletMain->SendAll(stealthAddr, wtx, inclLocked)) {
         throw JSONRPCError(RPC_WALLET_ERROR,
                            "Cannot create transaction.");
     }

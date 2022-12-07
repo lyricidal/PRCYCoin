@@ -8,7 +8,11 @@ $(package)_dependencies=openssl zlib
 $(package)_linux_dependencies=freetype fontconfig libxcb
 $(package)_build_subdir=qtbase
 $(package)_qt_libs=corelib network widgets gui plugins testlib concurrent
-$(package)_patches=fix_qt_pkgconfig.patch mac-qmake.conf fix_configure_mac.patch fix_no_printer.patch fix_rcc_determinism.patch fix_riscv64_arch.patch fix_s390x_powerpc_mips_mipsel_architectures.patch xkb-default.patch fix_android_qmake_conf.patch fix_android_jni_static.patch no-xlib.patch fix_qpainter_non_determinism.patch
+$(package)_patches=fix_qt_pkgconfig.patch mac-qmake.conf fix_configure_mac.patch fix_no_printer.patch
+$(package)_patches+= fix_rcc_determinism.patch fix_riscv64_arch.patch xkb-default.patch no-xlib.patch
+$(package)_patches+= fix_android_qmake_conf.patch fix_android_jni_static.patch dont_hardcode_pwd.patch
+$(package)_patches+= freetype_back_compat.patch drop_lrelease_dependency.patch
+$(package)_patches+= fix_mingw_cross_compile.patch
 
 # Update OSX_QT_TRANSLATIONS when this is updated
 $(package)_qttranslations_file_name=qttranslations-$($(package)_suffix)
@@ -22,9 +26,10 @@ $(package)_extra_sources += $($(package)_qttools_file_name)
 
 define $(package)_set_vars
 $(package)_config_opts_release = -release
+$(package)_config_opts_release += -silent
 $(package)_config_opts_debug = -debug
 $(package)_config_opts += -bindir $(build_prefix)/bin
-$(package)_config_opts += -c++std c++11
+$(package)_config_opts += -c++std c++1z
 $(package)_config_opts += -confirm-license
 $(package)_config_opts += -hostprefix $(build_prefix)
 $(package)_config_opts += -no-compile-examples
@@ -68,7 +73,6 @@ $(package)_config_opts += -qt-pcre
 $(package)_config_opts += -qt-harfbuzz
 $(package)_config_opts += -system-zlib
 $(package)_config_opts += -static
-$(package)_config_opts += -silent
 $(package)_config_opts += -v
 $(package)_config_opts += -no-feature-dial
 $(package)_config_opts += -no-feature-ftp
@@ -95,6 +99,7 @@ $(package)_config_opts_darwin += -device-option MAC_SDK_VERSION=$(OSX_SDK_VERSIO
 $(package)_config_opts_darwin += -device-option CROSS_COMPILE="$(host)-"
 $(package)_config_opts_darwin += -device-option MAC_MIN_VERSION=$(OSX_MIN_VERSION)
 $(package)_config_opts_darwin += -device-option MAC_TARGET=$(host)
+$(package)_config_opts_darwin += -device-option XCODE_VERSION=$(XCODE_VERSION)
 endif
 
 # for macOS on Apple Silicon (ARM) see https://bugreports.qt.io/browse/QTBUG-85279
@@ -170,15 +175,44 @@ define $(package)_extract_cmds
   tar --no-same-owner --strip-components=1 -xf $($(package)_source_dir)/$($(package)_qttools_file_name) -C qttools
 endef
 
+# Preprocessing steps work as follows:
+#
+# 1. Apply our patches to the extracted source. See each patch for more info.
+#
+# 2. Point to lrelease in qttools/bin/lrelease; otherwise Qt will look for it in
+# $(host)/native/bin/lrelease and not find it.
+#
+# 3. Create a macOS-Clang-Linux mkspec using our mac-qmake.conf.
+#
+# 4. After making a copy of the mkspec for the linux-arm-gnueabi host, named
+# bitcoin-linux-g++, replace instances of linux-arm-gnueabi with $(host). This
+# way we can generically support hosts like riscv64-linux-gnu, which Qt doesn't
+# ship a mkspec for. See it's usage in config_opts_* above.
+#
+# 5. Put our C, CXX and LD FLAGS into gcc-base.conf. Only used for non-host builds.
+#
+# 6. Do similar for the win32-g++ mkspec.
+#
+# 7. In clang.conf, swap out clang & clang++, for our compiler + flags. See #17466.
+#
+# 8. Adjust a regex in toolchain.prf, to accomodate Guix's usage of
+# CROSS_LIBRARY_PATH. See #15277.
 define $(package)_preprocess_cmds
-  sed -i.old "s|FT_Get_Font_Format|FT_Get_X11_Font_Format|" qtbase/src/platformsupport/fontdatabases/freetype/qfontengine_ft.cpp && \
+  patch -p1 -i $($(package)_patch_dir)/freetype_back_compat.patch && \
+  patch -p1 -i $($(package)_patch_dir)/drop_lrelease_dependency.patch && \
+  patch -p1 -i $($(package)_patch_dir)/dont_hardcode_pwd.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_qt_pkgconfig.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_configure_mac.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_no_printer.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_rcc_determinism.patch && \
+  patch -p1 -i $($(package)_patch_dir)/xkb-default.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_android_qmake_conf.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_android_jni_static.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_riscv64_arch.patch && \
+  patch -p1 -i $($(package)_patch_dir)/no-xlib.patch && \
+  patch -p1 -i $($(package)_patch_dir)/fix_mingw_cross_compile.patch && \
   sed -i.old "s|updateqm.commands = \$$$$\$$$$LRELEASE|updateqm.commands = $($(package)_extract_dir)/qttools/bin/lrelease|" qttranslations/translations/translations.pro && \
-  sed -i.old "/updateqm.depends =/d" qttranslations/translations/translations.pro && \
-  sed -i.old "s/src_plugins.depends = src_sql src_network/src_plugins.depends = src_network/" qtbase/src/src.pro && \
-  sed -i.old -e 's/if \[ "$$$$XPLATFORM_MAC" = "yes" \]; then xspecvals=$$$$(macSDKify/if \[ "$$$$BUILD_ON_MAC" = "yes" \]; then xspecvals=$$$$(macSDKify/' -e 's|/bin/pwd|pwd|' qtbase/configure && \
   mkdir -p qtbase/mkspecs/macx-clang-linux &&\
-  cp -f qtbase/mkspecs/macx-clang/Info.plist.lib qtbase/mkspecs/macx-clang-linux/ &&\
-  cp -f qtbase/mkspecs/macx-clang/Info.plist.app qtbase/mkspecs/macx-clang-linux/ &&\
   cp -f qtbase/mkspecs/macx-clang/qplatformdefs.h qtbase/mkspecs/macx-clang-linux/ &&\
   cp -f $($(package)_patch_dir)/mac-qmake.conf qtbase/mkspecs/macx-clang-linux/qmake.conf && \
   echo "!host_build: QMAKE_INCDIR += $(host_prefix)/native/include/c++/v1" >> qtbase/mkspecs/macx-clang-linux/qmake.conf && \
@@ -188,22 +222,9 @@ define $(package)_preprocess_cmds
   sed -i.old "s|QMAKE_INSTALL_NAME_TOOL=\$$$$\$$$${CROSS_COMPILE}|QMAKE_INSTALL_NAME_TOOL=$(host_prefix)/native/bin/\$$$$\$$$${CROSS_COMPILE}|" qtbase/mkspecs/macx-clang-linux/qmake.conf && \
   cp -r qtbase/mkspecs/linux-arm-gnueabi-g++ qtbase/mkspecs/bitcoin-linux-g++ && \
   sed -i.old "s/arm-linux-gnueabi-/$(host)-/g" qtbase/mkspecs/bitcoin-linux-g++/qmake.conf && \
-  patch -p1 -i $($(package)_patch_dir)/fix_qt_pkgconfig.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_configure_mac.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_no_printer.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_rcc_determinism.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/xkb-default.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_android_qmake_conf.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_android_jni_static.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_qpainter_non_determinism.patch &&\
   echo "!host_build: QMAKE_CFLAGS     += $($(package)_cflags) $($(package)_cppflags)" >> qtbase/mkspecs/common/gcc-base.conf && \
   echo "!host_build: QMAKE_CXXFLAGS   += $($(package)_cxxflags) $($(package)_cppflags)" >> qtbase/mkspecs/common/gcc-base.conf && \
   echo "!host_build: QMAKE_LFLAGS     += $($(package)_ldflags)" >> qtbase/mkspecs/common/gcc-base.conf && \
-  patch -p1 -i $($(package)_patch_dir)/fix_riscv64_arch.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/fix_s390x_powerpc_mips_mipsel_architectures.patch &&\
-  patch -p1 -i $($(package)_patch_dir)/no-xlib.patch &&\
-  echo "QMAKE_LINK_OBJECT_MAX = 10" >> qtbase/mkspecs/win32-g++/qmake.conf &&\
-  echo "QMAKE_LINK_OBJECT_SCRIPT = object_script" >> qtbase/mkspecs/win32-g++/qmake.conf &&\
   sed -i.old "s|QMAKE_CFLAGS           += |!host_build: QMAKE_CFLAGS            = $($(package)_cflags) $($(package)_cppflags) |" qtbase/mkspecs/win32-g++/qmake.conf && \
   sed -i.old "s|QMAKE_CXXFLAGS         += |!host_build: QMAKE_CXXFLAGS            = $($(package)_cxxflags) $($(package)_cppflags) |" qtbase/mkspecs/win32-g++/qmake.conf && \
   sed -i.old "0,/^QMAKE_LFLAGS_/s|^QMAKE_LFLAGS_|!host_build: QMAKE_LFLAGS            = $($(package)_ldflags)\n&|" qtbase/mkspecs/win32-g++/qmake.conf && \
