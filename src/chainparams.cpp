@@ -8,6 +8,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "chainparams.h"
+#include "consensus/merkle.h"
 
 #include "chainparamsseeds.h"
 #include "util.h"
@@ -108,9 +109,10 @@ public:
         nRejectBlockOutdatedMajority = 10260; // 95%
         nToCheckBlockUpgradeMajority = 10800; // Approximate expected amount of blocks in 7 days (1440*7.5)
         nMinerThreads = 0;
-        nTargetTimespan = 1 * 60; // PRCYcoin: 1 day
+        nTargetTimespan = 1 * 60; // PRCYcoin: 1 minute
         nTargetSpacing = 1 * 60;  // PRCYcoin: 1 minute
         nMaturity = 100;
+        nStakeMinAge = 60 * 60;   // PRCYcoin: 1 hour
         nMasternodeCountDrift = 20;
         nMNCollateralAmt = 5000 * COIN;
         nMinimumStakeAmount = 2500 * COIN;
@@ -151,7 +153,7 @@ public:
         txNew.vout[0].scriptPubKey = CScript() << ParseHex("04b78f63269234b741668d85b57ba11edec2ee20f15719db180d5d6a37c4e9db0c494390fb54925934bc7b29f148a372c00273bbd5c939830d7d2941de6ce44b8b") << OP_CHECKSIG;
         genesis.vtx.push_back(txNew);
         genesis.hashPrevBlock.SetNull();
-        genesis.hashMerkleRoot = genesis.BuildMerkleTree();
+        genesis.hashMerkleRoot = BlockMerkleRoot(genesis);
         genesis.nVersion = 1;
         genesis.nTime = 1610409600; // 1/12/2021 @ 12:00am (GMT)
         genesis.nBits = 0x1e0ffff0;
@@ -376,11 +378,11 @@ public:
     {
         networkID = CBaseChainParams::REGTEST;
         strNetworkID = "regtest";
-        strNetworkID = "regtest";
         pchMessageStart[0] = 0xc6;
         pchMessageStart[1] = 0xb3;
         pchMessageStart[2] = 0x97;
         pchMessageStart[3] = 0xd1;
+        nDefaultPort = 59686;
         nSubsidyHalvingInterval = 150;
         nEnforceBlockUpgradeMajority = 750;
         nRejectBlockOutdatedMajority = 950;
@@ -389,6 +391,13 @@ public:
         nTargetTimespan = 24 * 60 * 60; // Prcycoin: 1 day
         nTargetSpacing = 1 * 60;        // Prcycoin: 1 minutes
         bnProofOfWorkLimit = ~UINT256_ZERO >> 1;
+        nLastPOWBlock = 250;
+        nMaturity = 100;
+        nStakeMinAge = 0;
+        nMasternodeCountDrift = 4;
+        nModifierUpdateBlock = 0; //approx Mon, 17 Apr 2017 04:00:00 GMT
+
+        //! Modify the regtest genesis block so the timestamp is valid for a later start.
         genesis.nTime = 1608422399;
         genesis.nBits = 0x207fffff;
         genesis.nNonce = 12361;
@@ -423,8 +432,6 @@ public:
         }
 
         hashGenesisBlock = genesis.GetHash();
-        nDefaultPort = 51476;
-
         assert(hashGenesisBlock == uint256S("690cbb5c7ae999de1de49948a3c109d3b15fe4de4297980de8ff0cbfe3c7823a"));
 
         vFixedSeeds.clear(); //! Testnet mode doesn't have any fixed seeds.
@@ -436,6 +443,7 @@ public:
         fDefaultConsistencyChecks = true;
         fRequireStandard = false;
         fMineBlocksOnDemand = true;
+        fSkipProofOfWorkCheck = true;
         fTestnetToBeDeprecatedFieldRPC = false;
     }
     const Checkpoints::CCheckpointData& Checkpoints() const

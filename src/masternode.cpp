@@ -25,23 +25,31 @@ std::map<int64_t, uint256> mapCacheBlockHashes;
 //Get the last hash that matches the modulus given. Processed in reverse order
 bool GetBlockHash(uint256& hash, int nBlockHeight)
 {
-    if (chainActive.Tip() == NULL) return false;
+    int tipHeight;
+    const CBlockIndex* tipIndex;
+    {
+        LOCK(cs_main);
+        CBlockIndex *pindex = chainActive.Tip();
+        if (!pindex) return false;
+        tipHeight = pindex->nHeight;
+        tipIndex = mapBlockIndex[pindex->GetBlockHash()];
+    }
 
     if (nBlockHeight == 0)
-        nBlockHeight = chainActive.Tip()->nHeight;
+        nBlockHeight = tipHeight;
 
     if (mapCacheBlockHashes.count(nBlockHeight)) {
         hash = mapCacheBlockHashes[nBlockHeight];
         return true;
     }
 
-    const CBlockIndex* BlockLastSolved = chainActive.Tip();
-    const CBlockIndex* BlockReading = chainActive.Tip();
+    const CBlockIndex* BlockLastSolved = tipIndex;
+    const CBlockIndex* BlockReading = tipIndex;
 
-    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || chainActive.Tip()->nHeight + 1 < nBlockHeight) return false;
+    if (BlockLastSolved == nullptr || BlockLastSolved->nHeight == 0 || tipHeight + 1 < nBlockHeight) return false;
 
     int nBlocksAgo = 0;
-    if (nBlockHeight > 0) nBlocksAgo = (chainActive.Tip()->nHeight + 1) - nBlockHeight;
+    if (nBlockHeight > 0) nBlocksAgo = (tipHeight + 1) - nBlockHeight;
     assert(nBlocksAgo >= 0);
 
     int n = 0;
@@ -162,7 +170,10 @@ bool CMasternode::UpdateFromNewBroadcast(CMasternodeBroadcast& mnb)
 //
 uint256 CMasternode::CalculateScore(int mod, int64_t nBlockHeight)
 {
-    if (chainActive.Tip() == NULL) return UINT256_ZERO;
+    {
+        LOCK(cs_main);
+        if (chainActive.Tip() == nullptr) return UINT256_ZERO;
+    }
 
     uint256 hash;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
@@ -432,9 +443,10 @@ bool CMasternodeBroadcast::Create(std::string strService, std::string strKeyMast
         return false;
     }
 
-    if (!pwalletMain->GetMasternodeVinAndKeys(txin, pubKeyCollateralAddressNew, keyCollateralAddressNew, strTxHash, strOutputIndex)) {
-        strErrorRet = strprintf("Could not allocate txin %s:%s for masternode %s", strTxHash, strOutputIndex, strService);
-        LogPrint(BCLog::MASTERNODE,"CMasternodeBroadcast::Create -- %s\n", strErrorRet);
+    std::string strError;
+    if (!pwalletMain->GetMasternodeVinAndKeys(txin, pubKeyCollateralAddressNew, keyCollateralAddressNew, strTxHash, strOutputIndex, strError)) {
+        strErrorRet = strError; // GetMasternodeVinAndKeys logs this error. Only returned for GUI error notification.
+        LogPrint(BCLog::MASTERNODE,"CMasternodeBroadcast::Create -- %s\n", strprintf("Could not allocate txin %s:%s for masternode %s", strTxHash, strOutputIndex, strService));
         return false;
     }
 
@@ -497,7 +509,7 @@ bool CMasternodeBroadcast::CheckDefaultPort(CService service, std::string& strEr
     if (service.GetPort() != nDefaultPort) {
         strErrorRet = strprintf("Invalid port %u for masternode %s, only %d is supported on %s-net.",
                                 service.GetPort(), service.ToString(), nDefaultPort, Params().NetworkIDString());
-        LogPrint(BCLog::MASTERNODE, "%s - %s\n", strContext, strErrorRet);
+        LogPrintf("%s - %s\n", strContext, strErrorRet);
         return false;
     }
 

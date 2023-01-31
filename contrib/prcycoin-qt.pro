@@ -114,6 +114,7 @@ HEADERS += src/activemasternode.h \
            src/net.h \
            src/netbase.h \
            src/noui.h \
+           optional.h \
            src/poa.h \
            src/prevector.h \
            src/protocol.h \
@@ -123,6 +124,7 @@ HEADERS += src/activemasternode.h \
            src/reverse_iterate.h \
            src/scheduler.h \
            src/serialize.h \
+           src/stakeinput.h \
            src/streams.h \
            src/swifttx.h \
            src/sync.h \
@@ -447,6 +449,7 @@ SOURCES += src/activemasternode.cpp \
            src/random.cpp \
            src/rest.cpp \
            src/scheduler.cpp \
+           src/stakeinput.cpp \
            src/swifttx.cpp \
            src/sync.cpp \
            src/timedata.cpp \

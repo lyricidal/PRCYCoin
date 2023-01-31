@@ -130,6 +130,8 @@ uint256 ParseHashV(const UniValue& v, std::string strName) {
         strHex = v.get_str();
     if (!IsHex(strHex)) // Note: IsHex("") is false
         throw JSONRPCError(RPC_INVALID_PARAMETER, strName + " must be hexadecimal string (not '" + strHex + "')");
+    if (64 != strHex.length())
+        throw JSONRPCError(RPC_INVALID_PARAMETER, strprintf("%s must be of length %d (not %d)", strName, 64, strHex.length()));
     uint256 result;
     result.SetHex(strHex);
     return result;
@@ -291,6 +293,7 @@ static const CRPCCommand vRPCCommands[] =
         {"blockchain", "getblockcount", &getblockcount, true, false, false},
         {"blockchain", "getblock", &getblock, true, false, false},
         {"blockchain", "getblockhash", &getblockhash, true, false, false},
+        {"blockchain", "getblockindexstats", &getblockindexstats, true, false, false},
         {"blockchain", "getlastpoablock", &getlastpoablock, true, false, false},
         {"blockchain", "getlastpoablockhash", &getlastpoablockhash, true, false, false},
         {"blockchain", "getlastpoablockheight", &getlastpoablockheight, true, false, false},
@@ -326,6 +329,7 @@ static const CRPCCommand vRPCCommands[] =
         {"generating", "getgenerate", &getgenerate, true, false, false},
         {"generating", "gethashespersec", &gethashespersec, true, false, false},
         {"generating", "setgenerate", &setgenerate, true, true, false},
+        {"generating", "generate", &generate, true, true, false},
         {"generating", "generatepoa", &generatepoa, true, true, false},
 #endif
 
@@ -361,7 +365,6 @@ static const CRPCCommand vRPCCommands[] =
          {"prcycoin", "getseesawrewardratio", &getseesawrewardratio, true, true, false},
          {"prcycoin", "getseesawrewardwithheight", &getseesawrewardwithheight, true, true, false},
          {"prcycoin", "masternodecurrent", &masternodecurrent, true, true, false},
-         {"prcycoin", "masternodedebug", &masternodedebug, true, true, false},
          {"prcycoin", "startmasternode", &startmasternode, true, true, false},
          {"prcycoin", "listmasternodeconf", &listmasternodeconf, true, true, false},
          {"prcycoin", "getmasternodewinners", &getmasternodewinners, true, true, false},
@@ -437,7 +440,9 @@ static const CRPCCommand vRPCCommands[] =
         {"wallet", "walletlock", &walletlock, true, false, true},
         {"wallet", "walletpassphrasechange", &walletpassphrasechange, true, false, true},
         {"wallet", "unlockwallet", &unlockwallet, true, false, true},
-        {"wallet", "revealmnemonicphrase", &revealmnemonicphrase, true, false, true}
+        {"wallet", "revealmnemonicphrase", &revealmnemonicphrase, true, false, true},
+        {"wallet", "createmasternode", &createmasternode, true, false, true},
+        {"wallet", "erasefromwallet", &erasefromwallet, true, false, true}
 
 #endif // ENABLE_WALLET
         };

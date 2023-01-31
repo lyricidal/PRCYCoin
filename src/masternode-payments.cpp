@@ -172,46 +172,23 @@ void DumpMasternodePayments()
     LogPrint(BCLog::MASTERNODE, "Budget dump finished  %dms\n", GetTimeMillis() - nStart);
 }
 
-bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMinted)
+bool IsBlockValueValid(int nHeight, CAmount nExpectedValue, CAmount nMinted)
 {
-    CBlockIndex* pindexPrev = chainActive.Tip();
-    if (pindexPrev == NULL) return true;
-
-    int nHeight = 0;
-    if (pindexPrev->GetBlockHash() == block.hashPrevBlock) {
-        nHeight = pindexPrev->nHeight + 1;
-    } else { //out of order
-        BlockMap::iterator mi = mapBlockIndex.find(block.hashPrevBlock);
-        if (mi != mapBlockIndex.end() && (*mi).second)
-            nHeight = (*mi).second->nHeight + 1;
-    }
-
-    if (nHeight == 0) {
-        LogPrint(BCLog::MASTERNODE, "IsBlockValueValid() : WARNING: Couldn't find previous block\n");
-    }
-
-    if (!masternodeSync.IsSynced()) { //there is no budget data to use to check anything
+    if (!masternodeSync.IsSynced()) {
+        //there is no budget data to use to check anything
         //super blocks will always be on these blocks, max 100 per budgeting
         if (nHeight % GetBudgetPaymentCycleBlocks() < 100) {
             return true;
-        } else {
-            if (nMinted > nExpectedValue) {
-                return false;
-            }
         }
-    } else { // we're synced and have data so check the budget schedule
-
+    } else {
+        // we're synced and have data so check the budget schedule
         if (budget.IsBudgetPaymentBlock(nHeight)) {
             //the value of the block is evaluated in CheckBlock
             return true;
-        } else {
-            if (nMinted > nExpectedValue) {
-                return false;
-            }
         }
     }
 
-    return true;
+    return nMinted <= nExpectedValue;
 }
 
 bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
@@ -260,41 +237,11 @@ bool CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
     CPubKey mnPaymentPubTx = mnPaymentPrivTx.GetPubKey();
 
     masternodePayments.GetBlockPayee(pindexPrev->nHeight + 1, payeeAddr);
-    if (payeeAddr.size() != 0) {
-        bool isNotSpent = false;
-        std::vector<CMasternode> mns = mnodeman.GetFullMasternodeVector();
-        for (CMasternode& mn : mns) {
-            if (mn.vin.masternodeStealthAddress == payeeAddr && mn.IsEnabled()) {
-                isNotSpent = true;
-                break;
-            }
-        }
-        if (!isNotSpent) payeeAddr.clear();
-    }
-    if (payeeAddr.size() == 0) {
-        //no masternode detected
-        CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
-        if (winningNode) {
-            //generate payee based on masternodeStealthAddress
-            payeeAddr = winningNode->vin.masternodeStealthAddress;
-        }
-
-        if (payeeAddr.size() != 0) {
-            bool isNotSpent = false;
-            std::vector<CMasternode> mns = mnodeman.GetFullMasternodeVector();
-            for (CMasternode& mn : mns) {
-                if (mn.vin.masternodeStealthAddress == payeeAddr && mn.IsEnabled()) {
-                    isNotSpent = true;
-                    break;
-                }
-            }
-            if (!isNotSpent) payeeAddr.clear();
-        }
-    }
-    /*std::string mnaddress = "41im5B4oiZ6WxMrQfXivfpZ5sMsPwbqhSSpDkvxxATq2QMvBa5nppNCYcESvLhGyEiZoEXyc8F5AJE3LymkrX24i17JicpNRAq8";
-    std::vector<unsigned char> temp(mnaddress.begin(), mnaddress.end());
-    payeeAddr = temp;*/
-    if (payeeAddr.size() != 0) {
+    //no masternode detected
+    CMasternode* winningNode = mnodeman.GetCurrentMasterNode(1);
+    if (winningNode) {
+        //generate payee based on masternodeStealthAddress
+        payeeAddr = winningNode->vin.masternodeStealthAddress;
         std::string mnsa(payeeAddr.begin(), payeeAddr.end());
 
         //Parse stealth address
@@ -364,6 +311,7 @@ void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, std::st
         if (Params().NetworkID() == CBaseChainParams::MAIN) {
             if (pfrom->HasFulfilledRequest(NetMsgType::GETMNWINNERS)) {
                 LogPrintf("CMasternodePayments::ProcessMessageMasternodePayments() : mnget - peer already asked me for the list\n");
+                LOCK(cs_main);
                 Misbehaving(pfrom->GetId(), 20);
                 return;
             }
@@ -410,6 +358,7 @@ void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, std::st
         if (!winner.SignatureValid()) {
             if (masternodeSync.IsSynced()) {
                 LogPrintf("CMasternodePayments::ProcessMessageMasternodePayments() : mnw - invalid signature\n");
+                LOCK(cs_main);
                 Misbehaving(pfrom->GetId(), 20);
             }
             // it could just be a non-synced masternode

@@ -200,6 +200,7 @@ extern UniValue bip38decrypt(const UniValue& params, bool fHelp);
 
 extern UniValue getgenerate(const UniValue& params, bool fHelp); // in rpcmining.cpp
 extern UniValue setgenerate(const UniValue& params, bool fHelp);
+extern UniValue generate(const UniValue& params, bool fHelp);
 extern UniValue generatepoa(const UniValue& params, bool fHelp);
 extern UniValue getnetworkhashps(const UniValue& params, bool fHelp);
 extern UniValue gethashespersec(const UniValue& params, bool fHelp);
@@ -269,6 +270,7 @@ extern UniValue getstakesplitthreshold(const UniValue& params, bool fHelp);
 extern UniValue multisend(const UniValue& params, bool fHelp);
 extern UniValue autocombinedust(const UniValue& params, bool fHelp);
 extern UniValue revealmnemonicphrase(const UniValue& params, bool fHelp);
+extern UniValue erasefromwallet(const UniValue& params, bool fHelp);
 
 extern UniValue getrawtransaction(const UniValue& params, bool fHelp); // in rcprawtransaction.cpp
 extern UniValue getrawtransactionbyblockheight(const UniValue& params, bool fHelp); // in rcprawtransaction.cpp
@@ -303,6 +305,7 @@ extern UniValue setmaxreorgdepth(const UniValue& params, bool fHelp);
 extern UniValue resyncfrom(const UniValue& params, bool fHelp);
 extern UniValue getblock(const UniValue& params, bool fHelp);
 extern UniValue getblockheader(const UniValue& params, bool fHelp);
+extern UniValue getblockindexstats(const UniValue& params, bool fHelp);
 extern UniValue getfeeinfo(const UniValue& params, bool fHelp);
 extern UniValue gettxoutsetinfo(const UniValue& params, bool fHelp);
 extern UniValue gettxout(const UniValue& params, bool fHelp);
@@ -311,6 +314,7 @@ extern UniValue getchaintips(const UniValue& params, bool fHelp);
 extern UniValue invalidateblock(const UniValue& params, bool fHelp);
 extern UniValue reconsiderblock(const UniValue& params, bool fHelp);
 extern UniValue getinvalid(const UniValue& params, bool fHelp);
+extern void validaterange(const UniValue& params, int& heightStart, int& heightEnd, int minHeightStart=1);
 
 extern UniValue masternode(const UniValue& params, bool fHelp);
 extern UniValue listmasternodes(const UniValue& params, bool fHelp);
@@ -322,8 +326,8 @@ extern UniValue getcurrentseesawreward(const UniValue& params, bool fHelp);
 extern UniValue getseesawrewardratio(const UniValue& params, bool fHelp);
 extern UniValue getseesawrewardwithheight(const UniValue& params, bool fHelp);
 extern UniValue masternodecurrent(const UniValue& params, bool fHelp);
-extern UniValue masternodedebug(const UniValue& params, bool fHelp);
 extern UniValue startmasternode(const UniValue& params, bool fHelp);
+extern UniValue createmasternode(const UniValue& params, bool fHelp);
 extern UniValue createmasternodekey(const UniValue& params, bool fHelp);
 extern UniValue getmasternodeoutputs(const UniValue& params, bool fHelp);
 extern UniValue listmasternodeconf(const UniValue& params, bool fHelp);
