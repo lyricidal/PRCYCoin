@@ -401,6 +401,8 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     encryptWalletAction->setCheckable(true);
     backupWalletAction = new QAction(QIcon(":/icons/filesave"), tr("&Backup Wallet..."), this);
     backupWalletAction->setStatusTip(tr("Backup wallet to another location"));
+    showSeedAction = new QAction(QIcon(":/icons/seedphrase"), tr("&Show Seed Phrase"), this);
+    showSeedAction->setStatusTip(tr("Show 24 word wallet seed phrase"));
     changePassphraseAction = new QAction(QIcon(":/icons/key"), tr("&Change Passphrase..."), this);
     changePassphraseAction->setStatusTip(tr("Change the passphrase used for wallet encryption"));
     unlockWalletAction = new QAction(tr("&Unlock Wallet..."), this);
@@ -482,8 +484,8 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     openBridgeAction->setStatusTip(tr("Bridge Link"));
     openDexAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PRivaCY DEX"), this);
     openDexAction->setStatusTip(tr("PRivaCY Dex Link"));
-    openCheckerAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PRCY Checker"), this);
-    openCheckerAction->setStatusTip(tr("PRCY Checker Link"));
+    openToolkitAction = new QAction(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation), tr("&PRCY Toolkit"), this);
+    openToolkitAction->setStatusTip(tr("PRCY Toolkit Link"));
     openTGTechSupportAction = new QAction(QIcon(":/icons/telegram"), tr("&Telegram Tech Support"), this);
     openTGTechSupportAction->setStatusTip(tr("Telegram Tech Support"));
     openTGMNSupportAction = new QAction(QIcon(":/icons/telegram"), tr("&Telegram Masternode Support"), this);
@@ -505,7 +507,7 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     connect(openBootStrapAction, SIGNAL(triggered()), this, SLOT(openBootStrapClicked()));
     connect(openBridgeAction, SIGNAL(triggered()), this, SLOT(openBridgeClicked()));
     connect(openDexAction, SIGNAL(triggered()), this, SLOT(openDexClicked()));
-    connect(openCheckerAction, SIGNAL(triggered()), this, SLOT(openCheckerClicked()));
+    connect(openToolkitAction, SIGNAL(triggered()), this, SLOT(openToolkitClicked()));
     connect(openTGTechSupportAction, SIGNAL(triggered()), this, SLOT(openTGTechSupportClicked()));
     connect(openTGMNSupportAction, SIGNAL(triggered()), this, SLOT(openTGMNSupportClicked()));
     connect(openDiscordSupportAction, SIGNAL(triggered()), this, SLOT(openDiscordSupportClicked()));
@@ -514,6 +516,7 @@ void BitcoinGUI::createActions(const NetworkStyle* networkStyle)
     if (walletFrame) {
         connect(encryptWalletAction, SIGNAL(triggered(bool)), walletFrame, SLOT(encryptWallet(bool)));
         connect(backupWalletAction, SIGNAL(triggered()), walletFrame, SLOT(backupWallet()));
+        connect(showSeedAction, SIGNAL(triggered()), this, SLOT(showSeedPhrase()));
         connect(changePassphraseAction, SIGNAL(triggered()), walletFrame, SLOT(changePassphrase()));
         connect(unlockWalletAction, SIGNAL(triggered(bool)), walletFrame, SLOT(unlockWallet(bool)));
         connect(lockWalletAction, SIGNAL(triggered()), walletFrame, SLOT(lockWallet()));
@@ -550,6 +553,7 @@ void BitcoinGUI::createMenuBar()
         //file->addAction(openAction);
         file->addAction(backupWalletAction);
         file->addSeparator();
+        file->addAction(showSeedAction);
         //file->addAction(usedSendingAddressesAction);
         //file->addAction(usedReceivingAddressesAction);
         //file->addSeparator();
@@ -608,7 +612,7 @@ void BitcoinGUI::createMenuBar()
     help->addAction(openBootStrapAction);
     help->addAction(openBridgeAction);
     help->addAction(openDexAction);
-    help->addAction(openCheckerAction);
+    help->addAction(openToolkitAction);
     help->addSeparator();
     help->addAction(openTGTechSupportAction);
     //help->addAction(openTGMNSupportAction);
@@ -776,6 +780,7 @@ void BitcoinGUI::setWalletActionsEnabled(bool enabled)
     masternodeAction->setEnabled(enabled);
     encryptWalletAction->setEnabled(enabled);
     backupWalletAction->setEnabled(enabled);
+    showSeedAction->setEnabled(enabled);
     changePassphraseAction->setEnabled(enabled);
     usedSendingAddressesAction->setEnabled(enabled);
     usedReceivingAddressesAction->setEnabled(enabled);
@@ -957,7 +962,7 @@ void BitcoinGUI::openTGMNSupportClicked()
 
 void BitcoinGUI::openDiscordSupportClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://discord.gg/8vbXJMf"));
+    QDesktopServices::openUrl(QUrl("https://discord.prcycoin.com"));
 }
 
 void BitcoinGUI::openBridgeClicked()
@@ -970,9 +975,9 @@ void BitcoinGUI::openDexClicked()
     QDesktopServices::openUrl(QUrl("https://privacydex.io"));
 }
 
-void BitcoinGUI::openCheckerClicked()
+void BitcoinGUI::openToolkitClicked()
 {
-    QDesktopServices::openUrl(QUrl("https://prcycoin.com/prcy-checker"));
+    QDesktopServices::openUrl(QUrl("https://toolkit.prcycoin.com"));
 }
 
 void BitcoinGUI::checkForUpdatesClicked()
@@ -1092,6 +1097,10 @@ void BitcoinGUI::gotoBlockExplorerPage()
     if (walletFrame) walletFrame->gotoBlockExplorerPage();
 }
 
+void BitcoinGUI::showSeedPhrase()
+{
+    if (walletFrame) walletFrame->showSeedPhrase();
+}
 #endif // ENABLE_WALLET
 
 void BitcoinGUI::setNumConnections(int count)

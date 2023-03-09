@@ -67,7 +67,6 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
     if (stkStatus && !fLiteMode){
         if (chainActive.Height() < Params().LAST_POW_BLOCK()) {
             stkStatus = false;
-            pwalletMain->walletStakingInProgress = false;
             pwalletMain->WriteStakingStatus(false);
             //Q_EMIT model->stakingStatusChanged(false);
         } else {
@@ -75,7 +74,6 @@ OptionsPage::OptionsPage(QWidget* parent) : QDialog(parent, Qt::WindowSystemMenu
             StakingStatusError stt = model->getStakingStatusError(error);
             if (error.length()) {
                 stkStatus = false;
-                pwalletMain->walletStakingInProgress = false;
                 pwalletMain->WriteStakingStatus(false);
                 //Q_EMIT model->stakingStatusChanged(false);
             }
@@ -471,7 +469,6 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
         }
         widget->setState(false);
         pwalletMain->WriteStakingStatus(false);
-        pwalletMain->walletStakingInProgress = false;
         return;
     }
     if (widget->getState()){
@@ -557,7 +554,6 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
             nLastCoinStakeSearchInterval = 0;
             model->generateCoins(false, 0);
             Q_EMIT model->stakingStatusChanged(false);
-            pwalletMain->walletStakingInProgress = false;
             pwalletMain->WriteStakingStatus(false);
             return;
         } else {
@@ -641,7 +637,6 @@ void OptionsPage::on_EnableStaking(ToggleButton* widget)
         nLastCoinStakeSearchInterval = 0;
         model->generateCoins(false, 0);
         Q_EMIT model->stakingStatusChanged(false);
-        pwalletMain->walletStakingInProgress = false;
         pwalletMain->WriteStakingStatus(false);
     }
 }
@@ -843,6 +838,9 @@ void OptionsPage::on_month() {
 }
 
 void OptionsPage::onShowMnemonic() {
+    if(!model)
+        return;
+
     int status = model->getEncryptionStatus();
     if (status == WalletModel::Locked || status == WalletModel::UnlockedForStakingOnly) {
         WalletModel::UnlockContext ctx(model->requestUnlock(AskPassphraseDialog::Context::Unlock_Full, true));
@@ -885,17 +883,12 @@ void OptionsPage::onShowMnemonic() {
             return;
         }
     }
-    
-    CHDChain hdChainCurrent;
-    if (!pwalletMain->GetDecryptedHDChain(hdChainCurrent))
-        return;
+    QString phrase = "";
+    std::string recoverySeedPhrase = "";
+    if (model->getSeedPhrase(recoverySeedPhrase)) {
+        phrase = QString::fromStdString(recoverySeedPhrase);
+    }
 
-    SecureString mnemonic;
-    SecureString mnemonicPass;
-    if (!hdChainCurrent.GetMnemonic(mnemonic, mnemonicPass))
-        return;
-
-    QString mPhrase = std::string(mnemonic.begin(), mnemonic.end()).c_str();
     QMessageBox msgBox;
     QPushButton *copyButton = msgBox.addButton(tr("Copy"), QMessageBox::ActionRole);
     QPushButton *okButton = msgBox.addButton(tr("OK"), QMessageBox::ActionRole);
@@ -903,13 +896,13 @@ void OptionsPage::onShowMnemonic() {
     copyButton->setIcon(QIcon(":/icons/editcopy"));
     msgBox.setWindowTitle("Mnemonic Recovery Phrase");
     msgBox.setText("Below is your Mnemonic Recovery Phrase, consisting of 24 seed words. Please copy/write these words down in order. We strongly recommend keeping multiple copies in different locations.");
-    msgBox.setInformativeText("\n<b>" + mPhrase + "</b>");
+    msgBox.setInformativeText("\n<b>" + phrase + "</b>");
     msgBox.setStyleSheet(GUIUtil::loadStyleSheet());
     msgBox.exec();
 
     if (msgBox.clickedButton() == copyButton) {
-    //Copy Mnemonic Recovery Phrase to clipboard
-    GUIUtil::setClipboard(std::string(mnemonic.begin(), mnemonic.end()).c_str());
+        //Copy Mnemonic Recovery Phrase to clipboard
+        GUIUtil::setClipboard(phrase);
     }
 }
 

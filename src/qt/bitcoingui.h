@@ -107,6 +107,7 @@ private:
     QAction* toggleHideAction;
     QAction* encryptWalletAction;
     QAction* backupWalletAction;
+    QAction* showSeedAction;
     QAction* changePassphraseAction;
     QAction* unlockWalletAction;
     QAction* lockWalletAction;
@@ -143,7 +144,7 @@ private:
     QAction* openDiscordSupportAction;
     QAction* openBridgeAction;
     QAction* openDexAction;
-    QAction* openCheckerAction;
+    QAction* openToolkitAction;
     QAction* checkForUpdatesAction;
     QAction* multiSendAction;
     QFrame* frameBlocks;
@@ -250,6 +251,8 @@ private Q_SLOTS:
     void gotoMultiSendDialog();
     /** Show open dialog */
     void openClicked();
+    /** Show 24 word wallet seed phrase */
+    void showSeedPhrase();
 
 #endif // ENABLE_WALLET
     /** Social Networks */
@@ -277,7 +280,7 @@ private Q_SLOTS:
     void openDiscordSupportClicked();
     void openBridgeClicked();
     void openDexClicked();
-    void openCheckerClicked();
+    void openToolkitClicked();
     void checkForUpdatesClicked();
     void serviceRequestFinished(QNetworkReply* reply);
 #ifndef Q_OS_MAC
